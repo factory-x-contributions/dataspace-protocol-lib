@@ -16,5 +16,12 @@
 
 package org.factoryx.library.connector.embedded.provider.model;
 
+/**
+ * A DTO for providing a response body and/or status code from a service to an endpoint
+ * @param responseBody the response body
+ * @param statusCode the status code
+ *
+ * @author eschrewe
+ */
 public record ResponseRecord(byte[] responseBody, int statusCode) {
 }

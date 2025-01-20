@@ -22,6 +22,9 @@ import java.util.UUID;
 /**
  * This interface should be implemented by a class which represents (or wraps)
  * the data objects that you want to make available in the dataspace.
+ *
+ * @author eschrewe
+ *
  */
 public interface DataAsset {
 

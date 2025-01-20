@@ -23,6 +23,9 @@ import java.util.UUID;
 
 /**
  * This is a service interface to provide read-only access to the stored NegotiationRecords
+ *
+ * @author eschrewe
+ *
  */
 public interface ContractRecordService {
 

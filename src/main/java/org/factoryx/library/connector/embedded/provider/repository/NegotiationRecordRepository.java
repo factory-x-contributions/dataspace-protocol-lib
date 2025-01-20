@@ -23,7 +23,13 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 import java.util.UUID;
 
+
 @Repository
+/**
+ * Repository type for persisting NegotiationRecord entities
+ *
+ * @author eschrewe
+ */
 public interface NegotiationRecordRepository extends JpaRepository<NegotiationRecord, UUID> {
     List<NegotiationRecord> findAllByContractId(UUID contractId);
 }

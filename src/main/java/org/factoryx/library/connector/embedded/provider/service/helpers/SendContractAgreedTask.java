@@ -37,6 +37,9 @@ import static org.factoryx.library.connector.embedded.provider.service.helpers.J
  * This class represents a task to send a ContractAgreed message in the
  * context of a specific negotiation. Should be initiated, after an agreeable
  * new contract request has been received by a consumer partner.
+ *
+ * @author eschrewe
+ *
  */
 @Slf4j
 public class SendContractAgreedTask implements Runnable {

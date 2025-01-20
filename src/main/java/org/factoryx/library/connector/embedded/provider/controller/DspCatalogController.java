@@ -36,6 +36,10 @@ import java.util.Map;
 
 @RestController
 @Slf4j
+/**
+ * Endpoint for receiving DSP catalog requests
+ * @author tobias.urbanek
+ */
 public class DspCatalogController {
 
     private final DspCatalogService dspCatalogService;

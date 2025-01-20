@@ -31,6 +31,13 @@ import static org.factoryx.library.connector.embedded.provider.service.Authoriza
 
 @Service
 @Slf4j
+/**
+ * This service can check whether a given token is valid for a given request URI
+ * in the context of a DSP transfer request.
+ *
+ * @author eschrewe
+ *
+ */
 public class DataAccessTokenValidationService {
 
     private final AuthorizationService authorizationService;

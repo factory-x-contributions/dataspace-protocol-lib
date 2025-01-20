@@ -27,6 +27,9 @@ import java.util.UUID;
 
 /**
  * A TransferRecord stores the (current) status of a transfer
+ *
+ * @author dalmasoud
+ *
  */
 @Setter
 @Getter

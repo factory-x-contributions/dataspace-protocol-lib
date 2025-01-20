@@ -31,6 +31,11 @@ import java.util.UUID;
 
 @Service
 @Slf4j
+/**
+ * This services creates a response body for a DSP catalog request
+ *
+ * @author tobias.urbanek
+ */
 public class DspCatalogService {
 
     private final DataAssetManagementService dataManagementService;

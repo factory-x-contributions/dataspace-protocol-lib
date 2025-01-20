@@ -16,6 +16,12 @@
 
 package org.factoryx.library.connector.embedded.provider.model.transfer;
 
+/**
+ * The possible states, a DSP transfer can be in.
+ *
+ * @author dalmasoud
+ *
+ */
 public enum TransferState {
     REQUESTED,
     STARTED,

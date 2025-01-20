@@ -39,6 +39,9 @@ import static org.factoryx.library.connector.embedded.provider.service.helpers.J
 
 /**
  * This service contains the logic for handling incoming negotiation requests in the DSP context
+ *
+ * @author eschrewe
+ *
  */
 @Service
 @Slf4j

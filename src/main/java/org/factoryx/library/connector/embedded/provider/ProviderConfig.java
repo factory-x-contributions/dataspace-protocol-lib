@@ -24,6 +24,12 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 @Configuration
+/**
+ * A bean providing config class
+ *
+ * @author eschrewe
+ *
+ */
 public class ProviderConfig {
 
     /**

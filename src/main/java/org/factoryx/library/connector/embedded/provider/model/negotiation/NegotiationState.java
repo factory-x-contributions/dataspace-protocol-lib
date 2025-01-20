@@ -16,6 +16,12 @@
 
 package org.factoryx.library.connector.embedded.provider.model.negotiation;
 
+/**
+ * The possible states of a DSP negotiation
+ *
+ * @author eschrewe
+ *
+ */
 public enum NegotiationState {
     REQUESTED,
     OFFERED,

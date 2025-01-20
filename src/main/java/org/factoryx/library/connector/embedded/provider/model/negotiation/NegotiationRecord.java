@@ -30,6 +30,12 @@ import java.util.UUID;
 @Getter
 @Slf4j
 @Entity
+/**
+ * Entity class that represents a DSP negotiation
+ *
+ * @author eschrewe
+ *
+ */
 public class NegotiationRecord {
     // Initial attributes (these are not expected to change after the negotiation has started):
 

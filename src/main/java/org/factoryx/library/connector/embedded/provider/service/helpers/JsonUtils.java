@@ -27,6 +27,13 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * This class contains several useful static methods and values for handling JSON and JSON-LD.
+ *
+ * @author eschrewe
+ * @author dalmasoud
+ *
+ */
 public class JsonUtils {
 
     // Namespace constants:

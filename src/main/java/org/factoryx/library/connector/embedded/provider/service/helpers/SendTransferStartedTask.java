@@ -31,6 +31,14 @@ import static org.factoryx.library.connector.embedded.provider.service.helpers.J
 import static org.factoryx.library.connector.embedded.provider.service.helpers.JsonUtils.getSimpleCredential;
 
 @Slf4j
+/**
+ * This class represents a task to send a "TransferStarted" message in the
+ * context of a specific transfer request. Should be initiated, after a valid transfer
+ * request has been received by a consumer partner.
+ *
+ * @author dalmasoud
+ *
+ */
 public class SendTransferStartedTask implements Runnable {
     private final UUID transferId;
     private final TransferRecordService transferRecordService;

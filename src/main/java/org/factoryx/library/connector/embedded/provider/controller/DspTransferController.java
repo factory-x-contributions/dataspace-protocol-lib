@@ -27,6 +27,10 @@ import java.util.UUID;
 
 @RestController
 @Slf4j
+/**
+ * Endpoint for receiving DSP requests related to negotiations
+ * @author dalmasoud
+ */
 public class DspTransferController {
 
     private final DspTransferService dspTransferService;

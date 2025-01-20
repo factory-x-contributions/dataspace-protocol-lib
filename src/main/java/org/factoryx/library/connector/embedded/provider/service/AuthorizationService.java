@@ -35,6 +35,15 @@ import java.util.function.Function;
 
 @Service
 @Slf4j
+/**
+ * This service allows creating a JWT for authorizing a DSP transfer as well
+ * as methods for conveniently validating a token's signature and accessing its
+ * claims.
+ *
+ * @author dalmasoud
+ * @author eschrewe
+ *
+ */
 public class AuthorizationService {
 
     /**

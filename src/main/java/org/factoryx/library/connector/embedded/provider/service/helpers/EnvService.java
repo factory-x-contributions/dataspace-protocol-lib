@@ -23,6 +23,12 @@ import org.springframework.stereotype.Service;
 import java.util.UUID;
 
 @Service
+/**
+ * This service provides access to property defined variables.
+ *
+ * @author eschrewe
+ *
+ */
 public class EnvService {
 
     @Value("${org.factoryx.library.hostname:localhost}")

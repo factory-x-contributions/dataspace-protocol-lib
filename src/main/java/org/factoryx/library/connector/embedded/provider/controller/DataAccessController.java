@@ -31,6 +31,12 @@ import java.util.UUID;
 @RestController
 @Slf4j
 @ConditionalOnProperty(name = "org.factoryx.library.usebuiltindataccess", havingValue = "true")
+/**
+ *
+ * Default Endpoint for servicing DSP-data-pull requests
+ *
+ * @author eschrewe
+ */
 public class DataAccessController {
 
     private final DataAssetManagementService dataAssetManagementService;

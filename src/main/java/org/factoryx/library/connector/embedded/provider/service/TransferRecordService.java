@@ -28,6 +28,12 @@ import java.util.UUID;
 
 @Service
 @Slf4j
+/**
+ * This service allows to persist, read and update TransferRecord entities
+ *
+ * @author dalmasoud
+ *
+ */
 public class TransferRecordService {
 
     private final TransferRecordRepository repository;

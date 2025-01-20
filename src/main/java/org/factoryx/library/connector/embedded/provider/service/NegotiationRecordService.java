@@ -27,6 +27,12 @@ import java.util.UUID;
 
 @Service
 @Slf4j
+/**
+ * This service allows to persist, read and update NegotiationRecord entities
+ *
+ * @author eschrewe
+ *
+ */
 public class NegotiationRecordService implements ContractRecordService {
 
     private final NegotiationRecordRepository repository;

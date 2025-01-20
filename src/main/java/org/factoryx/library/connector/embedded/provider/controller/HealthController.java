@@ -22,6 +22,10 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
+/**
+ * A simple health check endpoint
+ * @author eschrewe
+ */
 public class HealthController {
 
     @GetMapping("${org.factoryx.library.dspapiprefix:/dsp}/test")

@@ -41,6 +41,9 @@ import static org.factoryx.library.connector.embedded.provider.service.helpers.J
 /**
  * This service contains the logic for handling incoming transfer requests in
  * the DSP context.
+ *
+ * @author dalmasoud
+ *
  */
 @Service
 @Slf4j

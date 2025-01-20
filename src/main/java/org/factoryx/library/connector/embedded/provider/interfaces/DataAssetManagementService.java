@@ -22,6 +22,9 @@ import java.util.UUID;
 /**
  * A class implementing this interface is expected to provide read-access to
  * the library on single DataAssets and a complete list of all available DataAssets.
+ *
+ * @author eschrewe
+ *
  */
 public interface DataAssetManagementService {
 

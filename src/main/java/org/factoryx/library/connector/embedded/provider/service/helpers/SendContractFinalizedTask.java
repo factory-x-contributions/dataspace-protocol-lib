@@ -33,6 +33,9 @@ import static org.factoryx.library.connector.embedded.provider.service.helpers.J
  * This class represents a task to send a "Finalized" ContractEvent message in the
  * context of a specific negotiation. Should be initiated, after a verification
  * request has been received by a consumer partner.
+ *
+ * @author eschrewe
+ *
  */
 @Slf4j
 public class SendContractFinalizedTask implements Runnable {
