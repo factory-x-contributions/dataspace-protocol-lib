@@ -42,6 +42,12 @@ public class EnvService {
     @Value("${org.factoryx.library.usetls:false}")
     private boolean useTls;
 
+    @Value("${org.factoryx.library.usebuiltindataccess}")
+    private boolean useBuiltInDataAccess;
+
+    @Value("${org.factoryx.library.usebuiltindataccess:localhost}")
+    private String alternativeDataAccessUrlPrefix;
+
     private String getURLPrefix(){
         return useTls ? "https://" : "http://";
     }
@@ -51,7 +57,12 @@ public class EnvService {
     }
 
     public String getDatasetUrl(UUID datasetId) {
-        return getURLPrefix() + hostName + ":" + serverPort + dspApiPrefix + "/data-access/" + datasetId;
+        if (useBuiltInDataAccess) {
+            return getURLPrefix() + hostName + ":" + serverPort + dspApiPrefix + "/data-access/" + datasetId;
+        } else {
+            return alternativeDataAccessUrlPrefix + datasetId;
+        }
+
     }
 
     /**

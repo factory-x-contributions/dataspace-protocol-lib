@@ -21,6 +21,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.factoryx.library.connector.embedded.provider.interfaces.DataAssetManagementService;
 
 import org.factoryx.library.connector.embedded.provider.service.helpers.DataAccessTokenValidationService;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -29,6 +30,7 @@ import java.util.UUID;
 
 @RestController
 @Slf4j
+@ConditionalOnProperty(name = "org.factoryx.library.usebuiltindataccess", havingValue = "true")
 public class DataAccessController {
 
     private final DataAssetManagementService dataAssetManagementService;
@@ -50,7 +52,6 @@ public class DataAccessController {
             return ResponseEntity.status(404).build();
         }
         return ResponseEntity.ok().contentType(MediaType.parseMediaType(asset.getContentType())).body(asset.getDtoRepresentation());
-
     }
 
 }
