@@ -48,7 +48,7 @@ public class EnvService {
     @Value("${org.factoryx.library.usetls:false}")
     private boolean useTls;
 
-    @Value("${org.factoryx.library.usebuiltindataccess}")
+    @Value("${org.factoryx.library.usebuiltindataccess:true}")
     private boolean useBuiltInDataAccess;
 
     @Value("${org.factoryx.library.usebuiltindataccess:localhost}")
