@@ -30,7 +30,7 @@ import java.util.UUID;
 
 @RestController
 @Slf4j
-@ConditionalOnProperty(name = "org.factoryx.library.usebuiltindataccess", havingValue = "true")
+@ConditionalOnProperty(name = "org.factoryx.library.usebuiltindataccess", havingValue = "true", matchIfMissing = true)
 /**
  *
  * Default Endpoint for servicing DSP-data-pull requests
