@@ -20,7 +20,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.factoryx.library.connector.embedded.provider.model.negotiation.NegotiationRecord;
 import org.factoryx.library.connector.embedded.provider.model.negotiation.NegotiationState;
 import org.factoryx.library.connector.embedded.provider.repository.NegotiationRecordRepository;
-import org.factoryx.library.connector.embedded.provider.service.helpers.EnvService;
 import org.springframework.stereotype.Service;
 
 import java.util.UUID;
@@ -36,11 +35,9 @@ import java.util.UUID;
 public class NegotiationRecordService implements ContractRecordService {
 
     private final NegotiationRecordRepository repository;
-    private final EnvService envService;
 
-    public NegotiationRecordService(NegotiationRecordRepository repository, EnvService envService) {
+    public NegotiationRecordService(NegotiationRecordRepository repository) {
         this.repository = repository;
-        this.envService = envService;
     }
 
     /**
@@ -51,17 +48,24 @@ public class NegotiationRecordService implements ContractRecordService {
      * @param consumerPid - the process id on the consumer side
      * @param partnerId - the id under which the consumer refers to himself
      * @param partnerDspUrl - the DSP protocol URL of the consumer partner
-     * @param targetAssetId - the id of the asset, which the consumers wants to gain access to
-     * @param state - the initial state
+     * @param targetAssetId - the id of the asset, which the consumer wants to gain access to
+     * @param permissions - the permissions as proposed by the consumer partner
+     * @param obligations - the obligations as proposed by the consumer partner
+     * @param prohibitions - the prohibitions as proposed by the consumer partner
      * @return - the created NegotiationRecord
      */
-    public NegotiationRecord createNegotiationRecord(String consumerPid, String partnerId, String partnerDspUrl, String targetAssetId, NegotiationState state) {
+    public NegotiationRecord createNegotiationRecord(String consumerPid, String partnerId, String partnerDspUrl,
+                                                     String targetAssetId, String permissions, String obligations,
+                                                     String prohibitions) {
         NegotiationRecord negotiationRecord = new NegotiationRecord();
         negotiationRecord.setConsumerPid(consumerPid);
         negotiationRecord.setPartnerId(partnerId);
         negotiationRecord.setPartnerDspUrl(partnerDspUrl);
         negotiationRecord.setTargetAssetId(targetAssetId);
-        negotiationRecord.setState(state);
+        negotiationRecord.setState(NegotiationState.REQUESTED);
+        negotiationRecord.setPermissions(permissions);
+        negotiationRecord.setObligations(obligations);
+        negotiationRecord.setProhibitions(prohibitions);
         return repository.save(negotiationRecord);
     }
 
@@ -102,7 +106,6 @@ public class NegotiationRecordService implements ContractRecordService {
             return null;
         }
     }
-
 
     @Override
     public NegotiationRecord findByContractId(UUID contractId) {

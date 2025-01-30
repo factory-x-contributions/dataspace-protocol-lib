@@ -19,6 +19,7 @@ package org.factoryx.library.connector.embedded.provider.service.helpers;
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import lombok.extern.slf4j.Slf4j;
+import org.factoryx.library.connector.embedded.provider.interfaces.DspTokenProviderService;
 import org.factoryx.library.connector.embedded.provider.model.transfer.TransferRecord;
 import org.factoryx.library.connector.embedded.provider.service.AuthorizationService;
 import org.factoryx.library.connector.embedded.provider.service.TransferRecordService;
@@ -28,7 +29,6 @@ import org.springframework.web.client.RestClient;
 import java.util.UUID;
 
 import static org.factoryx.library.connector.embedded.provider.service.helpers.JsonUtils.FULL_CONTEXT;
-import static org.factoryx.library.connector.embedded.provider.service.helpers.JsonUtils.getSimpleCredential;
 
 @Slf4j
 /**
@@ -45,15 +45,18 @@ public class SendTransferStartedTask implements Runnable {
     private final AuthorizationService authorizationService;
     private final RestClient restClient;
     private final EnvService envService;
+    private final DspTokenProviderService dspTokenProviderService;
+
 
     public SendTransferStartedTask(UUID transferId, TransferRecordService transferRecordService,
-                                   AuthorizationService authorizationService,
-                                   RestClient restClient, EnvService envService) {
+                                   AuthorizationService authorizationService, RestClient restClient,
+                                   EnvService envService, DspTokenProviderService dspTokenProviderService) {
         this.transferId = transferId;
         this.transferRecordService = transferRecordService;
         this.authorizationService = authorizationService;
         this.restClient = restClient;
         this.envService = envService;
+        this.dspTokenProviderService = dspTokenProviderService;
     }
 
     @Override
@@ -81,7 +84,7 @@ public class SendTransferStartedTask implements Runnable {
                 .post()
                 .uri(targetURL)
                 .header("Content-Type", "application/json")
-                .header("Authorization", getSimpleCredential(transferRecord.getPartnerDspUrl(), envService.getBackendId()))
+                .header("Authorization", dspTokenProviderService.provideTokenForPartner(transferRecordUpdated) )
                 .body(requestBody)
                 .retrieve()
                 .onStatus(HttpStatusCode::isError,

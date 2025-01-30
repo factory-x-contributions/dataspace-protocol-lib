@@ -48,13 +48,13 @@ public class EnvService {
     @Value("${org.factoryx.library.usetls:false}")
     private boolean useTls;
 
-    @Value("${org.factoryx.library.usebuiltindataccess}")
+    @Value("${org.factoryx.library.usebuiltindataccess:true}")
     private boolean useBuiltInDataAccess;
 
-    @Value("${org.factoryx.library.usebuiltindataccess:localhost}")
+    @Value("${org.factoryx.library.alternativedataaccess:localhost}")
     private String alternativeDataAccessUrlPrefix;
 
-    private String getURLPrefix(){
+    public String getURLPrefix(){
         return useTls ? "https://" : "http://";
     }
 

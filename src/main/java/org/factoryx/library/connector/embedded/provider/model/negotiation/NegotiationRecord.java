@@ -16,11 +16,13 @@
 
 package org.factoryx.library.connector.embedded.provider.model.negotiation;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Objects;
@@ -29,6 +31,7 @@ import java.util.UUID;
 @Setter
 @Getter
 @Slf4j
+@ToString
 @Entity
 /**
  * Entity class that represents a DSP negotiation
@@ -80,6 +83,16 @@ public class NegotiationRecord {
      * Is always assigned by the service. Never set manually!
      */
     private UUID contractId;
+
+    /**
+     * The following attributes store the terms of the contract.
+     */
+    @Column(length = 5000)
+    private String permissions;
+    @Column(length = 5000)
+    private String obligations;
+    @Column(length = 5000)
+    private String prohibitions;
 
     @Override
     public boolean equals(Object o) {

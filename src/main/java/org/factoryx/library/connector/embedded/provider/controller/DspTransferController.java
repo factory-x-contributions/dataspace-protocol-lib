@@ -17,9 +17,11 @@
 package org.factoryx.library.connector.embedded.provider.controller;
 
 import lombok.extern.slf4j.Slf4j;
+import org.factoryx.library.connector.embedded.provider.interfaces.DspTokenValidationService;
 import org.factoryx.library.connector.embedded.provider.model.ResponseRecord;
 import org.factoryx.library.connector.embedded.provider.service.DspTransferService;
 import org.factoryx.library.connector.embedded.provider.service.helpers.JsonUtils;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -35,8 +37,11 @@ public class DspTransferController {
 
     private final DspTransferService dspTransferService;
 
-    public DspTransferController(DspTransferService dspTransferService) {
+    private final DspTokenValidationService dspTokenValidationService;
+
+    public DspTransferController(DspTransferService dspTransferService, DspTokenValidationService dspTokenValidationService) {
         this.dspTransferService = dspTransferService;
+        this.dspTokenValidationService = dspTokenValidationService;
     }
 
 
@@ -53,21 +58,30 @@ public class DspTransferController {
                                                             @RequestHeader("Authorization") String authHeader) {
 
         try {
-            var authJson = JsonUtils.parse(authHeader);
-            String clientId = authJson.getString("clientId");
-            String audience = authJson.getString("audience");
-            ResponseRecord responseRecord = dspTransferService.handleNewTransfer(requestBody, clientId, audience);
+            String partnerId = dspTokenValidationService.validateToken(authHeader);
+            if (partnerId == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Unauthorized request".getBytes());
+            }
+            ResponseRecord responseRecord = dspTransferService.handleNewTransfer(requestBody, partnerId);
             return ResponseEntity.status(responseRecord.statusCode()).body(responseRecord.responseBody());
         } catch (Exception e) {
-            return ResponseEntity.status(401).build();
+            return ResponseEntity.status(500).build();
         }
     }
 
     @PostMapping("${org.factoryx.library.dspapiprefix:/dsp}/transfers/{providerPid}/completion")
     public ResponseEntity<byte[]> completeTransfer(@RequestBody String requestBody,
                                                    @RequestHeader("Authorization") String authString, @PathVariable("providerPid") UUID providerPid) {
-        ResponseRecord responseRecord = dspTransferService.handleCompletionRequest(requestBody, authString,
-                providerPid);
-        return ResponseEntity.status(responseRecord.statusCode()).body(responseRecord.responseBody());
+        try {
+            String partnerId = dspTokenValidationService.validateToken(authString);
+            if (partnerId == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Unauthorized request".getBytes());
+            }
+
+            ResponseRecord responseRecord = dspTransferService.handleCompletionRequest(requestBody, partnerId, providerPid);
+            return ResponseEntity.status(responseRecord.statusCode()).body(responseRecord.responseBody());
+        } catch (Exception e) {
+            return ResponseEntity.status(500).build();
+        }
     }
 }

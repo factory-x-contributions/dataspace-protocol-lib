@@ -18,6 +18,7 @@ package org.factoryx.library.connector.embedded.provider.service.helpers;
 
 import jakarta.json.Json;
 import lombok.extern.slf4j.Slf4j;
+import org.factoryx.library.connector.embedded.provider.interfaces.DspTokenProviderService;
 import org.factoryx.library.connector.embedded.provider.model.negotiation.NegotiationRecord;
 import org.factoryx.library.connector.embedded.provider.model.negotiation.NegotiationState;
 import org.factoryx.library.connector.embedded.provider.service.NegotiationRecordService;
@@ -27,7 +28,6 @@ import org.springframework.web.client.RestClient;
 import java.util.UUID;
 
 import static org.factoryx.library.connector.embedded.provider.service.helpers.JsonUtils.FULL_CONTEXT;
-import static org.factoryx.library.connector.embedded.provider.service.helpers.JsonUtils.getSimpleCredential;
 
 /**
  * This class represents a task to send a "Finalized" ContractEvent message in the
@@ -42,14 +42,14 @@ public class SendContractFinalizedTask implements Runnable {
     private final UUID negotiationId;
     private final NegotiationRecordService negotiationRecordService;
     private final RestClient restClient;
-    private final EnvService envService;
+    private final DspTokenProviderService dspTokenProviderService;
 
     public SendContractFinalizedTask(UUID negotiationId, NegotiationRecordService negotiationRecordService,
-                                     RestClient restClient, EnvService envService) {
+                                     RestClient restClient, DspTokenProviderService dspTokenProviderService) {
         this.negotiationId = negotiationId;
         this.negotiationRecordService = negotiationRecordService;
         this.restClient = restClient;
-        this.envService = envService;
+        this.dspTokenProviderService = dspTokenProviderService;
     }
 
     @Override
@@ -65,6 +65,7 @@ public class SendContractFinalizedTask implements Runnable {
             log.warn("Expected negotiation record in state VERIFIED, but found {}", negotiationRecord.getState());
             log.warn("Aborting negotiation record with id {}", negotiationId);
             negotiationRecord.setState(NegotiationState.TERMINATED);
+            return;
         }
 
 
@@ -75,7 +76,7 @@ public class SendContractFinalizedTask implements Runnable {
                 .post()
                 .uri(targetURL)
                 .header("Content-Type", "application/json")
-                .header("Authorization", getSimpleCredential(negotiationRecord.getPartnerDspUrl(), envService.getBackendId()))
+                .header("Authorization", dspTokenProviderService.provideTokenForPartner(negotiationRecord))
                 .body(requestBody)
                 .retrieve()
                 .onStatus(HttpStatusCode::isError,
