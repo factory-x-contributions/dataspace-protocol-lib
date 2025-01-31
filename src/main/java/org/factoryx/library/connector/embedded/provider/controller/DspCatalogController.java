@@ -65,7 +65,7 @@ public class DspCatalogController {
             String result = dspTokenValidationService.validateToken(token);
             log.info("Got Result from token validation: {}", result);
             if (result == null) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Unauthorized request");
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
             }
             List<JsonObject> catalogs = dspCatalogService.getAllCatalogs();
             JsonObject jsonResponse = dspCatalogService.buildFinalCatalogResponse(catalogs);

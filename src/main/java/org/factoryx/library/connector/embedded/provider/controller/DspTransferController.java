@@ -59,7 +59,7 @@ public class DspTransferController {
         try {
             String partnerId = dspTokenValidationService.validateToken(authHeader);
             if (partnerId == null) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Unauthorized request".getBytes());
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
             }
             ResponseRecord responseRecord = dspTransferService.handleNewTransfer(requestBody, partnerId);
             return ResponseEntity.status(responseRecord.statusCode()).body(responseRecord.responseBody());
@@ -74,7 +74,7 @@ public class DspTransferController {
         try {
             String partnerId = dspTokenValidationService.validateToken(authString);
             if (partnerId == null) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Unauthorized request".getBytes());
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
             }
 
             ResponseRecord responseRecord = dspTransferService.handleCompletionRequest(requestBody, partnerId, providerPid);
