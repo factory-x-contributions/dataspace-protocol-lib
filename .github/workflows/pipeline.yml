@@ -1,4 +1,4 @@
-name: Gradle Publish
+name: Pipeline
 
 on:
   push:
