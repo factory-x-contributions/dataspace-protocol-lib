@@ -61,12 +61,19 @@ tasks {
 }
 
 publishing {
+    repositories {
+        maven {
+            name = "GitHubPackages"
+            url = uri("https://maven.pkg.github.com/factory-x-contributions/dataspace-protocol-lib")
+            credentials {
+                username = System.getenv("GITHUB_ACTOR")
+                password = System.getenv("GITHUB_TOKEN")
+            }
+        }
+    }
     publications {
         create<MavenPublication>("maven") {
-            groupId = group.toString()
             artifactId = "dataspace-protocol-lib"
-            version = "1.0"
-
             from(components["java"])
         }
     }
