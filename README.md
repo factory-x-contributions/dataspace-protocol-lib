@@ -1,5 +1,5 @@
 # Dataspace Protocol Lib
-[![CI](https://github.com/factory-x-contributions/dataspace-protocol-lib/actions/workflows/gradle-publish.yml?branch=main&logo=GitHub&style=flat-square&label=CI)](https://github.com/factory-x-contributions/dataspace-protocol-lib/actions/workflows/gradle-publish.yml)
+[![Pipeline](https://github.com/factory-x-contributions/dataspace-protocol-lib/actions/workflows/pipeline.yml/badge.svg?logo=GitHub&style=flat-square)](https://github.com/factory-x-contributions/dataspace-protocol-lib/actions/workflows/pipeline.yml)
 
 ## Getting started
 
