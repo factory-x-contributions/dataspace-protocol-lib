@@ -17,9 +17,10 @@
 package org.factoryx.library.connector.embedded.provider.controller;
 
 import lombok.extern.slf4j.Slf4j;
+import org.factoryx.library.connector.embedded.provider.interfaces.DspTokenValidationService;
 import org.factoryx.library.connector.embedded.provider.model.ResponseRecord;
 import org.factoryx.library.connector.embedded.provider.service.DspNegotiationService;
-import org.factoryx.library.connector.embedded.provider.service.helpers.JsonUtils;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -34,9 +35,11 @@ import java.util.UUID;
 public class DspNegotiationsController {
 
     private final DspNegotiationService dspNegotiationService;
+    private final DspTokenValidationService dspTokenValidationService;
 
-    public DspNegotiationsController(DspNegotiationService dspNegotiationService) {
+    public DspNegotiationsController(DspNegotiationService dspNegotiationService, DspTokenValidationService dspTokenValidationService) {
         this.dspNegotiationService = dspNegotiationService;
+        this.dspTokenValidationService = dspTokenValidationService;
     }
 
     /**
@@ -50,10 +53,12 @@ public class DspNegotiationsController {
     public ResponseEntity<byte[]> postNegotiationsNewRequestController(@RequestBody String stringBody,
                                                                        @RequestHeader("Authorization") String authString) {
         try {
-            var authJson = JsonUtils.parse(authString);
-            String clientId = authJson.getString("clientId");
-            String audience = authJson.getString("audience");
-            ResponseRecord responseRecord = dspNegotiationService.handleNewNegotiation(stringBody, audience, clientId);
+            String partnerId = dspTokenValidationService.validateToken(authString);
+            if (partnerId == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+            }
+
+            ResponseRecord responseRecord = dspNegotiationService.handleNewNegotiation(stringBody, partnerId);
             return ResponseEntity.status(responseRecord.statusCode()).body(responseRecord.responseBody());
         } catch (Exception e) {
             return ResponseEntity.status(401).build();
@@ -74,10 +79,11 @@ public class DspNegotiationsController {
                                                                          @RequestHeader("Authorization") String authString,
                                                                          @PathVariable("providerPid") UUID providerPid) {
         try {
-            var authJson = JsonUtils.parse(authString);
-            String clientId = authJson.getString("clientId");
-            String audience = authJson.getString("audience");
-            ResponseRecord responseRecord = dspNegotiationService.handleVerificationRequest(stringBody, audience, clientId, providerPid);
+            String partnerId = dspTokenValidationService.validateToken(authString);
+            if (partnerId == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Unauthorized request".getBytes());
+            }
+            ResponseRecord responseRecord = dspNegotiationService.handleVerificationRequest(stringBody, partnerId, providerPid);
             return ResponseEntity.status(responseRecord.statusCode()).build();
         } catch (Exception e) {
             return ResponseEntity.status(401).build();

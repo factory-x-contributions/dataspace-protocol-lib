@@ -75,7 +75,7 @@ public class JsonUtils {
     }
 
     /**
-     * Parses a String that contains a JSON representation to a (Jakarta-)
+     * Parses a String that contains a JSON representation to a
      * JsonObject
      *
      * @param jsonString - the String representation of a JSON object
@@ -83,6 +83,17 @@ public class JsonUtils {
      */
     public static JsonObject parse(String jsonString) {
         return Json.createReader(new StringReader(jsonString)).readObject();
+    }
+
+    /**
+     * Parses a String that contains a JSON representation to a
+     * JsonArray
+     *
+     * @param jsonString - the String representation of a JSON array
+     * @return - a JsonArray
+     */
+    public static JsonArray parseArray(String jsonString) {
+        return Json.createReader(new StringReader(jsonString)).readArray();
     }
 
     /**
@@ -155,12 +166,4 @@ public class JsonUtils {
         return responseBuilder.build().toString().getBytes(StandardCharsets.UTF_8);
     }
 
-    public static String getSimpleCredential(String partnerDspUrl, String ownClientId) {
-        return Json.createObjectBuilder()
-                .add("region", "eu")
-                .add("audience", partnerDspUrl)
-                .add("clientId", ownClientId)
-                .build()
-                .toString();
-    }
 }

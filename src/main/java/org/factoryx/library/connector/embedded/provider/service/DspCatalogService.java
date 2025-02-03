@@ -62,7 +62,6 @@ public class DspCatalogService {
     public DspCatalogService(DataAssetManagementService dataManagementService, EnvService envService) {
         this.dataManagementService = dataManagementService;
         this.envService = envService;
-
     }
 
     /**
@@ -132,9 +131,8 @@ public class DspCatalogService {
                         .add("@type", "dcat:DataService")
                         .add("dcat:endpointDescription", "dspace:connector")
                         .add("dcat:endpointUrl", envService.getOwnDspUrl()))
-                .add("dspace:participantId", "provider")
+                .add("dspace:participantId", envService.getBackendId())
                 .add("@context", JsonUtils.FULL_CONTEXT);
-
         return body.build();
     }
 }

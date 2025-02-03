@@ -20,6 +20,7 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import lombok.extern.slf4j.Slf4j;
 import org.factoryx.library.connector.embedded.provider.interfaces.DataAssetManagementService;
+import org.factoryx.library.connector.embedded.provider.interfaces.DspTokenProviderService;
 import org.factoryx.library.connector.embedded.provider.model.ResponseRecord;
 import org.factoryx.library.connector.embedded.provider.model.negotiation.NegotiationRecord;
 import org.factoryx.library.connector.embedded.provider.model.negotiation.NegotiationState;
@@ -57,44 +58,41 @@ public class DspNegotiationService {
 
     private final EnvService envService;
 
+    private final DspTokenProviderService dspTokenProviderService;
 
-    public DspNegotiationService(NegotiationRecordService negotiationRecordService, DataAssetManagementService dataManagementService, ExecutorService executorService, RestClient restClient, EnvService envService) {
+
+    public DspNegotiationService(NegotiationRecordService negotiationRecordService, DataAssetManagementService dataManagementService, ExecutorService executorService, RestClient restClient, EnvService envService, DspTokenProviderService dspTokenProviderService) {
         this.negotiationRecordService = negotiationRecordService;
         this.dataManagementService = dataManagementService;
         this.executorService = executorService;
         this.restClient = restClient;
         this.envService = envService;
+        this.dspTokenProviderService = dspTokenProviderService;
     }
 
     /**
      * This method handles new incoming contract negotiation requests from the /dsp/negotiations/request endpoint.
      *
      * @param requestBody - the request body of the incoming message
-     * @param audience - the audience as retrieved from the HTTP auth token
      * @param partnerId - the id of the requesting party as retrieved from the HTTP auth token
      * @return - a response ACK-body and code 201, if successful
      */
-    public ResponseRecord handleNewNegotiation(String requestBody, String audience, String partnerId) {
+    public ResponseRecord handleNewNegotiation(String requestBody, String partnerId) {
         JsonObject requestJson = parseAndExpand(requestBody);
-
-        String consumerPid, messageType, partnerDspUrl, targetAssetId;
+        String consumerPid, messageType, partnerDspUrl, targetAssetId, permissions, obligations, prohibitions;
         try {
             consumerPid = requestJson.getJsonArray(DSPACE_NAMESPACE + "consumerPid").getJsonObject(0).getString("@value");
             messageType = requestJson.getJsonArray("@type").getString(0);
             partnerDspUrl = requestJson.getJsonArray(DSPACE_NAMESPACE + "callbackAddress").getJsonObject(0).getString("@value");
             targetAssetId = requestJson.getJsonArray(DSPACE_NAMESPACE + "offer").getJsonObject(0).getJsonArray(ODRL_NAMESPACE + "target").getJsonObject(0).getString("@id");
+            permissions = requestJson.getJsonArray(DSPACE_NAMESPACE + "offer").getJsonObject(0).get(ODRL_NAMESPACE + "permission").toString();
+            obligations = requestJson.getJsonArray(DSPACE_NAMESPACE + "offer").getJsonObject(0).get(ODRL_NAMESPACE + "obligation").toString();
+            prohibitions = requestJson.getJsonArray(DSPACE_NAMESPACE + "offer").getJsonObject(0).get(ODRL_NAMESPACE + "prohibition").toString();
         } catch (Exception e) {
             return new ResponseRecord("Invalid request.".getBytes(StandardCharsets.UTF_8), 400);
         }
-        NegotiationRecord newRecord = negotiationRecordService.createNegotiationRecord(consumerPid, partnerId, partnerDspUrl, targetAssetId, NegotiationState.REQUESTED);
-
-        if (!envService.getOwnDspUrl().equals(audience)) {
-            log.warn("Invalid audience in token: {}", audience);
-            newRecord = negotiationRecordService.updateNegotiationRecordToState(newRecord.getOwnPid(), NegotiationState.TERMINATED);
-            return new ResponseRecord(createErrorResponse(newRecord.getOwnPid().toString(), consumerPid, "ContractNegotiationError",
-                    List.of("Invalid audience in token: " + audience)), 400);
-        }
-
+        NegotiationRecord newRecord = negotiationRecordService.createNegotiationRecord(consumerPid, partnerId, partnerDspUrl,
+                targetAssetId, permissions, obligations, prohibitions);
 
         if (!messageType.equals(DSPACE_NAMESPACE + "ContractRequestMessage")) {
             log.warn("Wrong message type: {} at /negotiations/request", messageType);
@@ -124,7 +122,8 @@ public class DspNegotiationService {
 
         log.debug("Sending Response:\n{}", prettyPrint(ackResponse));
 
-        executorService.submit(new SendContractAgreedTask(newRecord.getOwnPid(), negotiationRecordService, restClient, envService));
+        executorService.submit(new SendContractAgreedTask(newRecord.getOwnPid(), negotiationRecordService, restClient,
+                envService, dspTokenProviderService));
 
         return new ResponseRecord(ackResponse.getBytes(StandardCharsets.UTF_8), 201);
     }
@@ -147,13 +146,11 @@ public class DspNegotiationService {
      * /dsp/negotiations/{providerPid}/agreement/verification endpoint.
      *
      * @param requestBody - the request body of the incoming message
-     * @param audience - the audience as retrieved from the HTTP auth token
      * @param partnerId - the id of the requesting party as retrieved from the HTTP auth token
      * @return - code 200, if successful
      */
-    public ResponseRecord handleVerificationRequest(String requestBody, String audience, String partnerId, UUID providerPid) {
+    public ResponseRecord handleVerificationRequest(String requestBody, String partnerId, UUID providerPid) {
         JsonObject requestJson = parseAndExpand(requestBody);
-
         String messageType = requestJson.getJsonArray("@type").getString(0);
 
         String consumerPid = requestJson.getJsonArray(DSPACE_NAMESPACE + "consumerPid").getJsonObject(0).getString("@value");
@@ -198,7 +195,8 @@ public class DspNegotiationService {
 
         if (existingRecord != null) {
             // Initiate FINALIZED Message
-            executorService.submit(new SendContractFinalizedTask(providerPid, negotiationRecordService, restClient, envService));
+            executorService.submit(new SendContractFinalizedTask(providerPid, negotiationRecordService, restClient,
+                    dspTokenProviderService));
             return new ResponseRecord(null, 200);
         }
         return new ResponseRecord(createErrorResponse(providerPid.toString(), consumerPid, "ContractNegotiationError",

@@ -40,6 +40,10 @@ dependencies {
     implementation("io.jsonwebtoken:jjwt-impl:0.12.6")
     implementation("io.jsonwebtoken:jjwt-jackson:0.12.6")
 
+    implementation("com.nimbusds:nimbus-jose-jwt:10.0.1")
+    implementation("com.google.crypto.tink:tink:1.16.0")
+
+
     compileOnly("org.projectlombok:lombok")
     annotationProcessor("org.projectlombok:lombok")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
