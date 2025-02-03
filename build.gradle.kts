@@ -20,14 +20,6 @@ configurations {
     }
 }
 
-bootJar {
-    enabled = false
-}
-
-jar {
-    enabled = true
-}
-
 repositories {
     mavenCentral()
     mavenLocal()
@@ -54,8 +46,18 @@ dependencies {
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
-tasks.withType<Test> {
-    useJUnitPlatform()
+tasks {
+    bootJar {
+        enabled = false
+    }
+
+    jar {
+        enabled = true
+    }
+
+    withType<Test> {
+        useJUnitPlatform()
+    }
 }
 
 publishing {
