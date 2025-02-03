@@ -1,5 +1,5 @@
 # Dataspace Protocol Lib
-![Build Status](https://github.com/factory-x-contributions/dataspace-protocol-lib/actions/workflows/gradle-publish.yml/badge.svg)
+![Build Status](https://github.com/factory-x-contributions/dataspace-protocol-lib/actions/workflows/gradle-publish.yml/badge.svg?label=Build)
 
 ## Getting started
 
