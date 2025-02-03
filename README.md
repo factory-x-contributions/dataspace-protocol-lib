@@ -1,3 +1,6 @@
+# Dataspace Protocol Lib
+![Build](https://github.com/factory-x-contributions/dataspace-protocol-lib/actions/workflows/gradle-publish.yml/badge.svg)
+
 ## Getting started
 
 In order to use this project as a library, we need to make it available for your importing project
