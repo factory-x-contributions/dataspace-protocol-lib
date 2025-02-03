@@ -3,7 +3,10 @@ name: Gradle Publish
 on:
   push:
     branches:
-      - feat/TP41-251-github-workflow
+      - '**'
+  pull_request:
+    branches:
+      - main
 
 jobs:
   build:
@@ -29,6 +32,7 @@ jobs:
       run: ./gradlew build
 
   test:
+    needs: build
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -51,6 +55,7 @@ jobs:
       run: ./gradlew test
 
   publish:
+    needs: test
     runs-on: ubuntu-latest
     permissions:
       contents: read
