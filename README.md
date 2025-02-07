@@ -12,7 +12,7 @@ The project library should now be available under its classpath and artifact nam
 like this: 
 
 ```
-implementation("org.factoryx.library.connector.embedded:dataspace-protocol-lib:1.0")
+implementation("org.factoryx.library.connector.embedded:dataspace-protocol-lib:1.0.0-SNAPSHOT")
 ```
 
 ## Requirements on the importing project
