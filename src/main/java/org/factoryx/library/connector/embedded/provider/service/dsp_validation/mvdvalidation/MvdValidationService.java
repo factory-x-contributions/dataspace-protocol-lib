@@ -191,7 +191,7 @@ public class MvdValidationService implements DspTokenValidationService {
      * anyway.
      */
     private void cleanUpSeenJtis() {
-        long now = Instant.now().getEpochSecond();
+        long now = Instant.now().toEpochMilli();
         HashSet<String> expiredJtis = new HashSet<>();
         for (var entry : seenJtis.entrySet()) {
             if (entry.getValue() < now) {
