@@ -16,22 +16,25 @@
 
 package org.factoryx.library.connector.embedded.provider.service;
 
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.security.Keys;
+import com.nimbusds.jose.JWSAlgorithm;
+import com.nimbusds.jose.JWSHeader;
+import com.nimbusds.jose.JWSSigner;
+import com.nimbusds.jose.JWSVerifier;
+import com.nimbusds.jose.crypto.MACSigner;
+import com.nimbusds.jose.crypto.MACVerifier;
+import com.nimbusds.jwt.JWTClaimsSet;
+import com.nimbusds.jwt.SignedJWT;
 import lombok.extern.slf4j.Slf4j;
 import org.factoryx.library.connector.embedded.provider.service.helpers.EnvService;
 import org.springframework.stereotype.Service;
 
-import javax.crypto.SecretKey;
-import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
-import java.util.ArrayList;
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.util.Base64;
 import java.util.Date;
-import java.util.Random;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Function;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 @Service
 @Slf4j
@@ -46,101 +49,98 @@ import java.util.function.Function;
  */
 public class AuthorizationService {
 
-    /**
-     * Secret key for signing and verifying JWTs
-     */
-    private final SecretKey secretKey;
     private final long tokenValidityInMilliSeconds = 1000L * 60 * 5; // five minutes
+    private final Duration keyRotationInterval = Duration.ofHours(1); // must be larger than token validity
     public final static String CONTRACT_ID = "cid";
     public final static String DATA_ADDRESS = "dad";
     private final EnvService envService;
 
-    /**
-     * In-memory store for revoked tokens.
-     */
-    private final Set<String> revokedTokens = ConcurrentHashMap.newKeySet();
+    private JWSSigner signer;
+    private LocalDateTime signerInitializedAt = LocalDateTime.now();
 
+    private JWSVerifier verifier;
+    private JWSVerifier previousVerifier;
+
+    /**
+     * Prevent race conditions during key rotation.
+     */
+    private final ReadWriteLock lock = new ReentrantReadWriteLock();
 
     public AuthorizationService(EnvService envService) {
         this.envService = envService;
-        String secretString = generateSecretKey();
-        this.secretKey = Keys.hmacShaKeyFor(secretString.getBytes(StandardCharsets.UTF_8));
+        try {
+            String secretString = generateSecretKey();
+            signer = new MACSigner(secretString);
+            verifier = new MACVerifier(secretString);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private String generateSecretKey() {
-        StringBuilder sb = new StringBuilder();
-        ArrayList<Character> chars = new ArrayList<>();
-        for (char c = 'A'; c <= 'Z'; c++) {
-            chars.add(c);
-            chars.add((char) (c + 32));
-        }
-        for (char c = '0'; c <= '9'; c++) {
-            chars.add(c);
-        }
-        Random random = new SecureRandom();
-        for (int i = 0; i < 48; i++) {
-            sb.append(chars.get(random.nextInt(chars.size())));
-        }
-        return sb.toString();
+        byte[] key = new byte[32];
+        new SecureRandom().nextBytes(key);
+        return Base64.getEncoder().encodeToString(key);
     }
 
     /**
      * Generates a JWT token with the required claims.
      *
-     * @param cid    the contract ID
-     * @param dad    the data address
+     * @param cid the contract ID
+     * @param dad the data address
      * @return the generated JWT token
      */
     public String issueDataAccessToken(String cid, String dad) {
-        return Jwts.builder()
-                .claim(CONTRACT_ID, cid)
-                .claim(DATA_ADDRESS, dad)
-                .issuer(envService.getSingleAssetReadOnlyDataAccessIssuer())
-                .issuedAt(new Date())
-                .expiration(new Date(System.currentTimeMillis() + tokenValidityInMilliSeconds))
-                .signWith(secretKey, Jwts.SIG.HS256)
-                .compact();
-
+        try {
+            lock.writeLock().lock();
+            // check if key rotation is due
+            if (LocalDateTime.now().isAfter(signerInitializedAt.plus(keyRotationInterval))) {
+                String secretString = generateSecretKey();
+                signer = new MACSigner(secretString);
+                previousVerifier = verifier;
+                verifier = new MACVerifier(secretString);
+                signerInitializedAt = LocalDateTime.now();
+            }
+            lock.writeLock().unlock();
+            lock.readLock().lock();
+            long now = System.currentTimeMillis();
+            JWTClaimsSet claimsSet = new JWTClaimsSet.Builder()
+                    .issuer(envService.getSingleAssetReadOnlyDataAccessIssuer())
+                    .claim(CONTRACT_ID, cid)
+                    .claim(DATA_ADDRESS, dad)
+                    .issueTime(new Date(now))
+                    .expirationTime((new Date(now + tokenValidityInMilliSeconds)))
+                    .build();
+            SignedJWT signedJWT = new SignedJWT(new JWSHeader(JWSAlgorithm.HS256), claimsSet);
+            signedJWT.sign(signer);
+            return signedJWT.serialize();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        } finally {
+            lock.readLock().unlock();
+            lock.writeLock().unlock();
+        }
     }
 
     /**
-     * Validates the JWT token.
+     * Validates the JWT token's signature and expiration.
      *
      * @param token the JWT token to validate
-     * @return true if the token is valid, false otherwise
+     * @return true if the token has valid signature and is not expired, false otherwise
      */
     public boolean validateToken(String token) {
-        if (isTokenRevoked(token)) {
-            return false;
-        }
         try {
-            Claims claims = extractAllClaims(token);
-            String cid = extractCid(token);
-            String dad = extractDad(token);
-            String issuer = claims.getIssuer();
-            return (cid != null && dad != null && issuer != null && !isTokenExpired(claims));
+            SignedJWT signedJWT = SignedJWT.parse(token);
+            lock.readLock().lock();
+            boolean signatureValid = signedJWT.verify(verifier) || signedJWT.verify(previousVerifier);
+            long leeway = 5000; // five seconds
+            boolean notExpired = signedJWT.getJWTClaimsSet().getExpirationTime().getTime() >= System.currentTimeMillis() - leeway;
+            return signatureValid && notExpired;
         } catch (Exception e) {
             return false;
+        } finally {
+            lock.readLock().unlock();
         }
-    }
-
-    /**
-     * Revokes a JWT token.
-     *
-     * @param token the JWT token to revoke
-     */
-    public void revokeToken(String token) {
-        revokedTokens.add(token);
-    }
-
-    /**
-     * Checks if a JWT token is revoked.
-     *
-     * @param token the JWT token to check
-     * @return true if the token is revoked, false otherwise
-     */
-    private boolean isTokenRevoked(String token) {
-        return revokedTokens.contains(token);
     }
 
     /**
@@ -149,55 +149,12 @@ public class AuthorizationService {
      * @param token the JWT token
      * @return the claims extracted from the token
      */
-    public Claims extractAllClaims(String token) {
-        return Jwts.parser()
-                .verifyWith(secretKey)
-                .build()
-                .parseSignedClaims(token)
-                .getPayload();
+    public JWTClaimsSet extractAllClaims(String token) {
+        try {
+            return SignedJWT.parse(token).getJWTClaimsSet();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
-    /**
-     * Extracts a specific claim from the JWT token.
-     *
-     * @param <T>            the type of the claim
-     * @param token          the JWT token
-     * @param claimsResolver the function to resolve the claim
-     * @return the extracted claim
-     */
-    public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
-        Claims claims = extractAllClaims(token);
-        return claimsResolver.apply(claims);
-    }
-
-    /**
-     * Checks if the JWT token is expired.
-     *
-     * @param claims the claims extracted from the token
-     * @return true if the token is expired, false otherwise
-     */
-    private boolean isTokenExpired(Claims claims) {
-        Date expiration = claims.getExpiration();
-        return expiration.before(new Date());
-    }
-
-    /**
-     * Extracts the contract ID (cid) from the JWT token.
-     *
-     * @param token the JWT token
-     * @return the contract ID
-     */
-    public String extractCid(String token) {
-        return extractClaim(token, claims -> claims.get(CONTRACT_ID, String.class));
-    }
-
-    /**
-     * Extracts the data address (dad) from the JWT token.
-     *
-     * @param token the JWT token
-     * @return the data address
-     */
-    public String extractDad(String token) {
-        return extractClaim(token, claims -> claims.get(DATA_ADDRESS, String.class));
-    }
 }
