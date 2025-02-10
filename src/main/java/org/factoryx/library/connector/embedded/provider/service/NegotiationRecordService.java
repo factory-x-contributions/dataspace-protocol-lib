@@ -49,23 +49,16 @@ public class NegotiationRecordService implements ContractRecordService {
      * @param partnerId - the id under which the consumer refers to himself
      * @param partnerDspUrl - the DSP protocol URL of the consumer partner
      * @param targetAssetId - the id of the asset, which the consumer wants to gain access to
-     * @param permissions - the permissions as proposed by the consumer partner
-     * @param obligations - the obligations as proposed by the consumer partner
-     * @param prohibitions - the prohibitions as proposed by the consumer partner
      * @return - the created NegotiationRecord
      */
     public NegotiationRecord createNegotiationRecord(String consumerPid, String partnerId, String partnerDspUrl,
-                                                     String targetAssetId, String permissions, String obligations,
-                                                     String prohibitions) {
+                                                     String targetAssetId) {
         NegotiationRecord negotiationRecord = new NegotiationRecord();
         negotiationRecord.setConsumerPid(consumerPid);
         negotiationRecord.setPartnerId(partnerId);
         negotiationRecord.setPartnerDspUrl(partnerDspUrl);
         negotiationRecord.setTargetAssetId(targetAssetId);
         negotiationRecord.setState(NegotiationState.REQUESTED);
-        negotiationRecord.setPermissions(permissions);
-        negotiationRecord.setObligations(obligations);
-        negotiationRecord.setProhibitions(prohibitions);
         return repository.save(negotiationRecord);
     }
 

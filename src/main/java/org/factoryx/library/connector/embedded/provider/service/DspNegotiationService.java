@@ -17,10 +17,12 @@
 package org.factoryx.library.connector.embedded.provider.service;
 
 import jakarta.json.Json;
+import jakarta.json.JsonArray;
 import jakarta.json.JsonObject;
 import lombok.extern.slf4j.Slf4j;
 import org.factoryx.library.connector.embedded.provider.interfaces.DataAssetManagementService;
 import org.factoryx.library.connector.embedded.provider.interfaces.DspTokenProviderService;
+import org.factoryx.library.connector.embedded.provider.interfaces.DspPolicyService;
 import org.factoryx.library.connector.embedded.provider.model.ResponseRecord;
 import org.factoryx.library.connector.embedded.provider.model.negotiation.NegotiationRecord;
 import org.factoryx.library.connector.embedded.provider.model.negotiation.NegotiationState;
@@ -60,14 +62,19 @@ public class DspNegotiationService {
 
     private final DspTokenProviderService dspTokenProviderService;
 
+    private final DspPolicyService policyService;
 
-    public DspNegotiationService(NegotiationRecordService negotiationRecordService, DataAssetManagementService dataManagementService, ExecutorService executorService, RestClient restClient, EnvService envService, DspTokenProviderService dspTokenProviderService) {
+
+    public DspNegotiationService(NegotiationRecordService negotiationRecordService, DataAssetManagementService dataManagementService,
+                                 ExecutorService executorService, RestClient restClient, EnvService envService,
+                                 DspTokenProviderService dspTokenProviderService, DspPolicyService policyService) {
         this.negotiationRecordService = negotiationRecordService;
         this.dataManagementService = dataManagementService;
         this.executorService = executorService;
         this.restClient = restClient;
         this.envService = envService;
         this.dspTokenProviderService = dspTokenProviderService;
+        this.policyService = policyService;
     }
 
     /**
@@ -79,26 +86,37 @@ public class DspNegotiationService {
      */
     public ResponseRecord handleNewNegotiation(String requestBody, String partnerId) {
         JsonObject requestJson = parseAndExpand(requestBody);
-        String consumerPid, messageType, partnerDspUrl, targetAssetId, permissions, obligations, prohibitions;
+        log.info("RAW REQUEST: {}", prettyPrint(requestBody));
+        log.info("Expanded REQUEST: {}", prettyPrint(requestJson));
+        String consumerPid, messageType, partnerDspUrl, targetAssetId;
+        JsonObject offer;
+        int offerSize;
         try {
             consumerPid = requestJson.getJsonArray(DSPACE_NAMESPACE + "consumerPid").getJsonObject(0).getString("@value");
             messageType = requestJson.getJsonArray("@type").getString(0);
             partnerDspUrl = requestJson.getJsonArray(DSPACE_NAMESPACE + "callbackAddress").getJsonObject(0).getString("@value");
-            targetAssetId = requestJson.getJsonArray(DSPACE_NAMESPACE + "offer").getJsonObject(0).getJsonArray(ODRL_NAMESPACE + "target").getJsonObject(0).getString("@id");
-            permissions = requestJson.getJsonArray(DSPACE_NAMESPACE + "offer").getJsonObject(0).get(ODRL_NAMESPACE + "permission").toString();
-            obligations = requestJson.getJsonArray(DSPACE_NAMESPACE + "offer").getJsonObject(0).get(ODRL_NAMESPACE + "obligation").toString();
-            prohibitions = requestJson.getJsonArray(DSPACE_NAMESPACE + "offer").getJsonObject(0).get(ODRL_NAMESPACE + "prohibition").toString();
+            JsonArray offers = requestJson.getJsonArray(DSPACE_NAMESPACE + "offer");
+            offerSize = offers.size();
+            offer = offers.getJsonObject(0);
+            targetAssetId = offer.getJsonArray(ODRL_NAMESPACE + "target").getJsonObject(0).getString("@id");
         } catch (Exception e) {
             return new ResponseRecord("Invalid request.".getBytes(StandardCharsets.UTF_8), 400);
         }
         NegotiationRecord newRecord = negotiationRecordService.createNegotiationRecord(consumerPid, partnerId, partnerDspUrl,
-                targetAssetId, permissions, obligations, prohibitions);
+                targetAssetId);
 
         if (!messageType.equals(DSPACE_NAMESPACE + "ContractRequestMessage")) {
             log.warn("Wrong message type: {} at /negotiations/request", messageType);
             newRecord = negotiationRecordService.updateNegotiationRecordToState(newRecord.getOwnPid(), NegotiationState.TERMINATED);
             return new ResponseRecord(createErrorResponse(newRecord.getOwnPid().toString(), consumerPid, "ContractNegotiationError",
                     List.of("Wrong message type: " + messageType)), 400);
+        }
+
+        if (offerSize != 1 || !policyService.validateOffer(offer, newRecord.getTargetAssetId(), partnerId)) {
+            log.warn("Unexpected offer, rejecting contract negotiation");
+            newRecord = negotiationRecordService.updateNegotiationRecordToState(newRecord.getOwnPid(), NegotiationState.TERMINATED);
+            return new ResponseRecord(createErrorResponse(newRecord.getOwnPid().toString(), consumerPid, "ContractNegotiationError",
+                    List.of("Unexpected offer, rejecting contract negotiation")), 400);
         }
 
         try {
@@ -123,7 +141,7 @@ public class DspNegotiationService {
         log.debug("Sending Response:\n{}", prettyPrint(ackResponse));
 
         executorService.submit(new SendContractAgreedTask(newRecord.getOwnPid(), negotiationRecordService, restClient,
-                envService, dspTokenProviderService));
+                envService, dspTokenProviderService, policyService));
 
         return new ResponseRecord(ackResponse.getBytes(StandardCharsets.UTF_8), 201);
     }

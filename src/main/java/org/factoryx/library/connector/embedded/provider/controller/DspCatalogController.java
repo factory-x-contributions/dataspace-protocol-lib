@@ -62,14 +62,14 @@ public class DspCatalogController {
 
         try {
             log.info("Starting token validation");
-            String result = dspTokenValidationService.validateToken(token);
-            log.info("Got Result from token validation: {}", result);
-            if (result == null) {
+            String partnerId = dspTokenValidationService.validateToken(token);
+            log.info("Got Result from token validation: {}", partnerId);
+            if (partnerId == null) {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
             }
-            List<JsonObject> catalogs = dspCatalogService.getAllCatalogs();
-            JsonObject jsonResponse = dspCatalogService.buildFinalCatalogResponse(catalogs);
+            JsonObject jsonResponse = dspCatalogService.getFullCatalog(partnerId);
             return ResponseEntity.status(HttpStatus.OK).body(jsonResponse.toString());
+
         } catch (Exception e) {
             // Handle any unexpected errors
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An error occurred while processing the request.");
