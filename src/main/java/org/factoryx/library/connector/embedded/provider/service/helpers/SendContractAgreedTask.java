@@ -20,6 +20,7 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import lombok.extern.slf4j.Slf4j;
 import org.factoryx.library.connector.embedded.provider.interfaces.DspTokenProviderService;
+import org.factoryx.library.connector.embedded.provider.interfaces.DspPolicyService;
 import org.factoryx.library.connector.embedded.provider.model.negotiation.NegotiationRecord;
 import org.factoryx.library.connector.embedded.provider.model.negotiation.NegotiationState;
 import org.factoryx.library.connector.embedded.provider.service.NegotiationRecordService;
@@ -31,8 +32,7 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.UUID;
 
-import static org.factoryx.library.connector.embedded.provider.service.helpers.JsonUtils.FULL_CONTEXT;
-import static org.factoryx.library.connector.embedded.provider.service.helpers.JsonUtils.parseArray;
+import static org.factoryx.library.connector.embedded.provider.service.helpers.JsonUtils.*;
 
 /**
  * This class represents a task to send a ContractAgreed message in the
@@ -49,15 +49,17 @@ public class SendContractAgreedTask implements Runnable {
     private final RestClient restClient;
     private final EnvService envService;
     private final DspTokenProviderService dspTokenProviderService;
+    private final DspPolicyService dspPolicyService;
 
 
     public SendContractAgreedTask(UUID negotiationId, NegotiationRecordService negotiationRecordService, RestClient restClient,
-                                  EnvService envService, DspTokenProviderService dspTokenProviderService) {
+                                  EnvService envService, DspTokenProviderService dspTokenProviderService, DspPolicyService dspPolicyService) {
         this.negotiationId = negotiationId;
         this.negotiationRecordService = negotiationRecordService;
         this.restClient = restClient;
         this.envService = envService;
         this.dspTokenProviderService = dspTokenProviderService;
+        this.dspPolicyService = dspPolicyService;
     }
 
     @Override
@@ -115,9 +117,9 @@ public class SendContractAgreedTask implements Runnable {
                 .add("dspace:timestamp", getTimestampForZuluTimeZone())
                 .add("odrl:assignee", record.getPartnerId())
                 .add("odrl:assigner", envService.getBackendId())
-                .add("odrl:permission", parseArray(record.getPermissions()))
-                .add("odrl:prohibition", parseArray(record.getProhibitions()))
-                .add("odrl:obligation", parseArray(record.getObligations()))
+                .add("odrl:permission", dspPolicyService.getPermission(record.getTargetAssetId(), record.getPartnerId()))
+                .add("odrl:prohibition", dspPolicyService.getProhibition(record.getTargetAssetId(), record.getPartnerId()))
+                .add("odrl:obligation", dspPolicyService.getObligation(record.getTargetAssetId(), record.getPartnerId()))
                 .build();
         return Json.createObjectBuilder()
                 .add("@context", FULL_CONTEXT)

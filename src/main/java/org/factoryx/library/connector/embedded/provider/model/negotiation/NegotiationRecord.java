@@ -84,16 +84,6 @@ public class NegotiationRecord {
      */
     private UUID contractId;
 
-    /**
-     * The following attributes store the terms of the contract.
-     */
-    @Column(length = 5000)
-    private String permissions;
-    @Column(length = 5000)
-    private String obligations;
-    @Column(length = 5000)
-    private String prohibitions;
-
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
