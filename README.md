@@ -1,3 +1,6 @@
+# Dataspace Protocol Lib
+[![Pipeline](https://github.com/factory-x-contributions/dataspace-protocol-lib/actions/workflows/pipeline.yml/badge.svg?logo=GitHub&style=flat-square)](https://github.com/factory-x-contributions/dataspace-protocol-lib/actions/workflows/pipeline.yml)
+
 ## Getting started
 
 In order to use this project as a library, we need to make it available for your importing project
