@@ -15,7 +15,7 @@ The project library should now be available under its classpath and artifact nam
 like this: 
 
 ```
-implementation("org.factoryx.library.connector.embedded:spring-dsp-lib:1.0")
+implementation("org.factoryx.library.connector.embedded:dataspace-protocol-lib:1.0.0-SNAPSHOT")
 ```
 
 ## Requirements on the importing project
@@ -75,12 +75,21 @@ By default, the library is using the "/dsp/**" path. But you can configure this 
 
 Your importing project should provide the following properties: 
 
-| Property name                     | Meaning                                                  | Default setting |
-|-----------------------------------|----------------------------------------------------------|-----------------|
-| org.factoryx.library.hostname     | The dns name of the host, the application is running on. | localhost       |
-| org.factoryx.library.usetls       | boolean flag that indicates whether TLS is to be used    | false           |
-| org.factoryx.library.id           | The id, that you are using in your dataspace             | provider        |
-| org.factoryx.library.dspapiprefix | The prefix that all library-related endpoints are using  | /dsp            |
+| Property name                              | Meaning                                                                                | Default setting                                                        |
+|--------------------------------------------|----------------------------------------------------------------------------------------|------------------------------------------------------------------------|
+| org.factoryx.library.hostname              | The dns name of the host, the application is running on.                               | localhost                                                              |
+| org.factoryx.library.usetls                | boolean flag that indicates whether TLS is to be used                                  | false                                                                  |
+| org.factoryx.library.id                    | The id, that you are using in your dataspace                                           | provider                                                               |
+| org.factoryx.library.dspapiprefix          | The prefix that all library-related endpoints are using                                | /dsp                                                                   |
+| org.factoryx.library.usebuiltindataccess   | "false" disables the built-in dataacces (not recommended!)                             | true                                                                   | 
+| org.factoryx.library.alternativedataaccess | set the host adress and path to an alternative data access endpoint (not recommended!) | localhost                                                              |
+| org.factoryx.library.validationservice     | set the type of validation for DSP (currently supported: "mock", "mvd")                | mock                                                                   | 
+| org.factoryx.library.mvd.vaultroottoken    | set the token for authorizing access to the MVD provider vault                         | root                                                                   | 
+| org.factoryx.library.mvd.vaulturl          | set the url for the MVD provider vault                                                 | http://provider-vault:8200                                             | 
+| org.factoryx.library.mvd.vaultsecretalias  | set the secret alias for accessing the provider STS                                    | did%3Aweb%3Aprovider-identityhub%253A7083%3Aprovider-sts-client-secret | 
+| org.factoryx.library.mvd.ststokenurl       | set the url of the STS token endpoint                                                  | http://provider-sts-service:8082/api/sts/token                         | 
+| org.factoryx.library.mvd.trustedissuer     | set the ID of the MVD trusted issuer                                                   | did:web:dataspace-issuer                                               | 
+
 
 
 Please note that the DSP protocol URL will be a result of several settings:

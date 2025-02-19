@@ -56,8 +56,8 @@ public class DataAccessTokenValidationService {
             Objects.requireNonNull(assetId, "AssetId must not be null");
             token = token.replace("Bearer ", "").replace("bearer ", "");
             var claims = authorizationService.extractAllClaims(token);
-            String contractId = claims.get(CONTRACT_ID).toString();
-            String dataAddress = claims.get(DATA_ADDRESS).toString();
+            String contractId = claims.getStringClaim(CONTRACT_ID);
+            String dataAddress = claims.getStringClaim(DATA_ADDRESS);
             String issuer = claims.getIssuer();
             NegotiationRecord negotiationRecord = contractRecordService.findByContractId(UUID.fromString(contractId));
             return negotiationRecord != null

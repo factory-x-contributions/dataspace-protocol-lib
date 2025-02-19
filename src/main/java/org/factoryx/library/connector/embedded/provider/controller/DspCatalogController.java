@@ -16,23 +16,18 @@
 
 package org.factoryx.library.connector.embedded.provider.controller;
 
-import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import lombok.extern.slf4j.Slf4j;
+import org.factoryx.library.connector.embedded.provider.interfaces.DspTokenValidationService;
 import org.factoryx.library.connector.embedded.provider.service.DspCatalogService;
-import org.factoryx.library.connector.embedded.provider.service.helpers.JsonUtils;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.HttpStatusCode;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.client.RestClient;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RestController;
 
-import java.util.Base64;
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @Slf4j
@@ -43,9 +38,11 @@ import java.util.Map;
 public class DspCatalogController {
 
     private final DspCatalogService dspCatalogService;
+    private final DspTokenValidationService dspTokenValidationService;
 
-    public DspCatalogController(DspCatalogService dspCatalogService) {
+    public DspCatalogController(DspCatalogService dspCatalogService, DspTokenValidationService dspTokenValidationService) {
         this.dspCatalogService = dspCatalogService;
+        this.dspTokenValidationService = dspTokenValidationService;
     }
 
     /**
@@ -64,9 +61,15 @@ public class DspCatalogController {
         }
 
         try {
-            List<JsonObject> catalogs = dspCatalogService.getAllCatalogs();
-            JsonObject jsonResponse = dspCatalogService.buildFinalCatalogResponse(catalogs);
+            log.info("Starting token validation");
+            String partnerId = dspTokenValidationService.validateToken(token);
+            log.info("Got Result from token validation: {}", partnerId);
+            if (partnerId == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+            }
+            JsonObject jsonResponse = dspCatalogService.getFullCatalog(partnerId);
             return ResponseEntity.status(HttpStatus.OK).body(jsonResponse.toString());
+
         } catch (Exception e) {
             // Handle any unexpected errors
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An error occurred while processing the request.");

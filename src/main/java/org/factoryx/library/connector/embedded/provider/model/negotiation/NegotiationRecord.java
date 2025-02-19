@@ -16,11 +16,13 @@
 
 package org.factoryx.library.connector.embedded.provider.model.negotiation;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Objects;
@@ -29,6 +31,7 @@ import java.util.UUID;
 @Setter
 @Getter
 @Slf4j
+@ToString
 @Entity
 /**
  * Entity class that represents a DSP negotiation

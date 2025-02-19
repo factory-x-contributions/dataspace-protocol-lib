@@ -22,6 +22,7 @@ import org.factoryx.library.connector.embedded.provider.interfaces.DataAssetMana
 
 import org.factoryx.library.connector.embedded.provider.service.helpers.DataAccessTokenValidationService;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -51,11 +52,11 @@ public class DataAccessController {
     public ResponseEntity<byte[]> dataAccess(@RequestHeader("Authorization") String authToken, @PathVariable("assetid") UUID assetId) {
         boolean tokenValidation = dataAccessTokenValidationService.validateDataAccessTokenForAssetId(authToken, assetId.toString());
         if (!tokenValidation) {
-            return ResponseEntity.status(401).build();
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
         var asset = dataAssetManagementService.getById(assetId);
         if (asset == null) {
-            return ResponseEntity.status(404).build();
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
         return ResponseEntity.ok().contentType(MediaType.parseMediaType(asset.getContentType())).body(asset.getDtoRepresentation());
     }

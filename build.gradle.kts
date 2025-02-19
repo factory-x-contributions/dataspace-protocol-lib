@@ -36,9 +36,8 @@ dependencies {
     implementation("org.eclipse.parsson:parsson:1.1.7")
     implementation("com.apicatalog:titanium-json-ld:1.4.1")
 
-    implementation("io.jsonwebtoken:jjwt-api:0.12.6")
-    implementation("io.jsonwebtoken:jjwt-impl:0.12.6")
-    implementation("io.jsonwebtoken:jjwt-jackson:0.12.6")
+    implementation("com.nimbusds:nimbus-jose-jwt:10.0.1")
+    implementation("com.google.crypto.tink:tink:1.16.0")
 
     compileOnly("org.projectlombok:lombok")
     annotationProcessor("org.projectlombok:lombok")
@@ -75,7 +74,9 @@ publishing {
         create<MavenPublication>("maven") {
             groupId = group.toString()
             artifactId = "dataspace-protocol-lib"
+
             version = project.version.toString()
+
             from(components["java"])
         }
     }

@@ -21,6 +21,7 @@ import jakarta.json.JsonObject;
 import lombok.extern.slf4j.Slf4j;
 import org.factoryx.library.connector.embedded.provider.interfaces.DataAsset;
 import org.factoryx.library.connector.embedded.provider.interfaces.DataAssetManagementService;
+import org.factoryx.library.connector.embedded.provider.interfaces.DspTokenProviderService;
 import org.factoryx.library.connector.embedded.provider.model.ResponseRecord;
 import org.factoryx.library.connector.embedded.provider.model.negotiation.NegotiationRecord;
 import org.factoryx.library.connector.embedded.provider.model.negotiation.NegotiationState;
@@ -61,15 +62,19 @@ public class DspTransferService {
 
     private final EnvService envService;
 
+    private final DspTokenProviderService dspTokenProviderService;
+
     public DspTransferService(TransferRecordService transferRecordService,
                               DataAssetManagementService dataManagementService, AuthorizationService authorizationService,
-                              ExecutorService executorService, RestClient restClient, EnvService envService) {
+                              ExecutorService executorService, RestClient restClient, EnvService envService,
+                              DspTokenProviderService dspTokenProviderService) {
         this.transferRecordService = transferRecordService;
         this.dataManagementService = dataManagementService;
         this.authorizationService = authorizationService;
         this.executorService = executorService;
         this.restClient = restClient;
         this.envService = envService;
+        this.dspTokenProviderService = dspTokenProviderService;
     }
 
     /**
@@ -77,11 +82,10 @@ public class DspTransferService {
      * /dsp/transfers/request endpoint.
      *
      * @param requestBody - the request body of the incoming message
-     * @param audience - the audience as retrieved from the HTTP auth token
      * @param partnerId - the id of the requesting party as retrieved from the HTTP auth token
      * @return - a response indicating the initiation status of the transfer process
      */
-    public ResponseRecord handleNewTransfer(String requestBody, String audience, String partnerId) {
+    public ResponseRecord handleNewTransfer(String requestBody, String partnerId) {
         JsonObject requestJson = parseAndExpand(requestBody);
         log.info("RequestJson: {}", requestJson);
         String consumerPid = requestJson.getJsonArray(DSPACE_NAMESPACE + "consumerPid").getJsonObject(0)
@@ -147,7 +151,7 @@ public class DspTransferService {
         log.debug("Sending Response:\n{}", prettyPrint(new String(ackResponse)));
 
         executorService.submit(new SendTransferStartedTask(newRecord.getOwnPid(), transferRecordService,
-                authorizationService, restClient, envService));
+                authorizationService, restClient, envService, dspTokenProviderService));
 
         return new ResponseRecord(ackResponse, 201);
     }
@@ -181,11 +185,11 @@ public class DspTransferService {
      * /dsp/transfers/{providerPid}/completion endpoint.
      *
      * @param requestBody
-     * @param authString
+     * @param partnerId
      * @param providerPid
      * @return
      */
-    public ResponseRecord handleCompletionRequest(String requestBody, String authString,
+    public ResponseRecord handleCompletionRequest(String requestBody, String partnerId,
                                                   UUID providerPid) {
         TransferRecord transferRecord = transferRecordService.updateTransferRecordState(providerPid,
                 TransferState.COMPLETED);
