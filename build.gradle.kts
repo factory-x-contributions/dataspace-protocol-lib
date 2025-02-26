@@ -45,16 +45,36 @@ dependencies {
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
-tasks.withType<Test> {
-    useJUnitPlatform()
+tasks {
+    bootJar {
+        enabled = false
+    }
+
+    jar {
+        enabled = true
+    }
+
+    withType<Test> {
+        useJUnitPlatform()
+    }
 }
 
 publishing {
+    repositories {
+        maven {
+            name = "GitHubPackages"
+            url = uri("https://maven.pkg.github.com/factory-x-contributions/dataspace-protocol-lib")
+            credentials {
+                username = System.getenv("GITHUB_ACTOR")
+                password = System.getenv("GITHUB_TOKEN")
+            }
+        }
+    }
     publications {
         create<MavenPublication>("maven") {
             groupId = group.toString()
             artifactId = "dataspace-protocol-lib"
-            version = "0.0.1-SNAPSHOT"
+            version = project.version.toString()
 
             from(components["java"])
         }
