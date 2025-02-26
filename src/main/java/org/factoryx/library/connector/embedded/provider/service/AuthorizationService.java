@@ -16,10 +16,7 @@
 
 package org.factoryx.library.connector.embedded.provider.service;
 
-import com.nimbusds.jose.JWSAlgorithm;
-import com.nimbusds.jose.JWSHeader;
-import com.nimbusds.jose.JWSSigner;
-import com.nimbusds.jose.JWSVerifier;
+import com.nimbusds.jose.*;
 import com.nimbusds.jose.crypto.MACSigner;
 import com.nimbusds.jose.crypto.MACVerifier;
 import com.nimbusds.jwt.JWTClaimsSet;
@@ -91,34 +88,42 @@ public class AuthorizationService {
      * @return the generated JWT token
      */
     public String issueDataAccessToken(String cid, String dad) {
+        lock.writeLock().lock();
         try {
-            lock.writeLock().lock();
-            // check if key rotation is due
-            if (LocalDateTime.now().isAfter(signerInitializedAt.plus(keyRotationInterval))) {
-                String secretString = generateSecretKey();
-                signer = new MACSigner(secretString);
-                previousVerifier = verifier;
-                verifier = new MACVerifier(secretString);
-                signerInitializedAt = LocalDateTime.now();
+            try {
+                if (LocalDateTime.now().isAfter(signerInitializedAt.plus(keyRotationInterval))) {
+                    String secretString = generateSecretKey();
+                    signer = new MACSigner(secretString);
+                    previousVerifier = verifier;
+                    verifier = new MACVerifier(secretString);
+                    signerInitializedAt = LocalDateTime.now();
+                }
+            } catch (JOSEException e) {
+                throw new RuntimeException("Error rotating keys", e);
             }
+        } finally {
             lock.writeLock().unlock();
-            lock.readLock().lock();
+        }
+
+        lock.readLock().lock();
+        try {
             long now = System.currentTimeMillis();
             JWTClaimsSet claimsSet = new JWTClaimsSet.Builder()
                     .issuer(envService.getSingleAssetReadOnlyDataAccessIssuer())
                     .claim(CONTRACT_ID, cid)
                     .claim(DATA_ADDRESS, dad)
                     .issueTime(new Date(now))
-                    .expirationTime((new Date(now + tokenValidityInMilliSeconds)))
+                    .expirationTime(new Date(now + tokenValidityInMilliSeconds))
                     .build();
+
             SignedJWT signedJWT = new SignedJWT(new JWSHeader(JWSAlgorithm.HS256), claimsSet);
             signedJWT.sign(signer);
             return signedJWT.serialize();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+
+        } catch (JOSEException e) {
+            throw new RuntimeException("Error signing JWT", e);
         } finally {
             lock.readLock().unlock();
-            lock.writeLock().unlock();
         }
     }
 

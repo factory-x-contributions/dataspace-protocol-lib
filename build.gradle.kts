@@ -54,7 +54,7 @@ publishing {
         create<MavenPublication>("maven") {
             groupId = group.toString()
             artifactId = "dataspace-protocol-lib"
-            version = "1.0.0-SNAPSHOT"
+            version = "0.0.1-SNAPSHOT"
 
             from(components["java"])
         }
