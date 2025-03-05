@@ -34,7 +34,7 @@ dependencies {
 
     implementation("jakarta.json:jakarta.json-api:2.1.3")
     implementation("org.eclipse.parsson:parsson:1.1.7")
-    implementation("com.apicatalog:titanium-json-ld:1.4.1")
+    implementation("com.apicatalog:titanium-json-ld:1.5.0")
 
     implementation("com.nimbusds:nimbus-jose-jwt:10.0.1")
     implementation("com.google.crypto.tink:tink:1.16.0")
