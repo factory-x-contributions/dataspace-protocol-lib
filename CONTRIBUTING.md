@@ -11,6 +11,7 @@ All types of contributions are encouraged and valued. See the [Table of Contents
 
 - [I Have a Question](#i-have-a-question)
   - [I Want To Contribute](#i-want-to-contribute)
+  - [Release Management](#release-management)
   - [Reporting Bugs](#reporting-bugs)
   - [Suggesting Enhancements](#suggesting-enhancements)
   - [Your First Code Contribution](#your-first-code-contribution)
@@ -40,6 +41,29 @@ We will then take care of the issue as soon as possible.
 
 > ### Legal Notice <!-- omit in toc -->
 > When contributing to this project, you must agree that you have authored 100% of the content, that you have the necessary rights to the content and that the content you contribute may be provided under the project licence.
+
+### Release Management
+
+#### Branch Structure
+
+- **Main Branch**: 
+  - The `main` branch is the primary branch for releases. Every new commit to `main` is treated as a new release.
+  
+- **Development Branch**: 
+  - The `development` branch is used for integrating feature branches. It serves as a staging area before merging into `main`.
+
+#### Release Process
+
+1. **Feature Development**:
+   - Create feature branches off the `development` branch for new features or bug fixes.
+   
+2. **Merging**:
+   - Merge stable feature branches into the `development` branch.
+   - Once features in `development` are stable and ready for release, merge `development` into `main`.
+
+3. **Versioning**:
+   - Use [Semantic Versioning](https://semver.org/) (e.g., v1.0.0) for all releases.
+   - Tag each release in the `main` branch with the corresponding version number.
 
 
 ### Versioning
