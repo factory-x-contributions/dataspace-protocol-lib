@@ -1,6 +1,9 @@
 # Dataspace Protocol Lib
 [![Pipeline](https://github.com/factory-x-contributions/dataspace-protocol-lib/actions/workflows/pipeline.yml/badge.svg?logo=GitHub&style=flat-square)](https://github.com/factory-x-contributions/dataspace-protocol-lib/actions/workflows/pipeline.yml)
 
+## Contributions:
+In order to contribute to the project, please look at the [CONTRIBUTING.md](/CONTRIBUTING.md) file for the formalities. 
+
 ## Getting started
 
 In order to use this project as a library, we need to make it available for your importing project
@@ -97,6 +100,8 @@ Please note that the DSP protocol URL will be a result of several settings:
 ```
 http<s>://<org.factoryx.library.hostname>:<server.port>/<org.factoryx.library.dspapiprefix>
 ```
+
+
 
 
 
