@@ -41,6 +41,15 @@ We will then take care of the issue as soon as possible.
 > ### Legal Notice <!-- omit in toc -->
 > When contributing to this project, you must agree that you have authored 100% of the content, that you have the necessary rights to the content and that the content you contribute may be provided under the project licence.
 
+
+### Versioning
+
+We use [Semantic Versioning](https://semver.org/) for our releases. Please ensure that any changes you make adhere to our versioning scheme.
+
+- **MAJOR**: For breaking changes.
+- **MINOR**: For backward-compatible enhancements.
+- **PATCH**: For backward-compatible bug fixes.
+
 ### Reporting Bugs
 
 <!-- omit in toc -->
