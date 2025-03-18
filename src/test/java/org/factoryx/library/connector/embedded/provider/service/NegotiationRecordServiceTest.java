@@ -100,8 +100,7 @@ public class NegotiationRecordServiceTest {
         // Assert
         assertNotNull(updatedRecord);
         assertEquals(NegotiationState.AGREED, updatedRecord.getState());
-        assertNotNull(updatedRecord.getContractId());  
-        assertNotEquals(UUID.randomUUID(), updatedRecord.getContractId());
+        assertNotNull(updatedRecord.getContractId());
     }
 
     @Test

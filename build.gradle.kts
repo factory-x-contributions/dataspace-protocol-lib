@@ -20,6 +20,8 @@ configurations {
     }
 }
 
+val byteBuddyAgent by configurations.creating
+
 repositories {
     mavenCentral()
     mavenLocal()
@@ -43,6 +45,7 @@ dependencies {
     annotationProcessor("org.projectlombok:lombok")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+    byteBuddyAgent("net.bytebuddy:byte-buddy-agent:1.15.10")
 }
 
 tasks {
@@ -56,6 +59,7 @@ tasks {
 
     withType<Test> {
         useJUnitPlatform()
+        jvmArgs("-javaagent:${byteBuddyAgent.singleFile}")
     }
 }
 
