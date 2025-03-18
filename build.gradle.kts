@@ -20,6 +20,8 @@ configurations {
     }
 }
 
+val mockitoAgent = configurations.create("mockitoAgent")
+
 repositories {
     mavenCentral()
     mavenLocal()
@@ -43,6 +45,7 @@ dependencies {
     annotationProcessor("org.projectlombok:lombok")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+    mockitoAgent("org.mockito:mockito-core") { isTransitive = false }
 }
 
 tasks {
@@ -56,6 +59,7 @@ tasks {
 
     withType<Test> {
         useJUnitPlatform()
+        jvmArgs("-javaagent:${mockitoAgent.asPath}")
     }
 }
 
