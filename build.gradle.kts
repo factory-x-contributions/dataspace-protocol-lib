@@ -20,7 +20,7 @@ configurations {
     }
 }
 
-val byteBuddyAgent by configurations.creating
+val mockitoAgent = configurations.create("mockitoAgent")
 
 repositories {
     mavenCentral()
@@ -45,7 +45,7 @@ dependencies {
     annotationProcessor("org.projectlombok:lombok")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
-    byteBuddyAgent("net.bytebuddy:byte-buddy-agent:1.15.10")
+    mockitoAgent("org.mockito:mockito-core") { isTransitive = false }
 }
 
 tasks {
@@ -59,7 +59,7 @@ tasks {
 
     withType<Test> {
         useJUnitPlatform()
-        jvmArgs("-javaagent:${byteBuddyAgent.singleFile}")
+        jvmArgs("-javaagent:${mockitoAgent.asPath}")
     }
 }
 
