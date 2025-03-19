@@ -1,6 +1,8 @@
 package org.factoryx.library.connector.embedded.provider.model.dsp.transfer;
 import lombok.Getter;
 import lombok.Setter;
+import org.factoryx.library.connector.embedded.provider.model.dsp.util.EndpointProperty;
+
 import java.util.List;
 
 @Getter
@@ -16,12 +18,4 @@ public class Transfer {
     private String endpointType;
     private String endpoint;
     private List<EndpointProperty> endpointProperties;
-
-    @Getter
-    @Setter
-    public static class EndpointProperty {
-        private String type;
-        private String name;
-        private String value;
-    }
 }
