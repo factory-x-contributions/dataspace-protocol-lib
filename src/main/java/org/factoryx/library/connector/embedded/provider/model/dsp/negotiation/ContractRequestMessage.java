@@ -1,6 +1,8 @@
 package org.factoryx.library.connector.embedded.provider.model.dsp.negotiation;
 import lombok.Getter;
 import lombok.Setter;
+import org.factoryx.library.connector.embedded.provider.model.dsp.util.Offer;
+
 import java.util.List;
 
 @Getter
@@ -12,28 +14,4 @@ public class ContractRequestMessage {
     private String consumerPid;
     private Offer offer;
     private String callbackAddress;
-
-    @Getter
-    @Setter
-    public static class Offer {
-        private String type;
-        private String id;
-        private String target;
-        private List<Permission> permission;
-
-        @Getter
-        @Setter
-        public static class Permission {
-            private String action;
-            private List<Constraint> constraint;
-
-            @Getter
-            @Setter
-            public static class Constraint {
-                private String leftOperand;
-                private String operator;
-                private String rightOperand;
-            }
-        }
-    }
 }

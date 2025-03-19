@@ -7,7 +7,9 @@ import java.util.List;
 
 @Getter
 @Setter
-public class Duty {
-    private String action;
-    private List<Constraint> constraint;
+public class Offer {
+    private String type;
+    private String id;
+    private String target;
+    private List<Permission> permission;
 }
