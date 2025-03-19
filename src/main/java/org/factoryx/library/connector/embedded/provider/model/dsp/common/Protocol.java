@@ -1,4 +1,5 @@
 package org.factoryx.library.connector.embedded.provider.model.dsp.common;
+
 import lombok.Getter;
 import lombok.Setter;
 import org.factoryx.library.connector.embedded.provider.model.dsp.util.ProtocolVersion;
