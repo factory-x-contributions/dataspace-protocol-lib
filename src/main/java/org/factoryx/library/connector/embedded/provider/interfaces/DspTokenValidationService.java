@@ -25,4 +25,12 @@ public interface DspTokenValidationService {
      * @return the id of the sending partner if successful, else null
      */
     String validateToken(String token);
+
+    /**
+     * Validates a refresh token that was received at a DSP protocol endpoint.
+     *
+     * @param token the received refresh token
+     * @return the id of the sending partner if successful, else null
+     */
+    String validateRefreshToken(String token);
 }

@@ -50,4 +50,21 @@ public class MockValidationService implements DspTokenValidationService {
             return null;
         }
     }
+
+    @Override
+    public String validateRefreshToken(String token) {
+        try {
+            var authJson = JsonUtils.parse(token);
+            String issuer = authJson.getString("iss");
+            String audience = authJson.getString("audience");
+            if (envService.getOwnDspUrl().equals(issuer)) {
+                return audience;
+            } else {
+                return null;
+            }
+        } catch (Exception e) {
+            log.error("Failure while validating refresh token {}", token, e);
+            return null;
+        }
+    }
 }

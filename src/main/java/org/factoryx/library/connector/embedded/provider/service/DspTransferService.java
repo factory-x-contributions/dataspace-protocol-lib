@@ -200,4 +200,56 @@ public class DspTransferService {
         return new ResponseRecord(createResponse(transferRecord), 400);
     }
 
+    /**
+     * This method handles incoming token refresh requests from the
+     * /dsp/transfers/refresh endpoint.
+     *
+     * @param refreshToken - the refresh token
+     * @param authToken - the Authorization header value (Bearer access token)
+     * @param partnerId - the id of the requesting party as retrieved from the HTTP auth token
+     * @return - a response containing the new access token and refresh token
+     */
+    public ResponseRecord handleRefreshTokenRequest(String refreshToken, String authToken, String partnerId) {
+        if (refreshToken == null || refreshToken.isEmpty()) {
+            return new ResponseRecord("Refresh token is required".getBytes(StandardCharsets.UTF_8), 400);
+        }
+        if (authToken == null || authToken.isEmpty()) {
+            return new ResponseRecord("Authorization token is required".getBytes(StandardCharsets.UTF_8), 400);
+        }
+        if (partnerId == null || partnerId.isEmpty()) {
+            return new ResponseRecord("Partner ID is required".getBytes(StandardCharsets.UTF_8), 400);
+        }
+        String token = authToken.replace("Bearer ", "").replace("bearer ", "");
+        // Validate the provided refresh token by delegating to the AuthorizationService.
+        // (This method should be implemented in AuthorizationService to parse the JWT and verify the signature)
+        // DID validation is done in the Transfer Controller
+        if (!authorizationService.validateRefreshToken(refreshToken, token, partnerId)) {
+            return new ResponseRecord("Invalid refresh token".getBytes(StandardCharsets.UTF_8), 401);
+        }
+
+        // Generate a new access token.
+        String newAccessToken = authorizationService.issueDataAccessToken(partnerId, DSPACE_NAMESPACE);
+
+        // Generate a new refresh token.
+        String newRefreshToken = authorizationService.issueRefreshToken(token, partnerId);
+
+        // Define the lifetime (in seconds) for the new access token.
+        long expiresIn = 300;
+
+        return new ResponseRecord(
+                createRefreshTokenResponse(newRefreshToken, newAccessToken, expiresIn), 200);
+    }
+
+    private static byte[] createRefreshTokenResponse(String refreshToken, String accessToken, long expiresIn) {
+        return Json.createObjectBuilder()
+                .add("@context", FULL_CONTEXT)
+                .add("@type", "dspace:TokenRefreshResponse")
+                .add("dspace:refreshToken", refreshToken)
+                .add("dspace:accessToken", accessToken)
+                .add("dspace:tokenType", "Bearer")
+                .add("dspace:expiresIn", expiresIn)
+                .build()
+                .toString()
+                .getBytes(StandardCharsets.UTF_8);
+    }
 }

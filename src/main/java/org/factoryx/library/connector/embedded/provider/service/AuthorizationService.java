@@ -50,6 +50,7 @@ public class AuthorizationService {
     private final Duration keyRotationInterval = Duration.ofHours(1); // must be larger than token validity
     public final static String CONTRACT_ID = "cid";
     public final static String DATA_ADDRESS = "dad";
+    public final static String TOKEN = "token";
     private final EnvService envService;
 
     private JWSSigner signer;
@@ -57,6 +58,9 @@ public class AuthorizationService {
 
     private JWSVerifier verifier;
     private JWSVerifier previousVerifier;
+
+    private JWSSigner refreshTokenSigner;
+    private JWSVerifier refreshTokenVerifier;
 
     /**
      * Prevent race conditions during key rotation.
@@ -69,6 +73,10 @@ public class AuthorizationService {
             String secretString = generateSecretKey();
             signer = new MACSigner(secretString);
             verifier = new MACVerifier(secretString);
+
+            String refreshTokenSecretString = generateSecretKey();
+            refreshTokenSigner = new MACSigner(refreshTokenSecretString);
+            refreshTokenVerifier = new MACVerifier(refreshTokenSecretString);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -162,4 +170,67 @@ public class AuthorizationService {
         }
     }
 
+    /**
+     * Issues a refresh token for the given client ID.
+     * 
+     * @param accessToken the access token associated with the refresh token
+     * @param clientId the client ID
+     * @return the refresh token
+     */
+    public String issueRefreshToken(String accessToken, String clientId) {
+        try {
+            lock.readLock().lock();
+            long now = System.currentTimeMillis();
+            String jti = Base64.getUrlEncoder().encodeToString(new byte[16]);
+
+            String ownDid = envService.getSingleAssetReadOnlyDataAccessIssuer();
+            JWTClaimsSet claimsSet = new JWTClaimsSet.Builder()
+                    .jwtID(jti)
+                    .issuer(ownDid)
+                    .subject(ownDid)
+                    .audience(clientId)
+                    .claim(TOKEN, accessToken)
+                    .issueTime(new Date(now))
+                    .build();
+
+            SignedJWT signedJWT = new SignedJWT(new JWSHeader(JWSAlgorithm.HS256), claimsSet);
+            signedJWT.sign(refreshTokenSigner);
+
+            return signedJWT.serialize();
+        } catch (JOSEException e) {
+            throw new RuntimeException("Error signing refresh token", e);
+        } finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    /**
+     * Validates the refresh token's signature and issuer.
+     * 
+     * @param refreshToken the refresh token to validate
+     * @param accessToken the access token associated with the refresh token
+     * @param partnerId the partner ID
+     * @return true if the token has a valid signature and issuer, false otherwise
+     */
+    public boolean validateRefreshToken(String refreshToken, String accessToken, String partnerId) {
+        lock.readLock().lock();
+        try {
+            SignedJWT signedJWT = SignedJWT.parse(refreshToken);
+            boolean signatureValid = signedJWT.verify(refreshTokenVerifier);
+            String issuer = signedJWT.getJWTClaimsSet().getIssuer();
+            String audience = signedJWT.getJWTClaimsSet().getAudience().get(0);
+            String subject = signedJWT.getJWTClaimsSet().getSubject();
+            String token = signedJWT.getJWTClaimsSet().getStringClaim(TOKEN);
+
+            boolean claimsValid = audience.equals(partnerId);
+            claimsValid = claimsValid && subject.equals(issuer);
+            claimsValid = claimsValid && issuer.equals(envService.getSingleAssetReadOnlyDataAccessIssuer());
+            claimsValid = claimsValid && token.equals(accessToken);
+            return signatureValid && claimsValid;
+        } catch (Exception e) {
+            return false;
+        } finally {
+            lock.readLock().unlock();
+        }
+    }
 }

@@ -30,6 +30,7 @@ import java.util.UUID;
 @Slf4j
 /**
  * Endpoint for receiving DSP requests related to negotiations
+ * 
  * @author dalmasoud
  */
 public class DspTransferController {
@@ -38,11 +39,12 @@ public class DspTransferController {
 
     private final DspTokenValidationService dspTokenValidationService;
 
+    private static final String GRANT_TYPE_REFRESH_TOKEN = "refresh_token";
+
     public DspTransferController(DspTransferService dspTransferService, DspTokenValidationService dspTokenValidationService) {
         this.dspTransferService = dspTransferService;
         this.dspTokenValidationService = dspTokenValidationService;
     }
-
 
     /**
      * Initiates a Pull Transfer Process.
@@ -81,6 +83,47 @@ public class DspTransferController {
             return ResponseEntity.status(responseRecord.statusCode()).body(responseRecord.responseBody());
         } catch (Exception e) {
             return ResponseEntity.status(500).build();
+        }
+    }
+
+    /**
+     * Endpoint for refreshing a token.
+     *
+     * @param grantType   - the type of grant
+     * @param refreshToken - the refresh token
+     * @param authToken  - the Authorization header value
+     * @return - a response containing the new token
+     */
+    @PostMapping("${org.factoryx.library.dspapiprefix:/dsp}/transfers/refresh")
+    public ResponseEntity<byte[]> refreshToken(
+            @RequestParam(name = "grant_type", required = false) String grantType,
+            @RequestParam(name = "refresh_token", required = false) String refreshToken,
+            @RequestHeader("Authorization") String authToken) {
+        try {
+            String partnerId = dspTokenValidationService.validateToken(authToken);
+            if (partnerId == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            }
+
+            if (!GRANT_TYPE_REFRESH_TOKEN.equals(grantType)) {
+                return ResponseEntity.badRequest().build();
+            }
+
+            if (refreshToken == null || refreshToken.isEmpty()) {
+                return ResponseEntity.badRequest().build();
+            }
+            String audience = dspTokenValidationService.validateRefreshToken(refreshToken);
+            if (audience == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            }
+            if (!partnerId.equals(audience)) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            }
+
+            ResponseRecord response = dspTransferService.handleRefreshTokenRequest(refreshToken, authToken, partnerId);
+            return ResponseEntity.status(response.statusCode()).body(response.responseBody());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 }

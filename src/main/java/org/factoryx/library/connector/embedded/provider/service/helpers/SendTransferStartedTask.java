@@ -106,6 +106,10 @@ public class SendTransferStartedTask implements Runnable {
         String datasetAddressUrl = record.getDatasetAddressUrl();
         String contractId = record.getContractId();
         String dataAccessToken = authorizationService.issueDataAccessToken(contractId, datasetAddressUrl);
+        String partnerId = record.getPartnerId();
+        String refreshTokenValue = authorizationService.issueRefreshToken(dataAccessToken, partnerId);
+        String expiresInValue = "300"; 
+        String refreshEndpointValue = envService.getRefreshEndpoint();
 
         JsonObject authorization = Json.createObjectBuilder()
                 .add("@type", "dspace:EndpointProperty")
@@ -134,6 +138,21 @@ public class SendTransferStartedTask implements Runnable {
                 .add("dspace:name", "https://w3id.org/edc/v0.0.1/ns/authType")
                 .add("dspace:value", "Bearer")
                 .build();
+        JsonObject refreshTokenProp = Json.createObjectBuilder()
+                .add("@type", "dspace:EndpointProperty")
+                .add("dspace:name", "https://w3id.org/tractusx/auth/refreshToken")
+                .add("dspace:value", refreshTokenValue)
+                .build();
+        JsonObject expiresInProp = Json.createObjectBuilder()
+                .add("@type", "dspace:EndpointProperty")
+                .add("dspace:name", "https://w3id.org/tractusx/auth/expiresIn")
+                .add("dspace:value", expiresInValue)
+                .build();
+        JsonObject refreshEndpointProp = Json.createObjectBuilder()
+                .add("@type", "dspace:EndpointProperty")
+                .add("dspace:name", "https://w3id.org/tractusx/auth/refreshEndpoint")
+                .add("dspace:value", refreshEndpointValue)
+                .build();
 
         JsonObject dataAddress = Json.createObjectBuilder()
                 .add("@type", "dspace:DataAddress")
@@ -141,7 +160,8 @@ public class SendTransferStartedTask implements Runnable {
                 .add("dspace:endpoint", record.getDatasetAddressUrl())
                 .add("dspace:endpointProperties",
                         Json.createArrayBuilder().add(authorization).add(authType)
-                                .add(authQuickFix).add(endpointQuickFix).add(authTypeFix).build())
+                                .add(authQuickFix).add(endpointQuickFix).add(authTypeFix).add(refreshTokenProp)
+                                .add(expiresInProp).add(refreshEndpointProp).build())
                 .build();
         return Json.createObjectBuilder()
                 .add("@context", FULL_CONTEXT)
