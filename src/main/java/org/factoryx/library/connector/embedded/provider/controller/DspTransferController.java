@@ -20,6 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.factoryx.library.connector.embedded.provider.interfaces.DspTokenValidationService;
 import org.factoryx.library.connector.embedded.provider.model.ResponseRecord;
 import org.factoryx.library.connector.embedded.provider.service.DspTransferService;
+import org.factoryx.library.connector.embedded.provider.service.helpers.DataAccessTokenValidationService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -36,14 +37,17 @@ import java.util.UUID;
 public class DspTransferController {
 
     private final DspTransferService dspTransferService;
-
     private final DspTokenValidationService dspTokenValidationService;
+    private final DataAccessTokenValidationService dataAccessTokenValidationService;
 
     private static final String GRANT_TYPE_REFRESH_TOKEN = "refresh_token";
 
-    public DspTransferController(DspTransferService dspTransferService, DspTokenValidationService dspTokenValidationService) {
+    public DspTransferController(DspTransferService dspTransferService,
+            DspTokenValidationService dspTokenValidationService,
+            DataAccessTokenValidationService dataAccessTokenValidationService) {
         this.dspTransferService = dspTransferService;
         this.dspTokenValidationService = dspTokenValidationService;
+        this.dataAccessTokenValidationService = dataAccessTokenValidationService;
     }
 
     /**
@@ -57,7 +61,6 @@ public class DspTransferController {
     @PostMapping("${org.factoryx.library.dspapiprefix:/dsp}/transfers/request")
     public ResponseEntity<byte[]> createPullTransferProcess(@RequestBody String requestBody,
                                                             @RequestHeader("Authorization") String authHeader) {
-
         try {
             String partnerId = dspTokenValidationService.validateToken(authHeader);
             if (partnerId == null) {
@@ -100,29 +103,22 @@ public class DspTransferController {
             @RequestParam(name = "refresh_token", required = false) String refreshToken,
             @RequestHeader("Authorization") String authToken) {
         try {
-            String partnerId = dspTokenValidationService.validateToken(authToken);
-            if (partnerId == null) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-            }
-
             if (!GRANT_TYPE_REFRESH_TOKEN.equals(grantType)) {
+                log.warn("Invalid grant type: {}", grantType);
                 return ResponseEntity.badRequest().build();
             }
 
-            if (refreshToken == null || refreshToken.isEmpty()) {
-                return ResponseEntity.badRequest().build();
-            }
-            String audience = dspTokenValidationService.validateRefreshToken(refreshToken);
-            if (audience == null) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-            }
-            if (!partnerId.equals(audience)) {
+            boolean refreshTokenValidation = dataAccessTokenValidationService.validateRefreshToken(refreshToken, authToken);
+            if (!refreshTokenValidation) {
+                log.warn("Invalid refresh token");
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
             }
 
-            ResponseRecord response = dspTransferService.handleRefreshTokenRequest(refreshToken, authToken, partnerId);
+            ResponseRecord response = dspTransferService.handleRefreshTokenRequest(refreshToken, authToken);    
+            log.info("Response: {}", response.responseBody());
             return ResponseEntity.status(response.statusCode()).body(response.responseBody());
         } catch (Exception e) {
+            log.error("Error processing refresh token request", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }

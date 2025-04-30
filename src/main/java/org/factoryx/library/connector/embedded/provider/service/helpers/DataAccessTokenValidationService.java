@@ -71,4 +71,25 @@ public class DataAccessTokenValidationService {
             return false;
         }
     }
+
+    public boolean validateRefreshToken(String refreshToken, String accessToken) {
+        try {
+            Objects.requireNonNull(refreshToken, "Token must not be null");
+            Objects.requireNonNull(accessToken, "Access token must not be null");
+            refreshToken = refreshToken.replace("Bearer ", "").replace("bearer ", "");
+            accessToken = accessToken.replace("Bearer ", "").replace("bearer ", "");
+            var claims = authorizationService.extractAllClaims(refreshToken);
+            String issuer = claims.getIssuer();
+            String subject = claims.getSubject();
+            String token = claims.getStringClaim(AuthorizationService.TOKEN);
+
+            return authorizationService.validateToken(refreshToken)
+                    && expectedIssuer.equals(issuer)
+                    && subject.equals(issuer)
+                    && token.equals(accessToken);
+        } catch (Exception e) {
+            log.error("Failure while validating refresh token", e);
+            return false;
+        }
+    }
 }

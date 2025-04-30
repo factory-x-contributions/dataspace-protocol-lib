@@ -209,35 +209,34 @@ public class DspTransferService {
      * @param partnerId - the id of the requesting party as retrieved from the HTTP auth token
      * @return - a response containing the new access token and refresh token
      */
-    public ResponseRecord handleRefreshTokenRequest(String refreshToken, String authToken, String partnerId) {
+    public ResponseRecord handleRefreshTokenRequest(String refreshToken, String authToken) {
         if (refreshToken == null || refreshToken.isEmpty()) {
             return new ResponseRecord("Refresh token is required".getBytes(StandardCharsets.UTF_8), 400);
         }
         if (authToken == null || authToken.isEmpty()) {
             return new ResponseRecord("Authorization token is required".getBytes(StandardCharsets.UTF_8), 400);
         }
-        if (partnerId == null || partnerId.isEmpty()) {
-            return new ResponseRecord("Partner ID is required".getBytes(StandardCharsets.UTF_8), 400);
-        }
-        String token = authToken.replace("Bearer ", "").replace("bearer ", "");
-        // Validate the provided refresh token by delegating to the AuthorizationService.
-        // (This method should be implemented in AuthorizationService to parse the JWT and verify the signature)
-        // DID validation is done in the Transfer Controller
-        if (!authorizationService.validateRefreshToken(refreshToken, token, partnerId)) {
-            return new ResponseRecord("Invalid refresh token".getBytes(StandardCharsets.UTF_8), 401);
-        }
 
-        // Generate a new access token.
-        String newAccessToken = authorizationService.issueDataAccessToken(partnerId, DSPACE_NAMESPACE);
+        try {
+            authToken = authToken.replace("Bearer ", "").replace("bearer ", "");
+            var claims = authorizationService.extractAllClaims(authToken);
+            String contractId = claims.getStringClaim(AuthorizationService.CONTRACT_ID);
+            String datasetAddressUrl = claims.getStringClaim(AuthorizationService.DATA_ADDRESS);
+            String newAccessToken = authorizationService.issueDataAccessToken(contractId, datasetAddressUrl);
 
-        // Generate a new refresh token.
-        String newRefreshToken = authorizationService.issueRefreshToken(token, partnerId);
+            refreshToken = refreshToken.replace("Bearer ", "").replace("bearer ", "");
+            var refreshClaims = authorizationService.extractAllClaims(refreshToken);
+            String partnerId = refreshClaims.getAudience().get(0);
+            String newRefreshToken = authorizationService.issueRefreshToken(authToken, partnerId);
 
-        // Define the lifetime (in seconds) for the new access token.
-        long expiresIn = 300;
-
-        return new ResponseRecord(
+            long expiresIn = 300;
+            return new ResponseRecord(
                 createRefreshTokenResponse(newRefreshToken, newAccessToken, expiresIn), 200);
+        } catch (Exception e) {
+            log.error("Error while handling refresh token request", e);
+            return new ResponseRecord("Error while handling refresh token request".getBytes(StandardCharsets.UTF_8), 500);
+        }
+    
     }
 
     private static byte[] createRefreshTokenResponse(String refreshToken, String accessToken, long expiresIn) {

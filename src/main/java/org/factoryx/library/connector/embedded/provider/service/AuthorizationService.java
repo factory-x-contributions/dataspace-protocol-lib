@@ -47,6 +47,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 public class AuthorizationService {
 
     private final long tokenValidityInMilliSeconds = 1000L * 60 * 5; // five minutes
+    private final long refreshTokenValidityInMilliSeconds = 1000L * 60 * 30; // thirty minutes
     private final Duration keyRotationInterval = Duration.ofHours(1); // must be larger than token validity
     public final static String CONTRACT_ID = "cid";
     public final static String DATA_ADDRESS = "dad";
@@ -59,9 +60,6 @@ public class AuthorizationService {
     private JWSVerifier verifier;
     private JWSVerifier previousVerifier;
 
-    private JWSSigner refreshTokenSigner;
-    private JWSVerifier refreshTokenVerifier;
-
     /**
      * Prevent race conditions during key rotation.
      */
@@ -73,10 +71,6 @@ public class AuthorizationService {
             String secretString = generateSecretKey();
             signer = new MACSigner(secretString);
             verifier = new MACVerifier(secretString);
-
-            String refreshTokenSecretString = generateSecretKey();
-            refreshTokenSigner = new MACSigner(refreshTokenSecretString);
-            refreshTokenVerifier = new MACVerifier(refreshTokenSecretString);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -96,22 +90,7 @@ public class AuthorizationService {
      * @return the generated JWT token
      */
     public String issueDataAccessToken(String cid, String dad) {
-        lock.writeLock().lock();
-        try {
-            try {
-                if (LocalDateTime.now().isAfter(signerInitializedAt.plus(keyRotationInterval))) {
-                    String secretString = generateSecretKey();
-                    signer = new MACSigner(secretString);
-                    previousVerifier = verifier;
-                    verifier = new MACVerifier(secretString);
-                    signerInitializedAt = LocalDateTime.now();
-                }
-            } catch (JOSEException e) {
-                throw new RuntimeException("Error rotating keys", e);
-            }
-        } finally {
-            lock.writeLock().unlock();
-        }
+        rotateKeys();
 
         lock.readLock().lock();
         try {
@@ -126,8 +105,8 @@ public class AuthorizationService {
 
             SignedJWT signedJWT = new SignedJWT(new JWSHeader(JWSAlgorithm.HS256), claimsSet);
             signedJWT.sign(signer);
-            return signedJWT.serialize();
 
+            return signedJWT.serialize();
         } catch (JOSEException e) {
             throw new RuntimeException("Error signing JWT", e);
         } finally {
@@ -178,8 +157,9 @@ public class AuthorizationService {
      * @return the refresh token
      */
     public String issueRefreshToken(String accessToken, String clientId) {
+        rotateKeys();
+        lock.readLock().lock();
         try {
-            lock.readLock().lock();
             long now = System.currentTimeMillis();
             String jti = Base64.getUrlEncoder().encodeToString(new byte[16]);
 
@@ -191,10 +171,11 @@ public class AuthorizationService {
                     .audience(clientId)
                     .claim(TOKEN, accessToken)
                     .issueTime(new Date(now))
+                    .expirationTime(new Date(now + refreshTokenValidityInMilliSeconds))
                     .build();
 
             SignedJWT signedJWT = new SignedJWT(new JWSHeader(JWSAlgorithm.HS256), claimsSet);
-            signedJWT.sign(refreshTokenSigner);
+            signedJWT.sign(signer);
 
             return signedJWT.serialize();
         } catch (JOSEException e) {
@@ -205,32 +186,25 @@ public class AuthorizationService {
     }
 
     /**
-     * Validates the refresh token's signature and issuer.
-     * 
-     * @param refreshToken the refresh token to validate
-     * @param accessToken the access token associated with the refresh token
-     * @param partnerId the partner ID
-     * @return true if the token has a valid signature and issuer, false otherwise
+     * Rotates the keys used for signing and verifying JWT tokens if the key
+     * rotation interval has passed.
      */
-    public boolean validateRefreshToken(String refreshToken, String accessToken, String partnerId) {
-        lock.readLock().lock();
+    private void rotateKeys() {
+        lock.writeLock().lock();
         try {
-            SignedJWT signedJWT = SignedJWT.parse(refreshToken);
-            boolean signatureValid = signedJWT.verify(refreshTokenVerifier);
-            String issuer = signedJWT.getJWTClaimsSet().getIssuer();
-            String audience = signedJWT.getJWTClaimsSet().getAudience().get(0);
-            String subject = signedJWT.getJWTClaimsSet().getSubject();
-            String token = signedJWT.getJWTClaimsSet().getStringClaim(TOKEN);
-
-            boolean claimsValid = audience.equals(partnerId);
-            claimsValid = claimsValid && subject.equals(issuer);
-            claimsValid = claimsValid && issuer.equals(envService.getSingleAssetReadOnlyDataAccessIssuer());
-            claimsValid = claimsValid && token.equals(accessToken);
-            return signatureValid && claimsValid;
-        } catch (Exception e) {
-            return false;
+            try {
+                if (LocalDateTime.now().isAfter(signerInitializedAt.plus(keyRotationInterval))) {
+                    String secretString = generateSecretKey();
+                    signer = new MACSigner(secretString);
+                    previousVerifier = verifier;
+                    verifier = new MACVerifier(secretString);
+                    signerInitializedAt = LocalDateTime.now();
+                }
+            } catch (JOSEException e) {
+                throw new RuntimeException("Error rotating keys", e);
+            }
         } finally {
-            lock.readLock().unlock();
+            lock.writeLock().unlock();
         }
     }
 }

@@ -140,17 +140,17 @@ public class SendTransferStartedTask implements Runnable {
                 .build();
         JsonObject refreshTokenProp = Json.createObjectBuilder()
                 .add("@type", "dspace:EndpointProperty")
-                .add("dspace:name", "https://w3id.org/tractusx/auth/refreshToken")
+                .add("dspace:name", "https://w3id.org/edc/v0.0.1/ns/refreshToken")
                 .add("dspace:value", refreshTokenValue)
                 .build();
         JsonObject expiresInProp = Json.createObjectBuilder()
                 .add("@type", "dspace:EndpointProperty")
-                .add("dspace:name", "https://w3id.org/tractusx/auth/expiresIn")
+                .add("dspace:name", "https://w3id.org/edc/v0.0.1/ns/expiresIn")
                 .add("dspace:value", expiresInValue)
                 .build();
         JsonObject refreshEndpointProp = Json.createObjectBuilder()
                 .add("@type", "dspace:EndpointProperty")
-                .add("dspace:name", "https://w3id.org/tractusx/auth/refreshEndpoint")
+                .add("dspace:name", "https://w3id.org/edc/v0.0.1/ns/refreshEndpoint")
                 .add("dspace:value", refreshEndpointValue)
                 .build();
 

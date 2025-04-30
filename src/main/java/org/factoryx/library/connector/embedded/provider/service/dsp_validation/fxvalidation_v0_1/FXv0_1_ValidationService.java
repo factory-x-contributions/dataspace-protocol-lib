@@ -120,36 +120,6 @@ public class FXv0_1_ValidationService implements DspTokenValidationService {
         }
     }
 
-    @Override
-    public String validateRefreshToken(String token) {
-        try {
-            log.info("Incoming refresh token: \n{}", token);
-            SignedJWT jwt = SignedJWT.parse(token);
-            var claims = jwt.getJWTClaimsSet();
-            String partnerDid = claims.getStringClaim("aud");
-
-            String accessTokenForPartnerCredentialService = claims.getStringClaim("token");
-            log.info("Received AccessToken from partner:\n{}", accessTokenForPartnerCredentialService);
-            SignedJWT at = SignedJWT.parse(accessTokenForPartnerCredentialService);
-            log.info("Payload of Access Token: \n{}", prettyPrint(at.getPayload().toString()));
-            boolean signatureCheckResult = verifyTokenSignature(jwt, partnerDid);
-            boolean tokenBasicCheckResult = basicValidation(jwt);
-
-            String selfSignedTokenForPartnerCredentialService = fXv01TokenProviderService.obtainSelfSignedSignatureFromSTS(
-                    partnerDid, List.of("token", accessTokenForPartnerCredentialService));
-
-            boolean membershipCheck = checkMembershipVerifiablePresentation(selfSignedTokenForPartnerCredentialService, partnerDid);
-            if (signatureCheckResult && tokenBasicCheckResult && membershipCheck) {
-                return partnerDid;
-            }
-            log.warn("Signature check: {}, membership check: {}, basic check: {}", signatureCheckResult, membershipCheck, tokenBasicCheckResult);
-            return null;
-        } catch (Exception e) {
-            log.error("Failure while validating token {}", token, e);
-            return null;
-        }
-    }
-
     /**
      * Resolves the key for the given partner and tries to verify the given token's signature with it
      *
