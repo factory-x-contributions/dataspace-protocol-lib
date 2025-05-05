@@ -69,7 +69,7 @@ public class DspTransferController {
             ResponseRecord responseRecord = dspTransferService.handleNewTransfer(requestBody, partnerId);
             return ResponseEntity.status(responseRecord.statusCode()).body(responseRecord.responseBody());
         } catch (Exception e) {
-            return ResponseEntity.status(500).build();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
@@ -85,7 +85,7 @@ public class DspTransferController {
             ResponseRecord responseRecord = dspTransferService.handleCompletionRequest(requestBody, partnerId, providerPid);
             return ResponseEntity.status(responseRecord.statusCode()).body(responseRecord.responseBody());
         } catch (Exception e) {
-            return ResponseEntity.status(500).build();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
@@ -103,18 +103,23 @@ public class DspTransferController {
             @RequestParam(name = "refresh_token", required = false) String refreshToken,
             @RequestHeader("Authorization") String authToken) {
         try {
+            String partnerId = dspTokenValidationService.validateToken(authToken);
+            if (partnerId == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+            }
+
             if (!GRANT_TYPE_REFRESH_TOKEN.equals(grantType)) {
                 log.warn("Invalid grant type: {}", grantType);
                 return ResponseEntity.badRequest().build();
             }
 
-            boolean refreshTokenValidation = dataAccessTokenValidationService.validateRefreshToken(refreshToken, authToken);
+            boolean refreshTokenValidation = dataAccessTokenValidationService.validateRefreshToken(refreshToken);
             if (!refreshTokenValidation) {
                 log.warn("Invalid refresh token");
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
             }
 
-            ResponseRecord response = dspTransferService.handleRefreshTokenRequest(refreshToken, authToken);    
+            ResponseRecord response = dspTransferService.handleRefreshTokenRequest(refreshToken);    
             log.info("Response: {}", response.responseBody());
             return ResponseEntity.status(response.statusCode()).body(response.responseBody());
         } catch (Exception e) {

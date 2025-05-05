@@ -205,29 +205,25 @@ public class DspTransferService {
      * /dsp/transfers/refresh endpoint.
      *
      * @param refreshToken - the refresh token
-     * @param authToken - the Authorization header value (Bearer access token)
      * @param partnerId - the id of the requesting party as retrieved from the HTTP auth token
      * @return - a response containing the new access token and refresh token
      */
-    public ResponseRecord handleRefreshTokenRequest(String refreshToken, String authToken) {
+    public ResponseRecord handleRefreshTokenRequest(String refreshToken) {
         if (refreshToken == null || refreshToken.isEmpty()) {
             return new ResponseRecord("Refresh token is required".getBytes(StandardCharsets.UTF_8), 400);
         }
-        if (authToken == null || authToken.isEmpty()) {
-            return new ResponseRecord("Authorization token is required".getBytes(StandardCharsets.UTF_8), 400);
-        }
 
         try {
-            authToken = authToken.replace("Bearer ", "").replace("bearer ", "");
-            var claims = authorizationService.extractAllClaims(authToken);
+            refreshToken = refreshToken.replace("Bearer ", "").replace("bearer ", "");
+            var refreshClaims = authorizationService.extractAllClaims(refreshToken);
+            String accessToken = refreshClaims.getStringClaim(AuthorizationService.TOKEN);
+            var claims = authorizationService.extractAllClaims(accessToken);
             String contractId = claims.getStringClaim(AuthorizationService.CONTRACT_ID);
             String datasetAddressUrl = claims.getStringClaim(AuthorizationService.DATA_ADDRESS);
             String newAccessToken = authorizationService.issueDataAccessToken(contractId, datasetAddressUrl);
 
-            refreshToken = refreshToken.replace("Bearer ", "").replace("bearer ", "");
-            var refreshClaims = authorizationService.extractAllClaims(refreshToken);
             String partnerId = refreshClaims.getAudience().get(0);
-            String newRefreshToken = authorizationService.issueRefreshToken(authToken, partnerId);
+            String newRefreshToken = authorizationService.issueRefreshToken(accessToken, partnerId);
 
             long expiresIn = 300;
             return new ResponseRecord(
