@@ -200,4 +200,51 @@ public class DspTransferService {
         return new ResponseRecord(createResponse(transferRecord), 400);
     }
 
+    /**
+     * This method handles incoming token refresh requests from the
+     * /dsp/transfers/refresh endpoint.
+     *
+     * @param refreshToken - the refresh token
+     * @param partnerId - the id of the requesting party as retrieved from the HTTP auth token
+     * @return - a response containing the new access token and refresh token
+     */
+    public ResponseRecord handleRefreshTokenRequest(String refreshToken) {
+        if (refreshToken == null || refreshToken.isEmpty()) {
+            return new ResponseRecord("Refresh token is required".getBytes(StandardCharsets.UTF_8), 400);
+        }
+
+        try {
+            refreshToken = refreshToken.replace("Bearer ", "").replace("bearer ", "");
+
+            var refreshTokenClaims = authorizationService.extractAllClaims(refreshToken);
+            String accessToken = refreshTokenClaims.getStringClaim(AuthorizationService.TOKEN);
+            String partnerId = refreshTokenClaims.getSubject();
+
+            var accessTokenClaims = authorizationService.extractAllClaims(accessToken);
+            String contractId = accessTokenClaims.getStringClaim(AuthorizationService.CONTRACT_ID);
+            String datasetAddressUrl = accessTokenClaims.getStringClaim(AuthorizationService.DATA_ADDRESS);
+
+            String newAccessToken = authorizationService.issueDataAccessToken(contractId, datasetAddressUrl);
+            String newRefreshToken = authorizationService.issueRefreshToken(accessToken, partnerId);
+
+            long expiresIn = 300;
+            return new ResponseRecord(
+                createRefreshTokenResponse(newRefreshToken, newAccessToken, expiresIn), 200);
+        } catch (Exception e) {
+            log.error("Error while handling refresh token request", e);
+            return new ResponseRecord("Error while handling refresh token request".getBytes(StandardCharsets.UTF_8), 500);
+        }
+    
+    }
+
+    private static byte[] createRefreshTokenResponse(String refreshToken, String accessToken, long expiresIn) {
+        return Json.createObjectBuilder()
+                .add("access_token", accessToken)
+                .add("token_type", "Bearer")
+                .add("expires_in", expiresIn)
+                .add("refresh_token", refreshToken)
+                .build()
+                .toString()
+                .getBytes(StandardCharsets.UTF_8);
+    }
 }

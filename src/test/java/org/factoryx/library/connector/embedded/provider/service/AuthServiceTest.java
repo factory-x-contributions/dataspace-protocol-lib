@@ -35,6 +35,8 @@ public class AuthServiceTest {
     private AuthorizationService authService;
     private static final String CONTRACT_ID = "57e5f3ac-c1ef-4361-89c9-71c51c18f089";
     private static final String DATA_ADDRESS = "http://localhost:8080/path/to/data-asset";
+    private static final String PARTNER_ID = "partner-123";
+    private static final String INVALID_PARTNER_ID = "partner-456";
 
     @BeforeEach
     void setUp() {
@@ -43,6 +45,9 @@ public class AuthServiceTest {
         authService = new AuthorizationService(envService);
     }
 
+    /*
+     * tests for access token creation and validation
+     */
     @Test
     void testIssueDataAccessToken() {
         String token = authService.issueDataAccessToken(CONTRACT_ID, DATA_ADDRESS);
@@ -81,5 +86,37 @@ public class AuthServiceTest {
 
         // Assert
         assertFalse(validationResult, "Token validation should fail for incorrect token");
+    }
+
+    /*
+     * tests for refresh token creation and validation
+     */
+    @Test
+    void testIssueRefreshToken() throws Exception {
+        String accessToken = authService.issueDataAccessToken(CONTRACT_ID, DATA_ADDRESS);
+        String refreshToken = authService.issueRefreshToken(accessToken, PARTNER_ID);
+        assertNotNull(refreshToken, "Refresh token should not be null");
+
+        JWTClaimsSet refreshTokenClaims = authService.extractAllClaims(refreshToken);
+        assertEquals("test-issuer", refreshTokenClaims.getIssuer(), "Refresh issuer should match");
+        assertEquals(PARTNER_ID, refreshTokenClaims.getSubject(), "Subject should be partnerId");
+        assertEquals(accessToken, refreshTokenClaims.getStringClaim(AuthorizationService.TOKEN), "Access token should match");
+    }
+
+    @Test
+    void testRefreshTokenValidForMatchingPartner() {
+        String accessToken = authService.issueDataAccessToken(CONTRACT_ID, DATA_ADDRESS);
+        String refreshToken = authService.issueRefreshToken(accessToken, PARTNER_ID);
+
+        assertTrue(authService.validateToken(refreshToken), "Refresh token should be valid (signature and exp)");
+    }
+
+    @Test
+    void testRefreshTokenInvalidForDifferentPartner() throws Exception {
+        String accessToken = authService.issueDataAccessToken(CONTRACT_ID, DATA_ADDRESS);
+        String refreshToken = authService.issueRefreshToken(accessToken, PARTNER_ID);
+
+        JWTClaimsSet refreshTokenClaims = authService.extractAllClaims(refreshToken);
+        assertNotEquals(INVALID_PARTNER_ID, refreshTokenClaims.getSubject(), "Refresh token should not be valid for different partnerId");
     }
 }
