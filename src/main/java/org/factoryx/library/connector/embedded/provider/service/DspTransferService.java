@@ -226,7 +226,7 @@ public class DspTransferService {
 
             String newAccessToken = authorizationService.issueDataAccessToken(contractId, datasetAddressUrl);
             String newRefreshToken = authorizationService.issueRefreshToken(accessToken, partnerId);
-            
+
             long expiresIn = 300;
             return new ResponseRecord(
                 createRefreshTokenResponse(newRefreshToken, newAccessToken, expiresIn), 200);
@@ -239,12 +239,10 @@ public class DspTransferService {
 
     private static byte[] createRefreshTokenResponse(String refreshToken, String accessToken, long expiresIn) {
         return Json.createObjectBuilder()
-                .add("@context", FULL_CONTEXT)
-                .add("@type", "dspace:TokenRefreshResponse")
-                .add("dspace:refreshToken", refreshToken)
-                .add("dspace:accessToken", accessToken)
-                .add("dspace:tokenType", "Bearer")
-                .add("dspace:expiresIn", expiresIn)
+                .add("access_token", accessToken)
+                .add("token_type", "Bearer")
+                .add("expires_in", expiresIn)
+                .add("refresh_token", refreshToken)
                 .build()
                 .toString()
                 .getBytes(StandardCharsets.UTF_8);
