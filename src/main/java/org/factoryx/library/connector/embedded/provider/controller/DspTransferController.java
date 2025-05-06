@@ -113,13 +113,14 @@ public class DspTransferController {
                 return ResponseEntity.badRequest().build();
             }
 
-            boolean refreshTokenValidation = dataAccessTokenValidationService.validateRefreshToken(refreshToken);
-            if (!refreshTokenValidation) {
+            boolean refreshTokenValid = dataAccessTokenValidationService.validateRefreshToken(refreshToken, partnerId);
+            if (!refreshTokenValid) {
                 log.warn("Invalid refresh token");
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
             }
 
-            ResponseRecord response = dspTransferService.handleRefreshTokenRequest(refreshToken);    
+            ResponseRecord response = dspTransferService.handleRefreshTokenRequest(refreshToken);
+                
             log.info("Response: {}", response.responseBody());
             return ResponseEntity.status(response.statusCode()).body(response.responseBody());
         } catch (Exception e) {

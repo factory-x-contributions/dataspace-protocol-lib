@@ -72,26 +72,29 @@ public class DataAccessTokenValidationService {
         }
     }
 
-    public boolean validateRefreshToken(String refreshToken) {
+    public boolean validateRefreshToken(String refreshToken, String partnerId) {
         try {
             Objects.requireNonNull(refreshToken, "Token must not be null");
+            Objects.requireNonNull(partnerId, "PartnerId must not be null");
+            
             refreshToken = refreshToken.replace("Bearer ", "").replace("bearer ", "");
             var refreshTokenClaims = authorizationService.extractAllClaims(refreshToken);
             String refreshTokenIssuer = refreshTokenClaims.getIssuer();
-            String subject = refreshTokenClaims.getSubject();
+            String refreshTokenSubject = refreshTokenClaims.getSubject();
             String accessToken = refreshTokenClaims.getStringClaim(AuthorizationService.TOKEN);
 
             var accessTokenClaims = authorizationService.extractAllClaims(accessToken);
             String contractId = accessTokenClaims.getStringClaim(CONTRACT_ID);
             String dataAddress = accessTokenClaims.getStringClaim(DATA_ADDRESS);
             String accessTokenIssuer = accessTokenClaims.getIssuer();
+
             NegotiationRecord negotiationRecord = contractRecordService.findByContractId(UUID.fromString(contractId));
 
             return negotiationRecord != null
                     && NegotiationState.FINALIZED.equals(negotiationRecord.getState())
                     && expectedIssuer.equals(accessTokenIssuer)
                     && expectedIssuer.equals(refreshTokenIssuer)
-                    && expectedIssuer.equals(subject)
+                    && partnerId.equals(refreshTokenSubject)
                     && dataAddress.endsWith(negotiationRecord.getTargetAssetId())
                     && authorizationService.validateToken(refreshToken);
         } catch (Exception e) {

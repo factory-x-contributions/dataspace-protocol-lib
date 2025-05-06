@@ -215,16 +215,18 @@ public class DspTransferService {
 
         try {
             refreshToken = refreshToken.replace("Bearer ", "").replace("bearer ", "");
-            var refreshClaims = authorizationService.extractAllClaims(refreshToken);
-            String accessToken = refreshClaims.getStringClaim(AuthorizationService.TOKEN);
-            var claims = authorizationService.extractAllClaims(accessToken);
-            String contractId = claims.getStringClaim(AuthorizationService.CONTRACT_ID);
-            String datasetAddressUrl = claims.getStringClaim(AuthorizationService.DATA_ADDRESS);
+
+            var refreshTokenClaims = authorizationService.extractAllClaims(refreshToken);
+            String accessToken = refreshTokenClaims.getStringClaim(AuthorizationService.TOKEN);
+            String partnerId = refreshTokenClaims.getSubject();
+
+            var accessTokenClaims = authorizationService.extractAllClaims(accessToken);
+            String contractId = accessTokenClaims.getStringClaim(AuthorizationService.CONTRACT_ID);
+            String datasetAddressUrl = accessTokenClaims.getStringClaim(AuthorizationService.DATA_ADDRESS);
+
             String newAccessToken = authorizationService.issueDataAccessToken(contractId, datasetAddressUrl);
-
-            String partnerId = refreshClaims.getAudience().get(0);
             String newRefreshToken = authorizationService.issueRefreshToken(accessToken, partnerId);
-
+            
             long expiresIn = 300;
             return new ResponseRecord(
                 createRefreshTokenResponse(newRefreshToken, newAccessToken, expiresIn), 200);

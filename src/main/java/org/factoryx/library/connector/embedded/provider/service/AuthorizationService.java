@@ -153,22 +153,19 @@ public class AuthorizationService {
      * Issues a refresh token for the given client ID.
      * 
      * @param accessToken the access token associated with the refresh token
-     * @param clientId the client ID
+     * @param partnerId the ID of the partner requesting the refresh token
      * @return the refresh token
      */
-    public String issueRefreshToken(String accessToken, String clientId) {
+    public String issueRefreshToken(String accessToken, String partnerId) {
         rotateKeys();
         lock.readLock().lock();
         try {
             long now = System.currentTimeMillis();
-            String jti = Base64.getUrlEncoder().encodeToString(new byte[16]);
 
-            String ownDid = envService.getSingleAssetReadOnlyDataAccessIssuer();
+            String issuerId = envService.getSingleAssetReadOnlyDataAccessIssuer();
             JWTClaimsSet claimsSet = new JWTClaimsSet.Builder()
-                    .jwtID(jti)
-                    .issuer(ownDid)
-                    .subject(ownDid)
-                    .audience(clientId)
+                    .issuer(issuerId)
+                    .subject(partnerId)
                     .claim(TOKEN, accessToken)
                     .issueTime(new Date(now))
                     .expirationTime(new Date(now + refreshTokenValidityInMilliSeconds))
