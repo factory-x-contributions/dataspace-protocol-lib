@@ -34,7 +34,7 @@ import java.util.UUID;
 @ToString
 @Document("negotiation_records")
 /**
- * Entity class that represents a DSP negotiation
+ * Document class that represents a DSP negotiation
  *
  * @author eschrewe
  *

@@ -11,6 +11,10 @@ import java.util.UUID;
 
 @Slf4j
 @Service
+/**
+ * Mock implementation of {@link DataAssetManagementService} that returns no data.
+ * This service is used as a placeholder or fallback and does not persist or manage any real data assets.
+ */
 public class InMemoryDataAssetManagementService implements DataAssetManagementService {
 
     @Override
