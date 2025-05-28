@@ -20,13 +20,11 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.client.RestClient;
 import org.springframework.context.annotation.ComponentScan;
-import org.springframework.data.mongodb.repository.config.EnableMongoRepositories;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 @Configuration
-//@EnableMongoRepositories(basePackages = "org.factoryx.library.connector.embedded.provider.repository")
 @ComponentScan(basePackages = "org.factoryx.library.connector.embedded.provider")
 /**
  * A bean providing config class
