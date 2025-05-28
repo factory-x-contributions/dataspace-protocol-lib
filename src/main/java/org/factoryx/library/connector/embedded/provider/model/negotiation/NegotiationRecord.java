@@ -16,13 +16,14 @@
 
 package org.factoryx.library.connector.embedded.provider.model.negotiation;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.Id;
+
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.annotation.Id;
+
 
 import java.util.Objects;
 import java.util.UUID;
@@ -31,7 +32,7 @@ import java.util.UUID;
 @Getter
 @Slf4j
 @ToString
-@Entity
+@Document("negotiation_records")
 /**
  * Entity class that represents a DSP negotiation
  *
@@ -47,7 +48,6 @@ public class NegotiationRecord {
      * Is always assigned by the service. Never set manually!
      */
     @Id
-    @GeneratedValue()
     private UUID ownPid;
     /**
      * The process id, under which the other partner refers to

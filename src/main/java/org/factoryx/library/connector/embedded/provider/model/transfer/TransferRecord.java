@@ -16,12 +16,13 @@
 
 package org.factoryx.library.connector.embedded.provider.model.transfer;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.Id;
+
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.annotation.Id;
+
 
 import java.util.UUID;
 
@@ -34,7 +35,7 @@ import java.util.UUID;
 @Setter
 @Getter
 @Slf4j
-@Entity
+@Document
 public class TransferRecord {
     /**
      * The transfer id on the Provider side (our side)
@@ -42,7 +43,6 @@ public class TransferRecord {
      * Is always assigned by the service. Never set manually!
      */
     @Id
-    @GeneratedValue()
     private UUID ownPid;
 
     /**
