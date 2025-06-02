@@ -41,6 +41,7 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 
 import static org.factoryx.library.connector.embedded.provider.service.helpers.JsonUtils.parse;
 import static org.factoryx.library.connector.embedded.provider.service.helpers.JsonUtils.prettyPrint;
@@ -91,7 +92,7 @@ public class MvdValidationService implements DspTokenValidationService {
     }
 
     @Override
-    public String validateToken(String token) {
+    public Map<String, String> validateToken(String token) {
         try {
             log.info("Incoming token: \n{}", token);
             SignedJWT jwt = SignedJWT.parse(token);
@@ -110,7 +111,8 @@ public class MvdValidationService implements DspTokenValidationService {
 
             boolean membershipCheck = checkMembershipVerifiablePresentation(selfSignedTokenForPartnerCredentialService, partnerDid);
             if (signatureCheckResult && tokenBasicCheckResult && membershipCheck) {
-                return partnerDid;
+                return Map.of(ReservedKeys.partnerId.toString(), partnerDid,
+                        ReservedKeys.credentials.toString(), "dataspacemember");
             }
             log.warn("Signature check: {}, membership check: {}, basic check: {}", signatureCheckResult, membershipCheck, tokenBasicCheckResult);
             return null;
