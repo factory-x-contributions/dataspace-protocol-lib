@@ -60,6 +60,7 @@ public class TransferRecordService {
     public TransferRecord createTransferRecord(String consumerPid, String partnerId, String partnerDspUrl,
                                                String agreementId) {
         TransferRecord transferRecord = new TransferRecord();
+        transferRecord.setOwnPid(UUID.randomUUID());
         transferRecord.setConsumerPid(consumerPid);
         transferRecord.setPartnerId(partnerId);
         transferRecord.setPartnerDspUrl(partnerDspUrl);

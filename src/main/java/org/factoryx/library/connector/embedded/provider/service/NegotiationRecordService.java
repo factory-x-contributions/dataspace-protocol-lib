@@ -54,6 +54,7 @@ public class NegotiationRecordService implements ContractRecordService {
     public NegotiationRecord createNegotiationRecord(String consumerPid, String partnerId, String partnerDspUrl,
                                                      String targetAssetId) {
         NegotiationRecord negotiationRecord = new NegotiationRecord();
+        negotiationRecord.setOwnPid(UUID.randomUUID());
         negotiationRecord.setConsumerPid(consumerPid);
         negotiationRecord.setPartnerId(partnerId);
         negotiationRecord.setPartnerDspUrl(partnerDspUrl);
