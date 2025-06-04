@@ -36,7 +36,7 @@ Beyond that, you need to have valid configurations set at least for the followin
 - spring.data.mongodb.port
 - spring.data.mongodb.database
 - spring.data.mongodb.username
-- spring.data.mongodb..password
+- spring.data.mongodb.password
 
 That means, the library is expecting to gain access to a MongoDB instance. 
 
