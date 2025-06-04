@@ -25,26 +25,25 @@ the following Spring Boot modules:
 
 ```
 	implementation("org.springframework.boot:spring-boot-starter-security")
-	implementation("org.springframework.boot:spring-boot-starter-data-jpa")
+	implementation("org.springframework.boot:spring-boot-starter-data-mongodb")
 	implementation("org.springframework.boot:spring-boot-starter-web")
 ```
 
 Beyond that, you need to have valid configurations set at least for the following Spring Boot properties:
 
 - server.port
-- spring.datasource.driver-class-name
-- spring.datasource.url
-- spring.datasource.username
-- spring.datasource.password
+- spring.data.mongodb.host
+- spring.data.mongodb.port
+- spring.data.mongodb.database
+- spring.data.mongodb.username
+- spring.data.mongodb..password
 
-That means, the library is expecting to gain access to an SQL Database like Postgres. But an In-Memory database like 
-HSQLDB or H2 will also work (e.g. if you just want to create a simple testing setup). In any case, you also need to provide the 
-fitting JDBC drivers for the database system you have chosen. 
+That means, the library is expecting to gain access to a MongoDB instance. 
 
 ### Software-level requirements
 
 #### Implementations you need to provide
-In order to couple your importing Spring Boot app with the library, you need to create an "@Entity"-annotated class that 
+In order to couple your importing Spring Boot app with the library, you need to create an "@Document"-annotated class that 
 implements the org.factoryx.library.connector.embedded.provider.interfaces.DataAsset interface. 
 
 And you need to create an implementation of the org.factoryx.library.connector.embedded.provider.interfaces.DataAssetManagementService, that 
@@ -57,8 +56,7 @@ the following annotations on top of you starter class (the one that has the '@Sp
 
 ```
 @ComponentScan(basePackages = {"org.factoryx.library", "org.demo.testenvironment"})
-@EntityScan(basePackages = {"org.factoryx.library", "org.demo.testenvironment"})
-@EnableJpaRepositories(basePackages = {"org.factoryx.library", "org.demo.testenvironment"})
+@EnableMongoRepositories(basePackages = {"org.factoryx.library", "org.demo.testenvironment"})
 ```
 
 Please replace 'org.demo.testenvironment' with one or more classpath prefixes of your importing project. 
