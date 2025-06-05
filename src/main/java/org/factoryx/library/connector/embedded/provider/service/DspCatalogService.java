@@ -28,6 +28,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -63,8 +64,8 @@ public class DspCatalogService {
      *
      * @return a list of JSON objects representing the DCAT datasets
      */
-    private List<JsonObject> getAllCatalogs(String partnerId){
-        List<? extends DataAsset> allDatasets = dataManagementService.getAll();
+    private List<JsonObject> getAllCatalogs(String partnerId, Map<String, String> partnerProperties){
+        List<? extends DataAsset> allDatasets = dataManagementService.getAll(partnerProperties);
         List<JsonObject> catalogs = new ArrayList<>();
 
         for (DataAsset dataset : allDatasets) {
@@ -131,7 +132,7 @@ public class DspCatalogService {
      * @param partnerId the partner
      * @return the catalog
      */
-    public JsonObject getFullCatalog(String partnerId) {
-        return buildFinalCatalogResponse(getAllCatalogs(partnerId));
+    public JsonObject getFullCatalog(String partnerId, Map<String, String> partnerProperties) {
+        return buildFinalCatalogResponse(getAllCatalogs(partnerId, partnerProperties));
     }
 }

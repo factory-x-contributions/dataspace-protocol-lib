@@ -25,6 +25,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -55,18 +56,19 @@ public class DspTransferController {
      * This starts the process for the consumer to request data from the provider.
      *
      * @param requestBody - the request body of the incoming transfer message
-     * @param authHeader  - the Authorization header value of the incoming message
+     * @param authString  - the Authorization header value of the incoming message
      * @return - a response indicating the initiation status of the transfer process
      */
     @PostMapping("${org.factoryx.library.dspapiprefix:/dsp}/transfers/request")
     public ResponseEntity<byte[]> createPullTransferProcess(@RequestBody String requestBody,
-                                                            @RequestHeader("Authorization") String authHeader) {
+                                                            @RequestHeader("Authorization") String authString) {
         try {
-            String partnerId = dspTokenValidationService.validateToken(authHeader);
+            Map<String, String> tokenValidationResult = dspTokenValidationService.validateToken(authString);
+            String partnerId = tokenValidationResult.get(DspTokenValidationService.ReservedKeys.partnerId.toString());
             if (partnerId == null) {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
             }
-            ResponseRecord responseRecord = dspTransferService.handleNewTransfer(requestBody, partnerId);
+            ResponseRecord responseRecord = dspTransferService.handleNewTransfer(requestBody, partnerId, tokenValidationResult);
             return ResponseEntity.status(responseRecord.statusCode()).body(responseRecord.responseBody());
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
@@ -77,7 +79,8 @@ public class DspTransferController {
     public ResponseEntity<byte[]> completeTransfer(@RequestBody String requestBody,
                                                    @RequestHeader("Authorization") String authString, @PathVariable("providerPid") UUID providerPid) {
         try {
-            String partnerId = dspTokenValidationService.validateToken(authString);
+            Map<String, String> tokenValidationResult = dspTokenValidationService.validateToken(authString);
+            String partnerId = tokenValidationResult.get(DspTokenValidationService.ReservedKeys.partnerId.toString());
             if (partnerId == null) {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
             }
@@ -94,16 +97,17 @@ public class DspTransferController {
      *
      * @param grantType   - the type of grant
      * @param refreshToken - the refresh token
-     * @param authToken  - the Authorization header value
+     * @param authString  - the Authorization header value
      * @return - a response containing the new token
      */
     @PostMapping("${org.factoryx.library.dspapiprefix:/dsp}/transfers/refresh")
     public ResponseEntity<byte[]> refreshToken(
             @RequestParam(name = "grant_type", required = false) String grantType,
             @RequestParam(name = "refresh_token", required = false) String refreshToken,
-            @RequestHeader("Authorization") String authToken) {
+            @RequestHeader("Authorization") String authString) {
         try {
-            String partnerId = dspTokenValidationService.validateToken(authToken);
+            Map<String, String> tokenValidationResult = dspTokenValidationService.validateToken(authString);
+            String partnerId = tokenValidationResult.get(DspTokenValidationService.ReservedKeys.partnerId.toString());
             if (partnerId == null) {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
             }

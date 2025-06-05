@@ -34,6 +34,7 @@ import org.springframework.web.client.RestClient;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 
@@ -85,7 +86,7 @@ public class DspTransferService {
      * @param partnerId - the id of the requesting party as retrieved from the HTTP auth token
      * @return - a response indicating the initiation status of the transfer process
      */
-    public ResponseRecord handleNewTransfer(String requestBody, String partnerId) {
+    public ResponseRecord handleNewTransfer(String requestBody, String partnerId, Map<String, String> partnerProperties) {
         JsonObject requestJson = parseAndExpand(requestBody);
         log.info("RequestJson: {}", requestJson);
         String consumerPid = requestJson.getJsonArray(DSPACE_NAMESPACE + "consumerPid").getJsonObject(0)
@@ -129,7 +130,7 @@ public class DspTransferService {
         }
 
         log.info("Received transfer request for datasetId: {}", datasetId);
-        DataAsset dataset = dataManagementService.getById(datasetId);
+        DataAsset dataset = dataManagementService.getByIdForProperties(datasetId, partnerProperties);
         if (dataset == null) {
             log.warn("Unknown dataset id {} for transfer record", datasetId);
             return abortTransferWithBadRequest(newRecord, "Unknown dataset");
@@ -205,7 +206,6 @@ public class DspTransferService {
      * /dsp/transfers/refresh endpoint.
      *
      * @param refreshToken - the refresh token
-     * @param partnerId - the id of the requesting party as retrieved from the HTTP auth token
      * @return - a response containing the new access token and refresh token
      */
     public ResponseRecord handleRefreshTokenRequest(String refreshToken) {

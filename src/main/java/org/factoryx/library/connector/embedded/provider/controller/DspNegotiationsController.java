@@ -24,6 +24,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -53,12 +54,13 @@ public class DspNegotiationsController {
     public ResponseEntity<byte[]> postNegotiationsNewRequestController(@RequestBody String stringBody,
                                                                        @RequestHeader("Authorization") String authString) {
         try {
-            String partnerId = dspTokenValidationService.validateToken(authString);
+            Map<String, String> tokenValidationResult = dspTokenValidationService.validateToken(authString);
+            String partnerId = tokenValidationResult.get(DspTokenValidationService.ReservedKeys.partnerId.toString());
             if (partnerId == null) {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
             }
 
-            ResponseRecord responseRecord = dspNegotiationService.handleNewNegotiation(stringBody, partnerId);
+            ResponseRecord responseRecord = dspNegotiationService.handleNewNegotiation(stringBody, partnerId, tokenValidationResult);
             return ResponseEntity.status(responseRecord.statusCode()).body(responseRecord.responseBody());
         } catch (Exception e) {
             return ResponseEntity.status(401).build();
@@ -79,7 +81,8 @@ public class DspNegotiationsController {
                                                                          @RequestHeader("Authorization") String authString,
                                                                          @PathVariable("providerPid") UUID providerPid) {
         try {
-            String partnerId = dspTokenValidationService.validateToken(authString);
+            Map<String, String> tokenValidationResult = dspTokenValidationService.validateToken(authString);
+            String partnerId = tokenValidationResult.get(DspTokenValidationService.ReservedKeys.partnerId.toString());
             if (partnerId == null) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Unauthorized request".getBytes());
             }

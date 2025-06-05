@@ -34,6 +34,7 @@ import org.springframework.web.client.RestClient;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 
@@ -84,10 +85,8 @@ public class DspNegotiationService {
      * @param partnerId - the id of the requesting party as retrieved from the HTTP auth token
      * @return - a response ACK-body and code 201, if successful
      */
-    public ResponseRecord handleNewNegotiation(String requestBody, String partnerId) {
+    public ResponseRecord handleNewNegotiation(String requestBody, String partnerId, Map<String, String> partnerProperties) {
         JsonObject requestJson = parseAndExpand(requestBody);
-        log.info("RAW REQUEST: {}", prettyPrint(requestBody));
-        log.info("Expanded REQUEST: {}", prettyPrint(requestJson));
         String consumerPid, messageType, partnerDspUrl, targetAssetId;
         JsonObject offer;
         int offerSize;
@@ -121,7 +120,7 @@ public class DspNegotiationService {
 
         try {
             UUID assetId = UUID.fromString(targetAssetId);
-            if (dataManagementService.getById(assetId) == null) {
+            if (dataManagementService.getByIdForProperties(assetId, partnerProperties) == null) {
                 log.warn("Unknown target asset id: {}", targetAssetId);
                 newRecord = negotiationRecordService.updateNegotiationRecordToState(newRecord.getOwnPid(), NegotiationState.TERMINATED);
                 return new ResponseRecord(createErrorResponse(newRecord.getOwnPid().toString(), consumerPid, "ContractNegotiationError",
