@@ -24,7 +24,9 @@ public interface DspTokenValidationService {
      * Validates a token that was received at a DSP protocol endpoint.
      *
      * @param token the received token
-     * @return the id of the sending partner if successful, else null
+     * @return a mapping containing the partnerId (if validated successfully), and optionally the partner's credentials
+     *         and further optionally additional properties of that partner.
+     *
      */
     Map<String, String> validateToken(String token);
 
