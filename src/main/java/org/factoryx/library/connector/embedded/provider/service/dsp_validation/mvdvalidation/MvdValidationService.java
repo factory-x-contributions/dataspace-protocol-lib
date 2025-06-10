@@ -95,6 +95,9 @@ public class MvdValidationService implements DspTokenValidationService {
     public Map<String, String> validateToken(String token) {
         try {
             log.info("Incoming token: \n{}", token);
+            if ("Bearer ".equalsIgnoreCase(token.substring(0, 7))) {
+                token = token.substring(7);
+            }
             SignedJWT jwt = SignedJWT.parse(token);
             var claims = jwt.getJWTClaimsSet();
             String partnerDid = claims.getStringClaim("sub");

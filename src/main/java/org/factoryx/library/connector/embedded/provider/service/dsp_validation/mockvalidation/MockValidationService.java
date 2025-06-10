@@ -39,6 +39,9 @@ public class MockValidationService implements DspTokenValidationService {
     @Override
     public Map<String, String> validateToken(String token) {
         try {
+            if ("Bearer ".equalsIgnoreCase(token.substring(0, 7))) {
+                token = token.substring(7);
+            }
             var authJson = JsonUtils.parse(token);
             String clientId = authJson.getString("clientId");
             String audience = authJson.getString("audience");
