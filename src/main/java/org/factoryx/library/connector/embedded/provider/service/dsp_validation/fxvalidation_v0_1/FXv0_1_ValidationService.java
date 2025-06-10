@@ -118,10 +118,10 @@ public class FXv0_1_ValidationService implements DspTokenValidationService {
                         ReservedKeys.credentials.toString(), "dataspacemember");
             }
             log.warn("Signature check: {}, membership check: {}, basic check: {}", signatureCheckResult, membershipCheck, tokenBasicCheckResult);
-            return null;
+            return Map.of();
         } catch (Exception e) {
             log.error("Failure while validating token {}", token, e);
-            return null;
+            return Map.of();
         }
     }
 

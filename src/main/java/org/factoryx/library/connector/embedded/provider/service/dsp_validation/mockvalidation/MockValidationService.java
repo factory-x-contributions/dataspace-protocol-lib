@@ -49,11 +49,11 @@ public class MockValidationService implements DspTokenValidationService {
                 return Map.of(ReservedKeys.partnerId.toString(), clientId,
                         ReservedKeys.credentials.toString(), "dataspacemember");
             } else {
-                return null;
+                return Map.of();
             }
         } catch (Exception e) {
             log.error("Failure while validating token {}", token, e);
-            return null;
+            return Map.of();
         }
     }
 }
