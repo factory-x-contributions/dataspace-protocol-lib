@@ -127,6 +127,6 @@ public class FXv0_1_TokenProviderService implements DspTokenProviderService {
                 })
                 .body(String.class);
         var stsResponseObject = JsonUtils.parse(stsResponse);
-        return stsResponseObject.getString("access_token");
+        return "Bearer " + stsResponseObject.getString("access_token");
     }
 }
