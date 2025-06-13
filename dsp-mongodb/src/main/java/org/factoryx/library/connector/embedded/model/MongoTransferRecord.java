@@ -1,40 +1,22 @@
-/*
- * Copyright (c) 2024. Fraunhofer-Gesellschaft zur Foerderung der angewandten Forschung e.V. (represented by Fraunhofer ISST)
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- */
-
-package org.factoryx.library.connector.embedded.provider.model.negotiation;
+package org.factoryx.library.connector.embedded.model;
 
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
+import org.factoryx.library.connector.embedded.provider.model.negotiation.NegotiationState;
+import org.factoryx.library.connector.embedded.provider.model.transfer.TransferRecord;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
 
-import java.util.Objects;
 import java.util.UUID;
 
 @Setter
 @Getter
 @Slf4j
 @ToString
-/**
- * Entity class that represents a DSP negotiation
- *
- * @author eschrewe
- *
- */
-public class NegotiationRecord {
+@Document("transfer_records")
+public class MongoTransferRecord extends TransferRecord {
     // Initial attributes (these are not expected to change after the negotiation has started):
 
     /**
@@ -42,6 +24,7 @@ public class NegotiationRecord {
      * <p>
      * Is always assigned by the service. Never set manually!
      */
+    @Id
     private UUID ownPid;
     /**
      * The process id, under which the other partner refers to
@@ -76,17 +59,5 @@ public class NegotiationRecord {
      * Is always assigned by the service. Never set manually!
      */
     private UUID contractId;
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof NegotiationRecord that)) return false;
-        return Objects.equals(ownPid, that.ownPid);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hashCode(ownPid);
-    }
 
 }

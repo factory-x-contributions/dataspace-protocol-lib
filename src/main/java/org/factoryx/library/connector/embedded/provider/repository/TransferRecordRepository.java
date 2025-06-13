@@ -17,15 +17,14 @@
 package org.factoryx.library.connector.embedded.provider.repository;
 
 import org.factoryx.library.connector.embedded.provider.model.transfer.TransferRecord;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
+import org.springframework.data.repository.ListCrudRepository;
 
 import java.util.UUID;
-@Repository
 /**
  * Repository type for persisting TransferRecord entities
  *
  * @author dalmasoud
  */
-public interface TransferRecordRepository extends JpaRepository<TransferRecord, UUID> {
+public interface TransferRecordRepository extends ListCrudRepository<TransferRecord, UUID> {
+
 }

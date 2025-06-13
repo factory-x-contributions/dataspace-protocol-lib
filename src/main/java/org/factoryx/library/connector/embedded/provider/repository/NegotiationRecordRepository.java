@@ -17,19 +17,17 @@
 package org.factoryx.library.connector.embedded.provider.repository;
 
 import org.factoryx.library.connector.embedded.provider.model.negotiation.NegotiationRecord;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
+import org.springframework.data.repository.ListCrudRepository;
 
 import java.util.List;
 import java.util.UUID;
 
 
-@Repository
 /**
  * Repository type for persisting NegotiationRecord entities
  *
  * @author eschrewe
  */
-public interface NegotiationRecordRepository extends JpaRepository<NegotiationRecord, UUID> {
+public interface NegotiationRecordRepository extends ListCrudRepository<NegotiationRecord, UUID> {
     List<NegotiationRecord> findAllByContractId(UUID contractId);
 }
