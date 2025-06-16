@@ -47,9 +47,11 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 public class AuthorizationService {
 
     private final long tokenValidityInMilliSeconds = 1000L * 60 * 5; // five minutes
+    private final long refreshTokenValidityInMilliSeconds = 1000L * 60 * 30; // thirty minutes
     private final Duration keyRotationInterval = Duration.ofHours(1); // must be larger than token validity
     public final static String CONTRACT_ID = "cid";
     public final static String DATA_ADDRESS = "dad";
+    public final static String TOKEN = "token";
     private final EnvService envService;
 
     private JWSSigner signer;
@@ -88,22 +90,7 @@ public class AuthorizationService {
      * @return the generated JWT token
      */
     public String issueDataAccessToken(String cid, String dad) {
-        lock.writeLock().lock();
-        try {
-            try {
-                if (LocalDateTime.now().isAfter(signerInitializedAt.plus(keyRotationInterval))) {
-                    String secretString = generateSecretKey();
-                    signer = new MACSigner(secretString);
-                    previousVerifier = verifier;
-                    verifier = new MACVerifier(secretString);
-                    signerInitializedAt = LocalDateTime.now();
-                }
-            } catch (JOSEException e) {
-                throw new RuntimeException("Error rotating keys", e);
-            }
-        } finally {
-            lock.writeLock().unlock();
-        }
+        rotateKeys();
 
         lock.readLock().lock();
         try {
@@ -118,8 +105,8 @@ public class AuthorizationService {
 
             SignedJWT signedJWT = new SignedJWT(new JWSHeader(JWSAlgorithm.HS256), claimsSet);
             signedJWT.sign(signer);
-            return signedJWT.serialize();
 
+            return signedJWT.serialize();
         } catch (JOSEException e) {
             throw new RuntimeException("Error signing JWT", e);
         } finally {
@@ -162,4 +149,59 @@ public class AuthorizationService {
         }
     }
 
+    /**
+     * Issues a refresh token for the given client ID.
+     * 
+     * @param accessToken the access token associated with the refresh token
+     * @param partnerId the ID of the partner requesting the refresh token
+     * @return the refresh token
+     */
+    public String issueRefreshToken(String accessToken, String partnerId) {
+        rotateKeys();
+        lock.readLock().lock();
+        try {
+            long now = System.currentTimeMillis();
+
+            String issuerId = envService.getSingleAssetReadOnlyDataAccessIssuer();
+            JWTClaimsSet claimsSet = new JWTClaimsSet.Builder()
+                    .issuer(issuerId)
+                    .subject(partnerId)
+                    .claim(TOKEN, accessToken)
+                    .issueTime(new Date(now))
+                    .expirationTime(new Date(now + refreshTokenValidityInMilliSeconds))
+                    .build();
+
+            SignedJWT signedJWT = new SignedJWT(new JWSHeader(JWSAlgorithm.HS256), claimsSet);
+            signedJWT.sign(signer);
+
+            return signedJWT.serialize();
+        } catch (JOSEException e) {
+            throw new RuntimeException("Error signing refresh token", e);
+        } finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    /**
+     * Rotates the keys used for signing and verifying JWT tokens if the key
+     * rotation interval has passed.
+     */
+    private void rotateKeys() {
+        lock.writeLock().lock();
+        try {
+            try {
+                if (LocalDateTime.now().isAfter(signerInitializedAt.plus(keyRotationInterval))) {
+                    String secretString = generateSecretKey();
+                    signer = new MACSigner(secretString);
+                    previousVerifier = verifier;
+                    verifier = new MACVerifier(secretString);
+                    signerInitializedAt = LocalDateTime.now();
+                }
+            } catch (JOSEException e) {
+                throw new RuntimeException("Error rotating keys", e);
+            }
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
 }

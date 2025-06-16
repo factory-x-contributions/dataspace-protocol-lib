@@ -14,7 +14,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-package org.factoryx.library.connector.embedded.provider.service.dsp_validation.mvdvalidation;
+package org.factoryx.library.connector.embedded.provider.service.dsp_validation.fxvalidation_v0_1;
 
 import jakarta.json.JsonObject;
 import lombok.extern.slf4j.Slf4j;
@@ -38,22 +38,22 @@ import static org.factoryx.library.connector.embedded.provider.service.helpers.J
 
 @Service
 @Slf4j
-@ConditionalOnProperty(name = "org.factoryx.library.validationservice", havingValue = "mvd")
-public class MvdTokenProviderService implements DspTokenProviderService {
+@ConditionalOnProperty(name = "org.factoryx.library.validationservice", havingValue = "fxv0_1")
+public class FXv0_1_TokenProviderService implements DspTokenProviderService {
 
     private final EnvService envService;
     private final RestClient restClient;
 
-    @Value("${org.factoryx.library.mvd.vaultroottoken:root}")
+    @Value("${org.factoryx.library.fxv01.vaultroottoken:root}")
     private String vaultRootToken;
 
-    @Value("${org.factoryx.library.mvd.vaulturl:http://provider-vault:8200}")
+    @Value("${org.factoryx.library.fxv01.vaulturl:http://provider-vault:8200}")
     private String vaultBaseUrl;
 
-    @Value("${org.factoryx.library.mvd.vaultsecretalias:did%3Aweb%3Aprovider-identityhub%253A7083%3Aprovider-sts-client-secret}")
+    @Value("${org.factoryx.library.fxv01.vaultsecretalias:did%3Aweb%3Aprovider-identityhub%253A7083%3Aprovider-sts-client-secret}")
     private String vaultSecretAlias;
 
-    @Value("${org.factoryx.library.mvd.ststokenurl:http://provider-sts-service:8082/api/sts/token}")
+    @Value("${org.factoryx.library.fxv01.ststokenurl:http://provider-sts-service:8082/api/sts/token}")
     private String stsTokenUrl;
 
     /**
@@ -61,7 +61,7 @@ public class MvdTokenProviderService implements DspTokenProviderService {
      */
     private String stsSecret;
 
-    public MvdTokenProviderService(EnvService envService, RestClient restClient) {
+    public FXv0_1_TokenProviderService(EnvService envService, RestClient restClient) {
         this.envService = envService;
         this.restClient = restClient;
     }
@@ -79,7 +79,7 @@ public class MvdTokenProviderService implements DspTokenProviderService {
     private String provideTokenForPartner(String partnerDid) {
         return obtainSelfSignedSignatureFromSTS(partnerDid,
                 List.of("bearer_access_scope",
-                        "org.eclipse.edc.vc.type:MembershipCredential:read org.eclipse.edc.vc.type:DataProcessorCredential:read"));
+                        "org.eclipse.edc.vc.type:MembershipCredential:read"));
     }
 
     /**

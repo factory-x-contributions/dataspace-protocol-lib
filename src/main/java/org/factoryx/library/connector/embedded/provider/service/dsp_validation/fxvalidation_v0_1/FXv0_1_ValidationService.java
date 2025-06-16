@@ -14,7 +14,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-package org.factoryx.library.connector.embedded.provider.service.dsp_validation.mvdvalidation;
+package org.factoryx.library.connector.embedded.provider.service.dsp_validation.fxvalidation_v0_1;
 
 import com.nimbusds.jose.JWSVerifier;
 import com.nimbusds.jose.crypto.ECDSAVerifier;
@@ -48,8 +48,8 @@ import static org.factoryx.library.connector.embedded.provider.service.helpers.J
 
 @Service
 @Slf4j
-@ConditionalOnProperty(name = "org.factoryx.library.validationservice", havingValue = "mvd")
-public class MvdValidationService implements DspTokenValidationService {
+@ConditionalOnProperty(name = "org.factoryx.library.validationservice", havingValue = "fxv0_1")
+public class FXv0_1_ValidationService implements DspTokenValidationService {
 
     /**
      * Cache for Did-documents
@@ -78,17 +78,17 @@ public class MvdValidationService implements DspTokenValidationService {
      */
     private final HashMap<String, HashMap<String, JWSVerifier>> knownJwsVerifiers = new HashMap<>();
 
-    @Value("${org.factoryx.library.mvd.trustedissuer:did:web:dataspace-issuer}")
+    @Value("${org.factoryx.library.fxv01.trustedissuer:did:web:dataspace-issuer}")
     private String TRUSTED_ISSUER;
 
     private final RestClient restClient;
     private final EnvService envService;
-    private final MvdTokenProviderService mvdTokenProviderService;
+    private final FXv0_1_TokenProviderService fXv01TokenProviderService;
 
-    public MvdValidationService(RestClient restClient, EnvService envService, MvdTokenProviderService mvdTokenProviderService) {
+    public FXv0_1_ValidationService(RestClient restClient, EnvService envService, FXv0_1_TokenProviderService fXv01TokenProviderService) {
         this.restClient = restClient;
         this.envService = envService;
-        this.mvdTokenProviderService = mvdTokenProviderService;
+        this.fXv01TokenProviderService = fXv01TokenProviderService;
     }
 
     @Override
@@ -109,7 +109,7 @@ public class MvdValidationService implements DspTokenValidationService {
             boolean signatureCheckResult = verifyTokenSignature(jwt, partnerDid);
             boolean tokenBasicCheckResult = basicValidation(jwt);
 
-            String selfSignedTokenForPartnerCredentialService = mvdTokenProviderService.obtainSelfSignedSignatureFromSTS(
+            String selfSignedTokenForPartnerCredentialService = fXv01TokenProviderService.obtainSelfSignedSignatureFromSTS(
                     partnerDid, List.of("token", accessTokenForPartnerCredentialService));
 
             boolean membershipCheck = checkMembershipVerifiablePresentation(selfSignedTokenForPartnerCredentialService, partnerDid);
@@ -344,9 +344,8 @@ public class MvdValidationService implements DspTokenValidationService {
                 log.info("VC Payload: \n{}", prettyPrint(vcPayloadObject));
                 JsonObject credentialSubject = vcPayloadObject.getJsonObject("vc").getJsonObject("credentialSubject");
                 String subjectId = credentialSubject.getString("id");
-                JsonObject membershipObject = credentialSubject.getJsonObject("membership");
-                String membershipType = membershipObject.getString("membershipType");
-                if (subjectId.equals(partnerDid) && "FullMember".equals(membershipType)) {
+                String certificationType = credentialSubject.getString("certificationType");
+                if (subjectId.equals(partnerDid) && "MyCertification".equals(certificationType)) {
                     log.info("Membership successfully confirmed!");
                     return true;
                 }

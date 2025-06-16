@@ -23,6 +23,8 @@ import org.factoryx.library.connector.embedded.provider.service.helpers.JsonUtil
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
+import java.util.Map;
+
 @Service
 @Slf4j
 @ConditionalOnProperty(name = "org.factoryx.library.validationservice", havingValue = "mock", matchIfMissing = true)
@@ -35,19 +37,23 @@ public class MockValidationService implements DspTokenValidationService {
     }
 
     @Override
-    public String validateToken(String token) {
+    public Map<String, String> validateToken(String token) {
         try {
+            if ("Bearer ".equalsIgnoreCase(token.substring(0, 7))) {
+                token = token.substring(7);
+            }
             var authJson = JsonUtils.parse(token);
             String clientId = authJson.getString("clientId");
             String audience = authJson.getString("audience");
             if (envService.getOwnDspUrl().equals(audience)) {
-                return clientId;
+                return Map.of(ReservedKeys.partnerId.toString(), clientId,
+                        ReservedKeys.credentials.toString(), "dataspacemember");
             } else {
-                return null;
+                return Map.of();
             }
         } catch (Exception e) {
             log.error("Failure while validating token {}", token, e);
-            return null;
+            return Map.of();
         }
     }
 }
