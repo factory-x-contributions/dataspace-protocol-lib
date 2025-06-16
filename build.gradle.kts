@@ -39,7 +39,7 @@ dependencies {
     implementation("com.apicatalog:titanium-json-ld:1.6.0")
 
     implementation("com.nimbusds:nimbus-jose-jwt:10.3")
-    implementation("com.google.crypto.tink:tink:1.16.0")
+    implementation("com.google.crypto.tink:tink:1.17.0")
 
     compileOnly("org.projectlombok:lombok")
     annotationProcessor("org.projectlombok:lombok")
