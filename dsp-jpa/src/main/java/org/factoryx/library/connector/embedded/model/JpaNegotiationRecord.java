@@ -1,13 +1,14 @@
 package org.factoryx.library.connector.embedded.model;
 
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.Id;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import org.factoryx.library.connector.embedded.provider.model.negotiation.NegotiationRecord;
 import org.factoryx.library.connector.embedded.provider.model.negotiation.NegotiationState;
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.util.UUID;
 
@@ -15,14 +16,17 @@ import java.util.UUID;
 @Setter
 @Slf4j
 @ToString
-@Document("negotiation_records")
-public class MongoNegotiationRecord extends NegotiationRecord {
+@Entity
+public class JpaNegotiationRecord extends NegotiationRecord {
     // Initial attributes (these are not expected to change after the negotiation has started):
 
     /**
      * The process id, under which we ourselves identify an ongoing negotiation
+     * <p>
+     * Is always assigned by the service. Never set manually!
      */
     @Id
+    @GeneratedValue()
     private UUID ownPid;
     /**
      * The process id, under which the other partner refers to
@@ -57,4 +61,5 @@ public class MongoNegotiationRecord extends NegotiationRecord {
      * Is always assigned by the service. Never set manually!
      */
     private UUID contractId;
+
 }

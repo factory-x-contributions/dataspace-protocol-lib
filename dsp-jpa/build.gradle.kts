@@ -20,7 +20,7 @@ repositories {
 }
 
 dependencies {
-    implementation("org.springframework.boot:spring-boot-starter-data-mongodb")
+    implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation(project(":dsp-lib"))
     implementation("org.springframework.boot:spring-boot-starter")
 
@@ -28,8 +28,6 @@ dependencies {
 
     compileOnly("org.projectlombok:lombok")
     annotationProcessor("org.projectlombok:lombok")
-
-
 
     testImplementation(platform("org.junit:junit-bom:5.10.0"))
     testImplementation("org.junit.jupiter:junit-jupiter")
@@ -43,7 +41,7 @@ publishing {
     publications {
         create<MavenPublication>("maven") {
             groupId = group.toString()
-            artifactId = "dsp-mongodb"
+            artifactId = "dsp-jpa"
             version = project.version.toString()
             from(components["java"])
         }

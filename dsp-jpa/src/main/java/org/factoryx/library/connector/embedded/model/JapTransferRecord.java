@@ -1,27 +1,30 @@
 package org.factoryx.library.connector.embedded.model;
 
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.Id;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
-
 import org.factoryx.library.connector.embedded.provider.model.transfer.TransferRecord;
 import org.factoryx.library.connector.embedded.provider.model.transfer.TransferState;
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.util.UUID;
 
-@Setter
 @Getter
+@Setter
 @Slf4j
 @ToString
-@Document("transfer_records")
-public class MongoTransferRecord extends TransferRecord {
+@Entity
+public class JapTransferRecord extends TransferRecord {
     /**
      * The transfer id on the Provider side (our side)
+     * <p>
+     * Is always assigned by the service. Never set manually!
      */
     @Id
+    @GeneratedValue()
     private UUID ownPid;
 
     /**
@@ -68,5 +71,4 @@ public class MongoTransferRecord extends TransferRecord {
      * The current state of the transfer
      */
     private TransferState state;
-
 }
