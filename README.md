@@ -45,9 +45,9 @@ fitting JDBC drivers for the database system you have chosen.
 
 #### Implementations you need to provide
 In order to couple your importing Spring Boot app with the library, you need to create an "@Entity"-annotated class that 
-implements the org.factoryx.library.connector.embedded.provider.interfaces.DataAsset interface. 
+implements the interfaces.org.factoryx.library.connector.embedded.DataAsset interface. 
 
-And you need to create an implementation of the org.factoryx.library.connector.embedded.provider.interfaces.DataAssetManagementService, that 
+And you need to create an implementation of the interfaces.org.factoryx.library.connector.embedded.DataAssetManagementService, that 
 is annotated as "@Service". This implementation is responsible for providing access to the data objects that you want to put 
 on offer in the dataspace. 
 
