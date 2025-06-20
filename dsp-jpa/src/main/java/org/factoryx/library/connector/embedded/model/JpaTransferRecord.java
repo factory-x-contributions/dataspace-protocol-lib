@@ -9,6 +9,7 @@ import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import org.factoryx.library.connector.embedded.provider.model.transfer.TransferRecord;
 import org.factoryx.library.connector.embedded.provider.model.transfer.TransferState;
+import org.springframework.context.annotation.Profile;
 
 import java.util.UUID;
 
@@ -17,7 +18,8 @@ import java.util.UUID;
 @Slf4j
 @ToString
 @Entity
-public class JapTransferRecord extends TransferRecord {
+@Profile("jpa")
+public class JpaTransferRecord extends TransferRecord {
     /**
      * The transfer id on the Provider side (our side)
      * <p>

@@ -38,14 +38,17 @@ public class TransferRecordService {
 
     private final TransferRecordRepository repository;
     private final ContractRecordService contactRecordService;
+    private final TransferRecordFactory recordFactory;
     private final EnvService envService;
 
     public TransferRecordService(TransferRecordRepository repository,
-                                 ContractRecordService contractRecordService, EnvService envService) {
+                                 ContractRecordService contractRecordService, TransferRecordFactory recordFactory, EnvService envService) {
         this.repository = repository;
         this.contactRecordService = contractRecordService;
+        this.recordFactory = recordFactory;
         this.envService = envService;
     }
+
 
     /**
      * This method stores a new transfer to the database. Our own
@@ -59,7 +62,7 @@ public class TransferRecordService {
      */
     public TransferRecord createTransferRecord(String consumerPid, String partnerId, String partnerDspUrl,
                                                String agreementId) {
-        TransferRecord transferRecord = new TransferRecord();
+        TransferRecord transferRecord = recordFactory.create();
         transferRecord.setConsumerPid(consumerPid);
         transferRecord.setPartnerId(partnerId);
         transferRecord.setPartnerDspUrl(partnerDspUrl);

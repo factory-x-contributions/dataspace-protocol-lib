@@ -9,6 +9,7 @@ import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import org.factoryx.library.connector.embedded.provider.model.negotiation.NegotiationRecord;
 import org.factoryx.library.connector.embedded.provider.model.negotiation.NegotiationState;
+import org.springframework.context.annotation.Profile;
 
 import java.util.UUID;
 
@@ -17,6 +18,7 @@ import java.util.UUID;
 @Slf4j
 @ToString
 @Entity
+@Profile("jpa")
 public class JpaNegotiationRecord extends NegotiationRecord {
     // Initial attributes (these are not expected to change after the negotiation has started):
 

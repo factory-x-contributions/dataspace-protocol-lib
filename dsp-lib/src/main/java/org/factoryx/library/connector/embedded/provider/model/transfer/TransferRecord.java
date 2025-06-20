@@ -31,7 +31,7 @@ import java.util.UUID;
 @Setter
 @Getter
 @Slf4j
-public class TransferRecord {
+public abstract class TransferRecord {
     /**
      * The transfer id on the Provider side (our side)
      * <p>

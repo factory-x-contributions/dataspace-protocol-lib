@@ -34,7 +34,7 @@ import java.util.UUID;
  * @author eschrewe
  *
  */
-public class NegotiationRecord {
+public abstract class NegotiationRecord {
     // Initial attributes (these are not expected to change after the negotiation has started):
 
     /**

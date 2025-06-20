@@ -35,9 +35,11 @@ import java.util.UUID;
 public class NegotiationRecordService implements ContractRecordService {
 
     private final NegotiationRecordRepository repository;
+    private final NegotiationRecordFactory recordFactory;
 
-    public NegotiationRecordService(NegotiationRecordRepository repository) {
+    public NegotiationRecordService(NegotiationRecordRepository repository, NegotiationRecordFactory recordFactory) {
         this.repository = repository;
+        this.recordFactory = recordFactory;
     }
 
     /**
@@ -53,7 +55,7 @@ public class NegotiationRecordService implements ContractRecordService {
      */
     public NegotiationRecord createNegotiationRecord(String consumerPid, String partnerId, String partnerDspUrl,
                                                      String targetAssetId) {
-        NegotiationRecord negotiationRecord = new NegotiationRecord();
+        NegotiationRecord negotiationRecord = recordFactory.create();
         negotiationRecord.setConsumerPid(consumerPid);
         negotiationRecord.setPartnerId(partnerId);
         negotiationRecord.setPartnerDspUrl(partnerDspUrl);
