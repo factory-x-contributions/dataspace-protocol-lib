@@ -17,7 +17,6 @@
 package org.factoryx.library.connector.embedded.provider.repository;
 
 import org.factoryx.library.connector.embedded.provider.model.transfer.TransferRecord;
-import org.springframework.data.repository.ListCrudRepository;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -31,5 +30,4 @@ public interface TransferRecordRepository {
     Optional<? extends TransferRecord> findById(UUID id);
 
     TransferRecord save(TransferRecord record);
-
 }

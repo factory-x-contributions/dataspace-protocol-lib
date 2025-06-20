@@ -20,6 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.factoryx.library.connector.embedded.provider.model.negotiation.NegotiationRecord;
 import org.factoryx.library.connector.embedded.provider.model.negotiation.NegotiationState;
 import org.factoryx.library.connector.embedded.provider.repository.NegotiationRecordRepository;
+import org.factoryx.library.connector.embedded.provider.repository.NegotiationRecordRepositoryFactory;
 import org.springframework.stereotype.Service;
 
 import java.util.UUID;
@@ -34,12 +35,16 @@ import java.util.UUID;
  */
 public class NegotiationRecordService implements ContractRecordService {
 
-    private final NegotiationRecordRepository repository;
+    private final NegotiationRecordRepositoryFactory repositoryFactory;
     private final NegotiationRecordFactory recordFactory;
 
-    public NegotiationRecordService(NegotiationRecordRepository repository, NegotiationRecordFactory recordFactory) {
-        this.repository = repository;
+    public NegotiationRecordService(NegotiationRecordRepositoryFactory repositoryFactory, NegotiationRecordFactory recordFactory) {
+        this.repositoryFactory = repositoryFactory;
         this.recordFactory = recordFactory;
+    }
+
+    private NegotiationRecordRepository getRepository() {
+        return repositoryFactory.getRepository();
     }
 
     /**
@@ -61,7 +66,7 @@ public class NegotiationRecordService implements ContractRecordService {
         negotiationRecord.setPartnerDspUrl(partnerDspUrl);
         negotiationRecord.setTargetAssetId(targetAssetId);
         negotiationRecord.setState(NegotiationState.REQUESTED);
-        return repository.save(negotiationRecord);
+        return getRepository().save(negotiationRecord);
     }
 
     /**
@@ -71,7 +76,7 @@ public class NegotiationRecordService implements ContractRecordService {
      * @return - the NegotiationRecord, if it existed, else null
      */
     public NegotiationRecord findByNegotiationRecordId(UUID negotiationRecordId) {
-        return repository.findById(negotiationRecordId).orElse(null);
+        return getRepository().findById(negotiationRecordId).orElse(null);
     }
 
     /**
@@ -91,11 +96,11 @@ public class NegotiationRecordService implements ContractRecordService {
                 UUID contractId;
                 do {
                     contractId = UUID.randomUUID();
-                } while (!repository.findAllByContractId(contractId).isEmpty());
+                } while (!getRepository().findAllByContractId(contractId).isEmpty());
                 existingRecord.setContractId(contractId);
             }
             existingRecord.setState(newState);
-            return repository.save(existingRecord);
+            return getRepository().save(existingRecord);
         } else {
             log.warn("Update failed, unknown NegotiationRecord id: {}", negotiationRecordId);
             return null;
@@ -104,7 +109,7 @@ public class NegotiationRecordService implements ContractRecordService {
 
     @Override
     public NegotiationRecord findByContractId(UUID contractId) {
-        var result = repository.findAllByContractId(contractId);
+        var result = getRepository().findAllByContractId(contractId);
         if (result.isEmpty()) {
             return null;
         }

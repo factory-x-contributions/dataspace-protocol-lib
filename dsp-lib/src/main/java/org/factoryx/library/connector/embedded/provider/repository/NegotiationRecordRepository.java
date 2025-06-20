@@ -17,7 +17,6 @@
 package org.factoryx.library.connector.embedded.provider.repository;
 
 import org.factoryx.library.connector.embedded.provider.model.negotiation.NegotiationRecord;
-import org.springframework.data.repository.ListCrudRepository;
 
 import java.util.List;
 import java.util.Optional;
@@ -29,17 +28,11 @@ import java.util.UUID;
  *
  * @author eschrewe
  */
-//public interface NegotiationRecordRepository extends ListCrudRepository<NegotiationRecord, UUID> {
-  //  List<NegotiationRecord> findAllByContractId(UUID contractId);
-//}
-
 public interface NegotiationRecordRepository {
+
     List<? extends NegotiationRecord> findAllByContractId(UUID contractId);
 
     NegotiationRecord save(NegotiationRecord record);
 
     Optional<? extends NegotiationRecord> findById(UUID id);
-
-
-    //Optional<? extends NegotiationRecord> findById(UUID id);
 }

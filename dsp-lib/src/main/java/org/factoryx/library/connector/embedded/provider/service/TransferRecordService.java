@@ -21,6 +21,7 @@ import org.factoryx.library.connector.embedded.provider.model.negotiation.Negoti
 import org.factoryx.library.connector.embedded.provider.model.transfer.TransferRecord;
 import org.factoryx.library.connector.embedded.provider.model.transfer.TransferState;
 import org.factoryx.library.connector.embedded.provider.repository.TransferRecordRepository;
+import org.factoryx.library.connector.embedded.provider.repository.TransferRecordRepositoryFactory;
 import org.factoryx.library.connector.embedded.provider.service.helpers.EnvService;
 import org.springframework.stereotype.Service;
 
@@ -36,17 +37,21 @@ import java.util.UUID;
  */
 public class TransferRecordService {
 
-    private final TransferRecordRepository repository;
+    private final TransferRecordRepositoryFactory repositoryFactory;
     private final ContractRecordService contactRecordService;
     private final TransferRecordFactory recordFactory;
     private final EnvService envService;
 
-    public TransferRecordService(TransferRecordRepository repository,
+    public TransferRecordService(TransferRecordRepositoryFactory repositoryFactory,
                                  ContractRecordService contractRecordService, TransferRecordFactory recordFactory, EnvService envService) {
-        this.repository = repository;
+        this.repositoryFactory = repositoryFactory;
         this.contactRecordService = contractRecordService;
         this.recordFactory = recordFactory;
         this.envService = envService;
+    }
+
+    private TransferRecordRepository getRepository() {
+        return repositoryFactory.getRepository();
     }
 
 
@@ -69,7 +74,7 @@ public class TransferRecordService {
         transferRecord.setContractId(agreementId);
         transferRecord.setFormat("HTTP_PULL");
         transferRecord.setState(TransferState.REQUESTED);
-        return repository.save(transferRecord);
+        return getRepository().save(transferRecord);
     }
 
     /**
@@ -79,7 +84,7 @@ public class TransferRecordService {
      * @return - the TransferRecord with the given id
      */
     public TransferRecord findByTransferRecordId(UUID transferRecordId) {
-        return repository.findById(transferRecordId).orElse(null);
+        return getRepository().findById(transferRecordId).orElse(null);
     }
 
     public NegotiationRecord findNegotiationRecordByAggreementId(UUID agreementId) {
@@ -100,7 +105,7 @@ public class TransferRecordService {
             return null;
         }
         transferRecord.setDatasetId(datasetId);
-        return repository.save(transferRecord);
+        return getRepository().save(transferRecord);
     }
 
     /**
@@ -124,7 +129,7 @@ public class TransferRecordService {
         }
 
         transferRecord.setState(newState);
-        return repository.save(transferRecord);
+        return getRepository().save(transferRecord);
     }
 
     /**
@@ -165,6 +170,6 @@ public class TransferRecordService {
         }
         transferRecord.setState(TransferState.STARTED);
         transferRecord.setDatasetAddressUrl(datasetUrl);
-        return repository.save(transferRecord);
+        return getRepository().save(transferRecord);
     }
 }
