@@ -8,6 +8,7 @@ import lombok.Setter;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import org.factoryx.library.connector.embedded.provider.model.transfer.TransferRecord;
+
 import org.factoryx.library.connector.embedded.provider.model.transfer.TransferState;
 import org.springframework.context.annotation.Profile;
 
@@ -72,5 +73,5 @@ public class JpaTransferRecord extends TransferRecord {
     /**
      * The current state of the transfer
      */
-    private TransferState state;
+   private TransferState state;
 }

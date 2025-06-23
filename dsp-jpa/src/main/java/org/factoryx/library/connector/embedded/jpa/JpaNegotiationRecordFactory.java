@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 @Component
 @Profile("jpa")
 public class JpaNegotiationRecordFactory implements NegotiationRecordFactory {
+
     @Override
     public NegotiationRecord create() {
         return new JpaNegotiationRecord();

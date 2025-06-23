@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 @Component
 @Profile("jpa")
 public class JpaTransferRecordFactory implements TransferRecordFactory {
+
     @Override
     public TransferRecord create() {
         return new JpaTransferRecord();

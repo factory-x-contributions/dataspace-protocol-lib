@@ -12,7 +12,7 @@ import java.util.UUID;
 @Repository
 @Profile("jpa")
 public interface JpaTransferRecordRepository extends JpaRepository<JpaTransferRecord, UUID>, TransferRecordRepository {
+
     @Override
     Optional<JpaTransferRecord> findById(UUID id);
-
 }

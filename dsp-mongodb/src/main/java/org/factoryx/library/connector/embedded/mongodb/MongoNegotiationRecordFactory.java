@@ -6,11 +6,16 @@ import org.factoryx.library.connector.embedded.provider.service.NegotiationRecor
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
+import java.util.UUID;
+
 @Component
 @Profile("mongodb")
 public class MongoNegotiationRecordFactory implements NegotiationRecordFactory {
+
     @Override
     public NegotiationRecord create() {
-        return new MongoNegotiationRecord();
+        MongoNegotiationRecord record = new MongoNegotiationRecord();
+        record.setOwnPid(UUID.randomUUID());
+        return record;
     }
 }

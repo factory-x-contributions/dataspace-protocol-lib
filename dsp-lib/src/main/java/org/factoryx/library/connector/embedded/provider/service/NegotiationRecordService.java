@@ -85,8 +85,7 @@ public class NegotiationRecordService implements ContractRecordService {
      * It can be retrieved from the returned NegotiationRecord by then.
      *
      * @param negotiationRecordId - the id of the required NegotiationRecord
-     * @param newState - the state, that this negotiation now has moved into
-     * @return - the updated NegotiationRecord
+     * @param newState - the state, that this negotiation now has moved into* @return - the updated NegotiationRecord
      */
     public NegotiationRecord updateNegotiationRecordToState(UUID negotiationRecordId, NegotiationState newState) {
         NegotiationRecord existingRecord = findByNegotiationRecordId(negotiationRecordId);

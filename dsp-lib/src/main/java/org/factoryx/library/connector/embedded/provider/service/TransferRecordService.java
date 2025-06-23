@@ -38,6 +38,7 @@ import java.util.UUID;
 public class TransferRecordService {
 
     private final TransferRecordRepositoryFactory repositoryFactory;
+
     private final ContractRecordService contactRecordService;
     private final TransferRecordFactory recordFactory;
     private final EnvService envService;

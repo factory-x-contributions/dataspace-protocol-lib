@@ -6,11 +6,16 @@ import org.factoryx.library.connector.embedded.provider.service.TransferRecordFa
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
+import java.util.UUID;
+
 @Component
 @Profile("mongodb")
 public class MongoTransferRecordFactory implements TransferRecordFactory {
+
     @Override
     public TransferRecord create() {
-        return new MongoTransferRecord();
+        MongoTransferRecord record = new MongoTransferRecord();
+        record.setOwnPid(UUID.randomUUID());
+        return record;
     }
 }

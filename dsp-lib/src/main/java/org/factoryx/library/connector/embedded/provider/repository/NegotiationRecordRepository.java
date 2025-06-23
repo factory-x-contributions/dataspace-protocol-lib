@@ -30,7 +30,7 @@ import java.util.UUID;
  */
 public interface NegotiationRecordRepository {
 
-    List<? extends NegotiationRecord> findAllByContractId(UUID contractId);
+    List<NegotiationRecord> findAllByContractId(UUID contractId);
 
     NegotiationRecord save(NegotiationRecord record);
 

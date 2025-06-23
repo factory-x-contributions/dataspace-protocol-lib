@@ -11,6 +11,7 @@ import org.factoryx.library.connector.embedded.provider.model.negotiation.Negoti
 import org.factoryx.library.connector.embedded.provider.model.negotiation.NegotiationState;
 import org.springframework.context.annotation.Profile;
 
+
 import java.util.UUID;
 
 @Getter
@@ -34,23 +35,23 @@ public class JpaNegotiationRecord extends NegotiationRecord {
      * The process id, under which the other partner refers to
      * this negotiation
      */
-    private String consumerPid;
+     private String consumerPid;
     /**
      * The id, under which your partner refers to itself
      */
-    private String partnerId;
+     private String partnerId;
     /**
      * The protocol URL of your partner
      */
-    private String partnerDspUrl;
+     private String partnerDspUrl;
     /**
      * The id of the asset which is targeted by this negotiation
      */
-    private String targetAssetId;
+     private String targetAssetId;
     /**
      * The credentials, which our partner has sent us during this negotiation
      */
-    private String partnerCredentials;
+     private String partnerCredentials;
 
     // Attributes that may be set later:
     /**
@@ -62,6 +63,5 @@ public class JpaNegotiationRecord extends NegotiationRecord {
      * <p>
      * Is always assigned by the service. Never set manually!
      */
-    private UUID contractId;
-
+     private UUID contractId;
 }
