@@ -3,7 +3,7 @@ name: Release Pipeline
 on:
   push:
     branches:
-      - feat/add-release-pipeline
+      - main
 
 jobs:
   release:
