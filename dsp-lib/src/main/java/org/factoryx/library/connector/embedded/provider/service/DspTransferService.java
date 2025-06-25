@@ -109,7 +109,7 @@ public class DspTransferService {
         }
 
         NegotiationRecord negotiationRecord = transferRecordService
-                .findNegotiationRecordByAggreementId(agreementId);
+                .findNegotiationRecordByAgreementId(agreementId);
         if (negotiationRecord == null) {
             log.warn("Unknown negotiation record for transfer process: {}", agreementId);
             return abortTransferWithBadRequest(newRecord, "Unknown agreement ID");

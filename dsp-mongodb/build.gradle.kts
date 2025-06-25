@@ -1,22 +1,22 @@
+val group: String by System.getProperties()
+val libVersion: String by System.getProperties()
+val name = "dataspace-protocol-lib-mongodb"
+
 plugins {
+    val springBootVersion: String by System.getProperties()
+    val springDependencyManagementVersion: String by System.getProperties()
     java
     `maven-publish`
-    id("org.springframework.boot") version "3.4.1"
-    id("io.spring.dependency-management") version "1.1.7"
+    id("org.springframework.boot") version springBootVersion
+    id("io.spring.dependency-management") version springDependencyManagementVersion
 }
 
-group = "org.factoryx.library.connector.embedded"
-version = "0.0.1-SNAPSHOT"
 
 java {
+    val javaVersion: String by System.getProperties()
     toolchain {
-        languageVersion = JavaLanguageVersion.of(21)
+        languageVersion = JavaLanguageVersion.of(Integer.parseInt(javaVersion))
     }
-}
-
-repositories {
-    mavenCentral()
-    mavenLocal()
 }
 
 dependencies {
@@ -24,15 +24,8 @@ dependencies {
     implementation(project(":dsp-lib"))
     implementation("org.springframework.boot:spring-boot-starter")
 
-    implementation("com.apicatalog:titanium-json-ld:1.4.1")
-
     compileOnly("org.projectlombok:lombok")
     annotationProcessor("org.projectlombok:lombok")
-
-
-
-    testImplementation(platform("org.junit:junit-bom:5.10.0"))
-    testImplementation("org.junit.jupiter:junit-jupiter")
 }
 
 tasks.test {
