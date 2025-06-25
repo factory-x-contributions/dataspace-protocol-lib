@@ -17,6 +17,7 @@
 package org.factoryx.library.connector.embedded.provider.interfaces;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -29,17 +30,39 @@ import java.util.UUID;
 public interface DataAssetManagementService {
 
     /**
-     * Retrieve a single DataAsset entity with the given id
+     * Retrieve a single DataAsset entity with the given id.
+     * Attention: This method should only be used by the DataAccess controller since it is skipping any DCP-related
+     * credential information because it assumes that this has already been checked during the DSP
+     * negotiation and transfer flow.
      *
      * @param id The UUID that specifies a DataAsset
      * @return the DataAsset entity
      */
     DataAsset getById(UUID id);
 
+
     /**
-     * Retrieve a list of all available DataAssets
+     * Retrieve a single DataAsset entity with the given id, if the partnerProperties are sufficient.
      *
+     * The use-case specific implementation of this interface can and should create mechanisms to determine
+     * which asset is visible for which kind of partner properties.
+     *
+     * @param id The UUID that specifies a DataAsset
+     * @param partnerProperties The properties of the partner that were found by the DspValidationService in his
+     *                          verifiable credentials
+     * @return the DataAsset entity
+     */
+    DataAsset getByIdForProperties(UUID id, Map<String, String> partnerProperties);
+
+    /**
+     * Retrieve a list of all available DataAssets (except for those where the partnerProperties are insufficient).
+     *
+     * The use-case specific implementation of this interface can and should create mechanisms to determine
+     * which asset is visible for which kind of partner properties.
+     *
+     * @param partnerProperties The properties of the partner that were found by the DspValidationService in his
+     *                          verifiable credentials
      * @return the list of DataAssets
      */
-    List<? extends DataAsset> getAll();
+    List<? extends DataAsset> getAll(Map<String, String> partnerProperties);
 }

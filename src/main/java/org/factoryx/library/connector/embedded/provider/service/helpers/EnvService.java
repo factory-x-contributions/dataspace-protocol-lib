@@ -71,6 +71,10 @@ public class EnvService {
 
     }
 
+    public String getRefreshEndpoint() {
+        return getURLPrefix() + hostName + ":" + serverPort + dspApiPrefix + "/authorization/refresh";
+    }
+
     /**
      * Generates the issuer claim value we expect for read-only transfer tokens
      *

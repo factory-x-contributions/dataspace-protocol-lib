@@ -27,7 +27,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
+import java.util.Map;
 
 @RestController
 @Slf4j
@@ -49,25 +49,26 @@ public class DspCatalogController {
      * Endpoint for requesting the catalog.
      *
      * @param body  the request body as a String
-     * @param token the Authorization header
+     * @param authString the Authorization header
      * @return a ResponseEntity with the JSON response and HTTP status code 200
      */
     @PostMapping("${org.factoryx.library.dspapiprefix:/dsp}/catalog/request")
     public ResponseEntity<String> requestCatalog(@RequestBody(required = false) String body,
-                                                 @RequestHeader(value = "Authorization", required = false) String token) {
+                                                 @RequestHeader(value = "Authorization", required = false) String authString) {
         // Check if body or token is null
-        if (body == null || token == null || token.isEmpty()) {
+        if (body == null || authString == null || authString.isEmpty()) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid request: Body and Authorization token are required.");
         }
 
         try {
             log.info("Starting token validation");
-            String partnerId = dspTokenValidationService.validateToken(token);
+            Map<String, String> tokenValidationResult = dspTokenValidationService.validateToken(authString);
+            String partnerId = tokenValidationResult.get(DspTokenValidationService.ReservedKeys.partnerId.toString());
             log.info("Got Result from token validation: {}", partnerId);
             if (partnerId == null) {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
             }
-            JsonObject jsonResponse = dspCatalogService.getFullCatalog(partnerId);
+            JsonObject jsonResponse = dspCatalogService.getFullCatalog(partnerId, tokenValidationResult);
             return ResponseEntity.status(HttpStatus.OK).body(jsonResponse.toString());
 
         } catch (Exception e) {

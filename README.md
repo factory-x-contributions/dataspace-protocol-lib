@@ -100,6 +100,13 @@ Please note that the DSP protocol URL will be a result of several settings:
 ```
 http<s>://<org.factoryx.library.hostname>:<server.port>/<org.factoryx.library.dspapiprefix>
 ```
+### Running the tests
+This project includes a comprehensive suite of unit tests to ensure the quality and correctness of the library. To run all tests, simply execute:
+
+```
+./gradlew test
+```
+
 
 
 

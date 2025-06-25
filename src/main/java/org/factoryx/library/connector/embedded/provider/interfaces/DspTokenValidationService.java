@@ -16,13 +16,30 @@
 
 package org.factoryx.library.connector.embedded.provider.interfaces;
 
+import java.util.Map;
+
 public interface DspTokenValidationService {
 
     /**
      * Validates a token that was received at a DSP protocol endpoint.
      *
      * @param token the received token
-     * @return the id of the sending partner if successful, else null
+     * @return a mapping containing the partnerId (if validated successfully), and optionally the partner's credentials
+     *         and further optionally additional properties of that partner.
+     *
      */
-    String validateToken(String token);
+    Map<String, String> validateToken(String token);
+
+    enum ReservedKeys {
+        /**
+         * The id of the partner. In case of DCP based authentication, this should be the partner's did:web id.
+         */
+        partnerId,
+
+        /**
+         * The credentials found during the evaluation of the auth token from the partner. It may contain a single
+         * word describing the found credential. Or it may contain a comma-separated list of credentials.
+         */
+        credentials,
+    }
 }
