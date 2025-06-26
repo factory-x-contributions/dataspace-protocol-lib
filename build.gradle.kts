@@ -6,7 +6,7 @@ plugins {
 }
 
 group = "org.factoryx.library.connector.embedded"
-version = "0.0.1-SNAPSHOT"
+version = "0.0.1"
 
 java {
     toolchain {

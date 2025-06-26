@@ -1,6 +1,9 @@
 # Dataspace Protocol Lib
 [![Pipeline](https://github.com/factory-x-contributions/dataspace-protocol-lib/actions/workflows/pipeline.yml/badge.svg?logo=GitHub&style=flat-square)](https://github.com/factory-x-contributions/dataspace-protocol-lib/actions/workflows/pipeline.yml)
 
+## Contributions:
+In order to contribute to the project, please look at the [CONTRIBUTING.md](/CONTRIBUTING.md) file for the contribution guidelines. 
+
 ## Getting started
 
 In order to use this project as a library, we need to make it available for your importing project
@@ -103,6 +106,8 @@ This project includes a comprehensive suite of unit tests to ensure the quality 
 ```
 ./gradlew test
 ```
+
+
 
 
 
