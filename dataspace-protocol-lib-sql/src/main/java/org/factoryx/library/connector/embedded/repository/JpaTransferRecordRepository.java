@@ -14,24 +14,21 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-package org.factoryx.library.connector.embedded.mongodb;
+package org.factoryx.library.connector.embedded.repository;
 
+import org.factoryx.library.connector.embedded.model.JpaTransferRecord;
 import org.factoryx.library.connector.embedded.provider.repository.TransferRecordRepository;
-import org.factoryx.library.connector.embedded.provider.repository.TransferRecordRepositoryFactory;
-import org.factoryx.library.connector.embedded.repository.MongoTransferRecordRepository;
-import org.springframework.stereotype.Component;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
 
-@Component
-public class MongoTransferRecordRepositoryFactory implements TransferRecordRepositoryFactory {
+import java.util.Optional;
+import java.util.UUID;
 
-    private final MongoTransferRecordRepository repository;
+@Repository
+public interface JpaTransferRecordRepository extends JpaRepository<JpaTransferRecord, UUID>, TransferRecordRepository {
 
-    public MongoTransferRecordRepositoryFactory(MongoTransferRecordRepository repository) {
-        this.repository = repository;
-    }
 
     @Override
-    public TransferRecordRepository getRepository() {
-        return repository;
-    }
+    Optional<JpaTransferRecord> findById(UUID id);
+
 }

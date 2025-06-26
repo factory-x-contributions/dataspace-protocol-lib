@@ -14,7 +14,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-/**package org.factoryx.library.connector.embedded.service;
+package org.factoryx.library.connector.embedded.service;
 
 import org.factoryx.library.connector.embedded.provider.model.negotiation.NegotiationRecord;
 import org.factoryx.library.connector.embedded.provider.model.negotiation.NegotiationState;
@@ -27,9 +27,10 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
-import java.util.Collections;
+import java.util.List;
 import java.util.UUID;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.when;
 
@@ -52,12 +53,11 @@ public class ContractRecordServiceTest {
 
         contractRecordService = negotiationRecordService;
 
-        mockRecord = new NegotiationRecord();
+        mockRecord = new NegotiationRecord(){};
         mockRecord.setOwnPid(UUID.randomUUID());
         mockRecord.setContractId(CONTRACT_ID);
         mockRecord.setState(NegotiationState.AGREED);
-        when(repository.findAllByContractId(CONTRACT_ID))
-                .thenReturn(Collections.singletonList(mockRecord));
+        when(repository.findAllByContractId(CONTRACT_ID)).thenReturn((List) List.of(mockRecord));
     }
 
     @Test
@@ -72,4 +72,4 @@ public class ContractRecordServiceTest {
         assertEquals(NegotiationState.AGREED, record.getState(),
                 "NegotiationRecord should be in AGREED state");
     }
-}**/
+}

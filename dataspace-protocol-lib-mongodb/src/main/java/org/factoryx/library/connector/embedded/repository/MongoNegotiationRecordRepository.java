@@ -16,17 +16,23 @@
 
 package org.factoryx.library.connector.embedded.repository;
 
-import org.factoryx.library.connector.embedded.model.JpaTransferRecord;
-import org.factoryx.library.connector.embedded.provider.repository.TransferRecordRepository;
-import org.springframework.data.jpa.repository.JpaRepository;
+import org.factoryx.library.connector.embedded.model.MongoNegotiationRecord;
+import org.factoryx.library.connector.embedded.provider.model.negotiation.NegotiationRecord;
+import org.factoryx.library.connector.embedded.provider.repository.NegotiationRecordRepository;
+import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 @Repository
-public interface JpaTransferRecordRepository extends JpaRepository<JpaTransferRecord, UUID>, TransferRecordRepository {
+public interface MongoNegotiationRecordRepository extends MongoRepository<MongoNegotiationRecord, UUID>, NegotiationRecordRepository {
 
     @Override
-    Optional<JpaTransferRecord> findById(UUID id);
+    List<NegotiationRecord> findAllByContractId(UUID contractId);
+
+    @Override
+    Optional<MongoNegotiationRecord> findById(UUID id);
+
 }

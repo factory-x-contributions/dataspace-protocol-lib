@@ -14,11 +14,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-/**package org.factoryx.library.connector.embedded.service;
+package org.factoryx.library.connector.embedded.service;
 
 import org.factoryx.library.connector.embedded.provider.model.negotiation.NegotiationRecord;
 import org.factoryx.library.connector.embedded.provider.model.negotiation.NegotiationState;
 import org.factoryx.library.connector.embedded.provider.repository.NegotiationRecordRepository;
+import org.factoryx.library.connector.embedded.provider.service.NegotiationRecordFactory;
 import org.factoryx.library.connector.embedded.provider.service.NegotiationRecordService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -26,13 +27,9 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
@@ -40,6 +37,9 @@ public class NegotiationRecordServiceTest {
 
     @Mock
     private NegotiationRecordRepository repository;
+
+    @Mock
+    private NegotiationRecordFactory negotiationRecordFactory;
 
     @InjectMocks
     private NegotiationRecordService negotiationRecordService;
@@ -56,7 +56,7 @@ public class NegotiationRecordServiceTest {
     void setUp() {
         MockitoAnnotations.openMocks(this);
 
-        mockRecord = new NegotiationRecord();
+        mockRecord = new NegotiationRecord(){};
         mockRecord.setOwnPid(RECORD_ID);
         mockRecord.setContractId(CONTRACT_ID);
         mockRecord.setConsumerPid(CONSUMER_PID);
@@ -66,8 +66,9 @@ public class NegotiationRecordServiceTest {
         mockRecord.setState(NegotiationState.REQUESTED);
 
         when(repository.save(any(NegotiationRecord.class))).thenReturn(mockRecord);
-        when(repository.findById(RECORD_ID)).thenReturn(Optional.of(mockRecord));
-        when(repository.findAllByContractId(CONTRACT_ID)).thenReturn(Collections.singletonList(mockRecord));
+        when(repository.findById(RECORD_ID)).thenReturn((Optional) Optional.of(mockRecord));
+        when(repository.findAllByContractId(CONTRACT_ID)).thenReturn((List) List.of(mockRecord));
+        when(negotiationRecordFactory.create()).thenReturn(new NegotiationRecord(){});
     }
 
     @Test
@@ -85,7 +86,7 @@ public class NegotiationRecordServiceTest {
     @Test
     void testFindByNegotiationRecordId() {
         // Arrange
-        when(repository.findById(RECORD_ID)).thenReturn(Optional.of(mockRecord));
+        when(repository.findById(RECORD_ID)).thenReturn((Optional) Optional.of(mockRecord));
 
         // Act
         NegotiationRecord foundRecord = negotiationRecordService.findByNegotiationRecordId(RECORD_ID);
@@ -121,7 +122,7 @@ public class NegotiationRecordServiceTest {
     @Test
     void testFindByContractId() {
         // Arrange	
-        when(repository.findAllByContractId(CONTRACT_ID)).thenReturn(Collections.singletonList(mockRecord));
+        when(repository.findAllByContractId(CONTRACT_ID)).thenReturn((List) List.of(mockRecord));
     
         // Act
         NegotiationRecord foundRecord = negotiationRecordService.findByContractId(CONTRACT_ID);
@@ -134,9 +135,9 @@ public class NegotiationRecordServiceTest {
     @Test
     void testFindByContractId_MultipleRecords() {
         // Simulate multiple records with the same contractId
-        NegotiationRecord anotherRecord = new NegotiationRecord();
+        NegotiationRecord anotherRecord = new NegotiationRecord(){};
         anotherRecord.setContractId(CONTRACT_ID);
-        when(repository.findAllByContractId(CONTRACT_ID)).thenReturn(Arrays.asList(mockRecord, anotherRecord));
+        when(repository.findAllByContractId(CONTRACT_ID)).thenReturn((List) List.of(mockRecord, anotherRecord));
 
         // Act
         NegotiationRecord foundRecord = negotiationRecordService.findByContractId(CONTRACT_ID);
@@ -147,4 +148,3 @@ public class NegotiationRecordServiceTest {
     }
 
 }
-**/

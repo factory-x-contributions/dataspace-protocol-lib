@@ -1,7 +1,7 @@
 
 val group: String by System.getProperties()
 val libVersion: String by System.getProperties()
-val name = "dataspace-protocol-lib-mongodb"
+val artifactName = "dataspace-protocol-lib-mongodb"
 
 plugins {
     val springBootVersion: String by System.getProperties()
@@ -13,14 +13,18 @@ plugins {
 }
 
 dependencies {
+    implementation("org.springframework.boot:spring-boot-starter-data-mongodb")
     implementation(project(":dsp-lib"))
-    implementation(project(":dsp-mongodb"))
+    implementation("org.springframework.boot:spring-boot-starter")
+
+    compileOnly("org.projectlombok:lombok")
+    annotationProcessor("org.projectlombok:lombok")
 }
 
 tasks.jar {
     manifest {
         attributes(
-            "Implementation-Title" to name,
+            "Implementation-Title" to artifactName,
             "Implementation-Version" to libVersion
         )
     }
@@ -34,7 +38,7 @@ publishing {
     publications {
         create<MavenPublication>("maven") {
             groupId = group
-            artifactId = name
+            artifactId = artifactName
             version = libVersion
 
             artifacts.clear()

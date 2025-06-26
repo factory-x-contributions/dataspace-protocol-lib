@@ -14,24 +14,25 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-package org.factoryx.library.connector.embedded.mongodb;
+package org.factoryx.library.connector.embedded.repository;
 
+import org.factoryx.library.connector.embedded.model.JpaNegotiationRecord;
+import org.factoryx.library.connector.embedded.provider.model.negotiation.NegotiationRecord;
 import org.factoryx.library.connector.embedded.provider.repository.NegotiationRecordRepository;
-import org.factoryx.library.connector.embedded.provider.repository.NegotiationRecordRepositoryFactory;
-import org.factoryx.library.connector.embedded.repository.MongoNegotiationRecordRepository;
-import org.springframework.stereotype.Component;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
 
-@Component
-public class MongoNegotiationRecordRepositoryFactory implements NegotiationRecordRepositoryFactory {
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 
-    private final MongoNegotiationRecordRepository repository;
 
-    public MongoNegotiationRecordRepositoryFactory(MongoNegotiationRecordRepository repository) {
-        this.repository = repository;
-    }
+@Repository
+public interface JpaNegotiationRecordRepository extends JpaRepository<JpaNegotiationRecord, UUID>, NegotiationRecordRepository {
 
     @Override
-    public NegotiationRecordRepository getRepository() {
-        return repository;
-    }
+    List<NegotiationRecord> findAllByContractId(UUID contractId);
+
+    @Override
+    Optional<JpaNegotiationRecord> findById(UUID id);
 }

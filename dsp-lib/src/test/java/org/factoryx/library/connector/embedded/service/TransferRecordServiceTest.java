@@ -14,12 +14,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-/**package org.factoryx.library.connector.embedded.service;
+package org.factoryx.library.connector.embedded.service;
 
 import org.factoryx.library.connector.embedded.provider.model.transfer.TransferRecord;
 import org.factoryx.library.connector.embedded.provider.model.transfer.TransferState;
 import org.factoryx.library.connector.embedded.provider.repository.TransferRecordRepository;
 import org.factoryx.library.connector.embedded.provider.service.ContractRecordService;
+import org.factoryx.library.connector.embedded.provider.service.TransferRecordFactory;
 import org.factoryx.library.connector.embedded.provider.service.TransferRecordService;
 import org.factoryx.library.connector.embedded.provider.service.helpers.EnvService;
 import org.junit.jupiter.api.BeforeEach;
@@ -31,8 +32,7 @@ import org.mockito.MockitoAnnotations;
 import java.util.Optional;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -40,6 +40,9 @@ public class TransferRecordServiceTest {
 
     @Mock
     private TransferRecordRepository repository;
+
+    @Mock
+    private TransferRecordFactory transferRecordFactory;
 
     @Mock
     private ContractRecordService contractRecordService;
@@ -66,7 +69,7 @@ public class TransferRecordServiceTest {
     void setUp() {
         MockitoAnnotations.openMocks(this);
 
-        mockRecord = new TransferRecord();
+        mockRecord = new TransferRecord(){};
         mockRecord.setOwnPid(RECORD_ID);
         mockRecord.setConsumerPid(CONSUMER_PID);
         mockRecord.setPartnerId(PARTNER_ID);
@@ -74,6 +77,7 @@ public class TransferRecordServiceTest {
         mockRecord.setContractId(AGREEMENT_ID);
         mockRecord.setState(TransferState.REQUESTED);
         when(repository.save(any(TransferRecord.class))).thenReturn(mockRecord);
+        when(transferRecordFactory.create()).thenReturn(new TransferRecord(){});
     }
   
 
@@ -95,7 +99,7 @@ public class TransferRecordServiceTest {
     @Test
     public void testUpdateTransferRecordState() {
         // Arrange
-        when(repository.findById(mockRecord.getOwnPid())).thenReturn(Optional.of(mockRecord));
+        when(repository.findById(mockRecord.getOwnPid())).thenReturn((Optional) Optional.of(mockRecord));
         // Act
         TransferRecord updatedRecord = transferRecordService.updateTransferRecordState(mockRecord.getOwnPid(),
                 TransferState.STARTED);
@@ -109,7 +113,7 @@ public class TransferRecordServiceTest {
     @Test
     public void testAddDatasetToTransferRecord() {
         // Arrange
-        when(repository.findById(mockRecord.getOwnPid())).thenReturn(Optional.of(mockRecord));
+        when(repository.findById(mockRecord.getOwnPid())).thenReturn((Optional) Optional.of(mockRecord));
         when(repository.save(any(TransferRecord.class))).thenReturn(mockRecord);
 
         // Act
@@ -138,7 +142,7 @@ public class TransferRecordServiceTest {
     @Test
     public void testStartTransferRecord() {
         // Arrange
-        when(repository.findById(mockRecord.getOwnPid())).thenReturn(Optional.of(mockRecord));
+        when(repository.findById(mockRecord.getOwnPid())).thenReturn((Optional) Optional.of(mockRecord));
         when(repository.save(any(TransferRecord.class))).thenReturn(mockRecord);
         mockRecord.setState(TransferState.REQUESTED);
 
@@ -168,7 +172,7 @@ public class TransferRecordServiceTest {
     @Test
     public void testStartTransferRecord_InvalidStateTransition() {
         // Arrange
-        when(repository.findById(mockRecord.getOwnPid())).thenReturn(Optional.of(mockRecord));
+        when(repository.findById(mockRecord.getOwnPid())).thenReturn((Optional) Optional.of(mockRecord));
         mockRecord.setState(TransferState.STARTED);
 
         // Act
@@ -178,4 +182,4 @@ public class TransferRecordServiceTest {
         assertNull(updatedRecord, "Expected record to be null when state transition is invalid");
         verify(repository, times(0)).save(any(TransferRecord.class));
     }
-}**/
+}
