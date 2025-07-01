@@ -36,17 +36,15 @@ import java.util.UUID;
  */
 public class TransferRecordService {
 
-    private final TransferRecordRepository transferRecordRepository;
-
+    private final TransferRecordRepository repository;
     private final ContractRecordService contactRecordService;
     private final TransferRecordFactory recordFactory;
-    private final EnvService envService;
 
-    public TransferRecordService(TransferRecordRepository transferRecordRepository, ContractRecordService contractRecordService, TransferRecordFactory recordFactory, EnvService envService) {
-        this.transferRecordRepository = transferRecordRepository;
+    public TransferRecordService(TransferRecordRepository transferRecordRepository,
+                                 ContractRecordService contractRecordService, TransferRecordFactory recordFactory) {
+        this.repository = transferRecordRepository;
         this.contactRecordService = contractRecordService;
         this.recordFactory = recordFactory;
-        this.envService = envService;
     }
 
     /**
@@ -68,7 +66,7 @@ public class TransferRecordService {
         transferRecord.setContractId(agreementId);
         transferRecord.setFormat("HTTP_PULL");
         transferRecord.setState(TransferState.REQUESTED);
-        return transferRecordRepository.save(transferRecord);
+        return repository.save(transferRecord);
     }
 
     /**
@@ -78,7 +76,7 @@ public class TransferRecordService {
      * @return - the TransferRecord with the given id
      */
     public TransferRecord findByTransferRecordId(UUID transferRecordId) {
-        return transferRecordRepository.findById(transferRecordId).orElse(null);
+        return repository.findById(transferRecordId).orElse(null);
     }
 
     public NegotiationRecord findNegotiationRecordByAgreementId(UUID agreementId) {
@@ -99,7 +97,7 @@ public class TransferRecordService {
             return null;
         }
         transferRecord.setDatasetId(datasetId);
-        return transferRecordRepository.save(transferRecord);
+        return repository.save(transferRecord);
     }
 
     /**
@@ -123,7 +121,7 @@ public class TransferRecordService {
         }
 
         transferRecord.setState(newState);
-        return transferRecordRepository.save(transferRecord);
+        return repository.save(transferRecord);
     }
 
     /**
@@ -164,6 +162,6 @@ public class TransferRecordService {
         }
         transferRecord.setState(TransferState.STARTED);
         transferRecord.setDatasetAddressUrl(datasetUrl);
-        return transferRecordRepository.save(transferRecord);
+        return repository.save(transferRecord);
     }
 }
