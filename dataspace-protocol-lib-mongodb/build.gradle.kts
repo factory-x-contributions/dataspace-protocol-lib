@@ -1,4 +1,3 @@
-
 val group: String by System.getProperties()
 val libVersion: String by System.getProperties()
 val artifactName = "dataspace-protocol-lib-mongodb"
@@ -19,6 +18,16 @@ dependencies {
 
     compileOnly("org.projectlombok:lombok")
     annotationProcessor("org.projectlombok:lombok")
+}
+
+tasks {
+    bootJar {
+        enabled = false
+    }
+
+    jar {
+        enabled = true
+    }
 }
 
 tasks.jar {

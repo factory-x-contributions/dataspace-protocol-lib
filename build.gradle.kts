@@ -1,4 +1,3 @@
-
 plugins {
     val springBootVersion: String by System.getProperties()
     val springDependencyManagementVersion: String by System.getProperties()
@@ -12,6 +11,16 @@ java {
     val javaVersion: String by System.getProperties()
     toolchain {
         languageVersion = JavaLanguageVersion.of(Integer.parseInt(javaVersion))
+    }
+}
+
+tasks {
+    bootJar {
+        enabled = false
+    }
+
+    jar {
+        enabled = true
     }
 }
 
