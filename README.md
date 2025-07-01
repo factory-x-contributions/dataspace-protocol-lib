@@ -1,22 +1,41 @@
 # Dataspace Protocol Lib
 [![Pipeline](https://github.com/factory-x-contributions/dataspace-protocol-lib/actions/workflows/pipeline.yml/badge.svg?logo=GitHub&style=flat-square)](https://github.com/factory-x-contributions/dataspace-protocol-lib/actions/workflows/pipeline.yml)
 
+## Contributions:
+In order to contribute to the project, please look at the [CONTRIBUTING.md](/CONTRIBUTING.md) file for the contribution guidelines. 
+
 ## Getting started
 
-In order to use this project as a library, we need to make it available for your importing project
+This project comes in two variants regarding the persistence handling. You can either choose to use the library with 
+an attached SQL database or you can choose to use a MongoDB instead. 
 
 ### Publishing via MavenLocal
 
+In order to use the library you can, depending on your choice, either build the MongoDB version: 
+
 ```
-./gradlew publishToMavenLocal
+./gradlew dataspace-protocol-lib-mongodb:publishToMavenLocal
 ```
+
+or the SQL version: 
+
+```
+./gradlew dataspace-protocol-lib-sql:publishToMavenLocal
+```
+
 
 The project library should now be available under its classpath and artifact name in your Maven local. It can be imported 
 like this: 
 
 ```
-implementation("org.factoryx.library.connector.embedded:dataspace-protocol-lib:1.0.0-SNAPSHOT")
+implementation("org.factoryx.library.connector.embedded:dataspace-protocol-lib-mongodb:<VERSION>>")
 ```
+
+or, respectively: 
+```
+implementation("org.factoryx.library.connector.embedded:dataspace-protocol-lib-sql:<VERSION>>")
+```
+
 
 ## Requirements on the importing project
 
@@ -29,9 +48,19 @@ the following Spring Boot modules:
 	implementation("org.springframework.boot:spring-boot-starter-web")
 ```
 
-Beyond that, you need to have valid configurations set at least for the following Spring Boot properties:
+Depending on the chose version, you may also need to add
+```
+	implementation("org.springframework.boot:spring-boot-starter-data-jpa")
+```
 
-- server.port
+or 
+```
+	implementation("org.springframework.boot:spring-boot-starter-data-mongodb")
+```
+
+
+#### Settings for SQL
+When using the SQL variant, then you must provide valid settings for the following properties:  
 - spring.datasource.driver-class-name
 - spring.datasource.url
 - spring.datasource.username
@@ -41,15 +70,21 @@ That means, the library is expecting to gain access to an SQL Database like Post
 HSQLDB or H2 will also work (e.g. if you just want to create a simple testing setup). In any case, you also need to provide the 
 fitting JDBC drivers for the database system you have chosen. 
 
+
+#### Settings for MongoDB
+For the MongoDB variant, you should provide the following settings: 
+- spring.data.mongodb.uri
+- spring.data.mongodb.database
+
 ### Software-level requirements
 
 #### Implementations you need to provide
-In order to couple your importing Spring Boot app with the library, you need to create an "@Entity"-annotated class that 
-implements the org.factoryx.library.connector.embedded.provider.interfaces.DataAsset interface. 
+In order to couple your importing Spring Boot app with the library, you need to create a class that 
+implements the org.factoryx.library.connector.embedded.provider.interfaces.DataAsset interface from the dsp-lib. 
 
 And you need to create an implementation of the org.factoryx.library.connector.embedded.provider.interfaces.DataAssetManagementService, that 
 is annotated as "@Service". This implementation is responsible for providing access to the data objects that you want to put 
-on offer in the dataspace. 
+on offer in the dataspace. You may choose to impose limitations on that data access based on the properties of the requesting partner. 
 
 #### Annotations
 Since the classpath of your Spring Boot starter project will likely differ from the library's classpath, you should use 
@@ -57,11 +92,21 @@ the following annotations on top of you starter class (the one that has the '@Sp
 
 ```
 @ComponentScan(basePackages = {"org.factoryx.library", "org.demo.testenvironment"})
+```
+
+Please replace 'org.demo.testenvironment' with one or more classpath prefixes of your importing project. 
+
+When using the SQL variant, you may also need to add: 
+
+```
 @EntityScan(basePackages = {"org.factoryx.library", "org.demo.testenvironment"})
 @EnableJpaRepositories(basePackages = {"org.factoryx.library", "org.demo.testenvironment"})
 ```
 
-Please replace 'org.demo.testenvironment' with one or more classpath prefixes of your importing project. 
+With the MongoDB variant, you should add instead: 
+```
+@EnableMongoRepositories(basePackages = {"org.factoryx.library"})
+```
 
 #### Security Setup
 
@@ -103,6 +148,8 @@ This project includes a comprehensive suite of unit tests to ensure the quality 
 ```
 ./gradlew test
 ```
+
+
 
 
 
