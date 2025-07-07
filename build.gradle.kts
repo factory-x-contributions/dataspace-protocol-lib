@@ -38,7 +38,7 @@ dependencies {
     implementation("org.eclipse.parsson:parsson:1.1.7")
     implementation("com.apicatalog:titanium-json-ld:1.6.0")
 
-    implementation("com.nimbusds:nimbus-jose-jwt:10.3")
+    implementation("com.nimbusds:nimbus-jose-jwt:10.3.1")
     implementation("com.google.crypto.tink:tink:1.18.0")
 
     compileOnly("org.projectlombok:lombok")
