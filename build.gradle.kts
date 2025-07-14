@@ -31,8 +31,8 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.springframework.boot:spring-boot-starter-web")
 
-    implementation("org.apache.logging.log4j:log4j-core:2.25.0")
-    implementation("org.apache.logging.log4j:log4j-api:2.25.0")
+    implementation("org.apache.logging.log4j:log4j-core:2.25.1")
+    implementation("org.apache.logging.log4j:log4j-api:2.25.1")
 
     implementation("jakarta.json:jakarta.json-api:2.1.3")
     implementation("org.eclipse.parsson:parsson:1.1.7")
