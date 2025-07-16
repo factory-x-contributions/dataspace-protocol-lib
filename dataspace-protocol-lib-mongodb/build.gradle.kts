@@ -65,5 +65,14 @@ publishing {
     }
     repositories {
         mavenLocal()
+
+        maven {
+            name = "GitHubPackages"
+            url = uri("https://maven.pkg.github.com/factory-x-contributions/dataspace-protocol-lib")
+            credentials {
+                username = System.getenv("GITHUB_ACTOR")
+                password = System.getenv("GITHUB_TOKEN")
+            }
+        }
     }
 }
