@@ -1,3 +1,6 @@
+val group: String by System.getProperties()
+val libVersion: String by System.getProperties()
+
 plugins {
     val springBootVersion: String by System.getProperties()
     val springDependencyManagementVersion: String by System.getProperties()
@@ -6,9 +9,6 @@ plugins {
     id("org.springframework.boot") version springBootVersion
     id("io.spring.dependency-management") version springDependencyManagementVersion
 }
-
-group = "org.factoryx.library.connector.embedded"
-version = "0.0.1-SNAPSHOT"
 
 java {
     val javaVersion: String by System.getProperties()
