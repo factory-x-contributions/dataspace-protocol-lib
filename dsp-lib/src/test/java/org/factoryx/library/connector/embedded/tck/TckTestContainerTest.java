@@ -1,12 +1,12 @@
 package org.factoryx.library.connector.embedded.tck;
 
-import org.factoryx.library.connector.embedded.provider.interfaces.DataAssetManagementService;
 import org.factoryx.library.connector.embedded.teststarter.SampleDataAssetManagementService;
 import org.factoryx.library.connector.embedded.teststarter.TestStarter;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.junit.jupiter.EnabledIf;
 import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.SelinuxContext;
@@ -30,43 +30,45 @@ import static org.junit.jupiter.api.Assertions.*;
 
 
 @SpringBootTest(classes = TestStarter.class, webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
+@EnabledIf(expression = "#{environment.getProperty('testcontainer.tck.disable') != 'true'}",
+        reason = "TCK Testcontainer Tests disabled via application.properties setting")
 public class TckTestContainerTest {
     final static DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     final static Path configFilePath = Paths.get("src/test/resources/tck.config").toAbsolutePath();
     final static Path outputFolderPath = Paths.get("src/test/resources/tck-logs/").toAbsolutePath();
 
     @Autowired
-    private SampleDataAssetManagementService dataAssetManagementService;
+    private SampleDataAssetManagementService sampleDataAssetManagementService;
 
     @BeforeAll
     static void ensureExistingOutputFolder() throws IOException {
         if (!Files.isDirectory(outputFolderPath)) {
             boolean nonDirectoryFileExists = Files.exists(outputFolderPath);
-            if(!nonDirectoryFileExists) {
-                // create directory
-                Files.createDirectory(outputFolderPath);
-            } else {
-                System.out.println("Please remove the existing file that conflicts with the tck-log output folder: " + outputFolderPath);
-                assertFalse(nonDirectoryFileExists);
-            }
+            assertFalse(nonDirectoryFileExists);
+            // create directory
+            Files.createDirectory(outputFolderPath);
         }
     }
 
     @Test
     void containerTest() throws Exception {
-        dataAssetManagementService.addTckDataAsset();
-        assertNotNull(dataAssetManagementService.getById(UUID.fromString("207ed5a4-2eae-47af-bcb1-9202280d2700")));
+        sampleDataAssetManagementService.addTckDataAsset();
+        assertNotNull(sampleDataAssetManagementService.getById(UUID.fromString("207ed5a4-2eae-47af-bcb1-9202280d2700")));
         assertTrue(waitForProjectBooted());
         assertThat(Files.exists(configFilePath)).isTrue();
+
+        // Note: Since there is currently no proper release version of the published TCK docker image, you may occasionally
+        // want to ensure you have the actual 'latest version' in your local docker repo by manually executing in your shell:
+        //
+        // docker pull eclipsedataspacetck/dsp-tck-runtime:latest
+
         try (GenericContainer<?> tckContainer = new GenericContainer<>("eclipsedataspacetck/dsp-tck-runtime:latest")) {
             tckContainer.addFileSystemBind(configFilePath.toString(), "/etc/tck/config.properties", BindMode.READ_ONLY, SelinuxContext.SINGLE);
             tckContainer.withExtraHost("host.docker.internal", "host-gateway");
             tckContainer.setPortBindings(List.of("8083:8083"));
             tckContainer.start();
-            int port = tckContainer.getMappedPort(8083);
-            System.out.println("Mapped Port: " + port + " -> 8083");
-            assertEquals(8083, port);
 
+            assertEquals(8083, tckContainer.getMappedPort(8083));
 
             var latch = new CountDownLatch(1);
             StringBuilder logOutputBuffer = new StringBuilder();
@@ -85,7 +87,7 @@ public class TckTestContainerTest {
 
     static private boolean waitForProjectBooted() throws Exception {
         System.out.println("Waiting for project booted...");
-        int retries = 10;
+        int retries = 20;
         int interval = 1000;
         int count = 0;
         boolean success = false;
