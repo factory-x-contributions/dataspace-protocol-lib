@@ -30,7 +30,7 @@ public class SampleDataAsset implements DataAsset {
 
     @Override
     public Map<String, String> getProperties() {
-        return Map.of("type", "SampleDataAsset","hasFieldA", "true", "hasFieldB", "true");
+        return Map.of("type", "SampleDataAsset", "hasFieldA", "true", "hasFieldB", "true");
     }
 
     @Override
