@@ -19,6 +19,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
@@ -70,15 +71,26 @@ public class TckTestContainerTest {
 
             assertEquals(8083, tckContainer.getMappedPort(8083));
 
+            List<String> expectedSuccesses = List.of("CAT:01-01");
+            List<String> foundSuccesses = new ArrayList<>();
+
             var latch = new CountDownLatch(1);
             StringBuilder logOutputBuffer = new StringBuilder();
             tckContainer.followOutput(outputFrame -> {
-                logOutputBuffer.append(outputFrame.getUtf8String());
-                if (outputFrame.getUtf8String().toLowerCase().contains("test run complete")) {
+                String line = outputFrame.getUtf8String();
+                logOutputBuffer.append(line);
+                if (line.contains("SUCCESSFUL:")) {
+                    String[] words = line.split(" ");
+                    foundSuccesses.add(words[words.length - 1].strip());
+                }
+                if (line.toLowerCase().contains("test run complete")) {
                     latch.countDown();
                 }
             });
+
             assertThat(latch.await(8, TimeUnit.MINUTES)).isTrue();
+            assertThat(foundSuccesses.containsAll(expectedSuccesses)).isTrue();
+
             String formattedDate = formatter.format(LocalDateTime.now());
             Files.writeString(outputFolderPath.resolve(formattedDate), logOutputBuffer.toString());
 
@@ -104,7 +116,7 @@ public class TckTestContainerTest {
             } catch (Exception e) {
                 System.out.println("Exception: " + e);
             }
-        } while(count < retries && !success);
+        } while (count < retries && !success);
         if (success) {
             System.out.println("Project booted after " + count + " tries");
         } else {
