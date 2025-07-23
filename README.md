@@ -155,7 +155,7 @@ By default, the TCK Test will not be executed, so running ...
 ```
 ... will execute all other tests, except for TCK.  
 
-If you explicitly execute them, then please run 
+If you explicitly want to execute them, then please run 
 
 ```
 ./gradlew clean test -Dtestcontainer.tck.disable=false
