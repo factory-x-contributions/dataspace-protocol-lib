@@ -49,6 +49,13 @@ dependencies {
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     mockitoAgent("org.mockito:mockito-core") { isTransitive = false }
+
+    testImplementation("org.testcontainers:testcontainers:1.21.3")
+    testImplementation("org.testcontainers:junit-jupiter:1.21.3")
+
+    testImplementation("org.hsqldb:hsqldb:2.7.4")
+    testImplementation(project(":dataspace-protocol-lib-sql"))
+    testImplementation("org.springframework.boot:spring-boot-starter-data-jpa")
 }
 
 tasks {
@@ -64,4 +71,8 @@ tasks {
         useJUnitPlatform()
         jvmArgs("-javaagent:${mockitoAgent.asPath}")
     }
+}
+
+tasks.test {
+    systemProperty("testcontainer.tck.disable", System.getProperty("testcontainer.tck.disable", "true"))
 }
