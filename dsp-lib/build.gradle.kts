@@ -72,3 +72,7 @@ tasks {
         jvmArgs("-javaagent:${mockitoAgent.asPath}")
     }
 }
+
+tasks.test {
+    systemProperty("testcontainer.tck.disable", System.getProperty("testcontainer.tck.disable", "true"))
+}

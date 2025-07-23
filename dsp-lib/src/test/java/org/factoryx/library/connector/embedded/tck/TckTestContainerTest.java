@@ -6,6 +6,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.core.env.Environment;
 import org.springframework.test.context.junit.jupiter.EnabledIf;
 import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.GenericContainer;
@@ -30,8 +31,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 
 @SpringBootTest(classes = TestStarter.class, webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
-@EnabledIf(expression = "#{environment.getProperty('testcontainer.tck.disable') != 'true'}",
-        reason = "TCK Testcontainer Tests disabled via application.properties setting")
+@EnabledIf(expression = "#{systemProperties['testcontainer.tck.disable'] == 'false'}")
 public class TckTestContainerTest {
     final static DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     final static Path configFilePath = Paths.get("src/test/resources/tck.config").toAbsolutePath();
