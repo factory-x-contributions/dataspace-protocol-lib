@@ -19,6 +19,7 @@ package org.factoryx.library.connector.embedded.provider.service.helpers;
 import jakarta.json.Json;
 import lombok.extern.slf4j.Slf4j;
 import org.factoryx.library.connector.embedded.provider.interfaces.DspTokenProviderService;
+import org.factoryx.library.connector.embedded.provider.model.DspVersion;
 import org.factoryx.library.connector.embedded.provider.model.negotiation.NegotiationRecord;
 import org.factoryx.library.connector.embedded.provider.model.negotiation.NegotiationState;
 import org.factoryx.library.connector.embedded.provider.service.NegotiationRecordService;
@@ -27,7 +28,7 @@ import org.springframework.web.client.RestClient;
 
 import java.util.UUID;
 
-import static org.factoryx.library.connector.embedded.provider.service.helpers.JsonUtils.FULL_CONTEXT;
+import static org.factoryx.library.connector.embedded.provider.service.helpers.JsonUtils.*;
 
 /**
  * This class represents a task to send a "Finalized" ContractEvent message in the
@@ -39,21 +40,25 @@ import static org.factoryx.library.connector.embedded.provider.service.helpers.J
  */
 @Slf4j
 public class SendContractFinalizedTask implements Runnable {
+
     private final UUID negotiationId;
     private final NegotiationRecordService negotiationRecordService;
     private final RestClient restClient;
     private final DspTokenProviderService dspTokenProviderService;
+    private final DspVersion dspVersion;
 
     public SendContractFinalizedTask(UUID negotiationId, NegotiationRecordService negotiationRecordService,
-                                     RestClient restClient, DspTokenProviderService dspTokenProviderService) {
+                                     RestClient restClient, DspTokenProviderService dspTokenProviderService, DspVersion dspVersion) {
         this.negotiationId = negotiationId;
         this.negotiationRecordService = negotiationRecordService;
         this.restClient = restClient;
         this.dspTokenProviderService = dspTokenProviderService;
+        this.dspVersion = dspVersion;
     }
 
     @Override
     public void run() {
+        log.info("Contract finalized task started with version {}", dspVersion);
         NegotiationRecord negotiationRecord = negotiationRecordService.findByNegotiationRecordId(negotiationId);
         if (negotiationRecord == null) {
             log.warn("Unknown negotiation record: {}", negotiationId);
@@ -68,39 +73,44 @@ public class SendContractFinalizedTask implements Runnable {
             return;
         }
 
-
         String targetURL = negotiationRecord.getPartnerDspUrl() + "/negotiations/" + negotiationRecord.getConsumerPid() + "/events";
         String requestBody = buildContractFinalizedMessage(negotiationRecord);
         log.debug("Created contract finalized request body: {}", requestBody);
-        restClient
-                .post()
-                .uri(targetURL)
-                .header("Content-Type", "application/json")
-                .header("Authorization", dspTokenProviderService.provideTokenForPartner(negotiationRecord))
-                .body(requestBody)
-                .retrieve()
-                .onStatus(HttpStatusCode::isError,
-                        (request, resp) -> {
-                            log.warn("Error sending FINALIZED MESSAGE to {} for {}", targetURL, negotiationId);
-                            log.warn("Status code: {}", resp.getStatusCode());
-                        })
-                .onStatus(HttpStatusCode::is2xxSuccessful,
-                        (request, resp) -> {
-                            log.info("Successfully sent FINALIZED MESSAGE to {} for {}!", targetURL, negotiationId);
-                            negotiationRecordService.updateNegotiationRecordToState(negotiationId, NegotiationState.FINALIZED);
-                        })
-                .toBodilessEntity();
+        try {
+            var response = restClient
+                    .post()
+                    .uri(targetURL)
+                    .header("Content-Type", "application/json")
+                    .header("Authorization", dspTokenProviderService.provideTokenForPartner(negotiationRecord))
+                    .body(requestBody)
+                    .retrieve()
+                    .onStatus(HttpStatusCode::isError,
+                            (request, resp) -> {
+                                log.warn("Error sending FINALIZED MESSAGE to {} for {}", targetURL, negotiationId);
+                                log.warn("Status code: {}", resp.getStatusCode());
+                            })
+                    .onStatus(HttpStatusCode::is2xxSuccessful,
+                            (request, resp) -> {
+                                log.info("Successfully sent FINALIZED MESSAGE to {} for {}!", targetURL, negotiationId);
+                                negotiationRecordService.updateNegotiationRecordToState(negotiationId, NegotiationState.FINALIZED);
+                            })
+                    .toBodilessEntity();
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+        }
     }
 
-    private static String buildContractFinalizedMessage(NegotiationRecord record) {
+    private String buildContractFinalizedMessage(NegotiationRecord record) {
+        String prefix = DspVersion.V_08.equals(dspVersion) ? "dspace:" : "";
+        String eventPrefix = DspVersion.V_08.equals(dspVersion) ? "https://w3id.org/dspace/v0.8/" : "";
         return Json.createObjectBuilder()
-                .add("@context", FULL_CONTEXT)
-                .add("@type", "dspace:ContractNegotiationEventMessage")
-                .add("dspace:consumerPid", record.getConsumerPid())
-                .add("dspace:providerPid", record.getOwnPid().toString())
-                .add("dspace:eventType", "https://w3id.org/dspace/v0.8/FINALIZED") // quick-fix because EDC does not accept "dspace:FINALIZED"
-//                .add("dspace:eventType", "dspace:FINALIZED")
+                .add("@context", JsonUtils.getContextForDspVersion(dspVersion))
+                .add("@type", prefix + "ContractNegotiationEventMessage")
+                .add(prefix + "consumerPid", record.getConsumerPid())
+                .add(prefix + "providerPid", record.getOwnPid().toString())
+                .add(prefix + "eventType", eventPrefix + "FINALIZED")
                 .build()
                 .toString();
     }
+
 }

@@ -1,12 +1,37 @@
+/*
+ * Copyright (c) 2025. Fraunhofer-Gesellschaft zur Foerderung der angewandten Forschung e.V. (represented by Fraunhofer ISST)
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 package org.factoryx.library.connector.embedded.tck;
 
+import org.factoryx.library.connector.embedded.model.JpaNegotiationRecord;
+import org.factoryx.library.connector.embedded.provider.model.negotiation.NegotiationRecord;
+import org.factoryx.library.connector.embedded.provider.model.negotiation.NegotiationState;
+import org.factoryx.library.connector.embedded.provider.repository.NegotiationRecordRepository;
+import org.factoryx.library.connector.embedded.provider.service.NegotiationRecordFactory;
+import org.factoryx.library.connector.embedded.teststarter.SampleDataAsset;
 import org.factoryx.library.connector.embedded.teststarter.SampleDataAssetManagementService;
+import org.factoryx.library.connector.embedded.teststarter.TckNegotiationRecordService;
 import org.factoryx.library.connector.embedded.teststarter.TestStarter;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.core.env.Environment;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Primary;
 import org.springframework.test.context.junit.jupiter.EnabledIf;
 import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.GenericContainer;
@@ -37,8 +62,14 @@ public class TckTestContainerTest {
     final static Path configFilePath = Paths.get("src/test/resources/tck.config").toAbsolutePath();
     final static Path outputFolderPath = Paths.get("src/test/resources/tck-logs/").toAbsolutePath();
 
+    final static UUID TP_02_01_MOCK_AGREEMENT_ID = UUID.fromString("ca38d696-e5b6-48b0-ac10-66edbb04ff4b");
+    final static UUID TP_02_02_MOCK_AGREEMENT_ID = UUID.fromString("ca38d696-e5b6-48b0-ac10-66edbb04ff4c");
+
     @Autowired
     private SampleDataAssetManagementService sampleDataAssetManagementService;
+
+    @Autowired
+    private TckNegotiationRecordService negotiationRecordService;
 
     @BeforeAll
     static void ensureExistingOutputFolder() throws IOException {
@@ -52,9 +83,19 @@ public class TckTestContainerTest {
 
     @Test
     void containerTest() throws Exception {
-        sampleDataAssetManagementService.addTckDataAsset();
-        assertNotNull(sampleDataAssetManagementService.getById(UUID.fromString("207ed5a4-2eae-47af-bcb1-9202280d2700")));
         assertTrue(waitForProjectBooted());
+        sampleDataAssetManagementService.addTckDataAsset(SampleDataAsset.CATALOG_ASSET_ID);
+        sampleDataAssetManagementService.addTckDataAsset(SampleDataAsset.NEGOTIATION_ASSET_ID);
+        assertNotNull(sampleDataAssetManagementService.getById(UUID.fromString(SampleDataAsset.CATALOG_ASSET_ID)));
+        assertNotNull(sampleDataAssetManagementService.getById(UUID.fromString(SampleDataAsset.NEGOTIATION_ASSET_ID)));
+        negotiationRecordService.injectMockData(createNegotiationRecord(TP_02_01_MOCK_AGREEMENT_ID));
+        negotiationRecordService.injectMockData(createNegotiationRecord(TP_02_02_MOCK_AGREEMENT_ID));
+
+        NegotiationRecord record = negotiationRecordService.findByContractId(TP_02_01_MOCK_AGREEMENT_ID);
+        assertNotNull(record);
+        record = negotiationRecordService.findByContractId(TP_02_02_MOCK_AGREEMENT_ID);
+        assertNotNull(record);
+
         assertThat(Files.exists(configFilePath)).isTrue();
 
         // Note: Since there is currently no proper release version of the published TCK docker image, you may occasionally
@@ -70,7 +111,8 @@ public class TckTestContainerTest {
 
             assertEquals(8083, tckContainer.getMappedPort(8083));
 
-            List<String> expectedSuccesses = List.of("CAT:01-01");
+            List<String> expectedSuccesses = List.of("MET:01-01", "CAT:01-01", "CAT:01-02", "CAT:01-03", "TP:02-01",
+                    "TP:02-02", "TP:02-03", "TP:03-03", "TP:03-04", "TP:03-05", "TP:03-06", "CN:03-01");
             List<String> foundSuccesses = new ArrayList<>();
 
             var latch = new CountDownLatch(1);
@@ -87,11 +129,12 @@ public class TckTestContainerTest {
                 }
             });
 
-            assertThat(latch.await(8, TimeUnit.MINUTES)).isTrue();
-            assertThat(foundSuccesses.containsAll(expectedSuccesses)).isTrue();
+            boolean latchResult = latch.await(8, TimeUnit.MINUTES);
 
             String formattedDate = formatter.format(LocalDateTime.now());
             Files.writeString(outputFolderPath.resolve(formattedDate), logOutputBuffer.toString());
+            assertThat(foundSuccesses.containsAll(expectedSuccesses)).isTrue();
+            assertThat(latchResult).isTrue();
         }
     }
 
@@ -123,4 +166,31 @@ public class TckTestContainerTest {
         return success;
 
     }
+
+    private JpaNegotiationRecord createNegotiationRecord(UUID contractId) {
+        try {
+            JpaNegotiationRecord negotiationRecord = new JpaNegotiationRecord();
+            negotiationRecord.setConsumerPid(UUID.randomUUID().toString());
+            negotiationRecord.setState(NegotiationState.FINALIZED);
+            negotiationRecord.setTargetAssetId(SampleDataAsset.CATALOG_ASSET_ID);
+            negotiationRecord.setPartnerId("consumer");
+            negotiationRecord.setContractId(contractId);
+            negotiationRecord.setPartnerDspUrl("http://localhost:8083");
+            return negotiationRecord;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    @TestConfiguration
+    static class TckTestConfig {
+
+        @Bean
+        @Primary
+        TckNegotiationRecordService negotiationRecordService(NegotiationRecordFactory recordFactory, NegotiationRecordRepository repository) {
+            return new TckNegotiationRecordService(recordFactory, repository);
+        }
+    }
+
 }

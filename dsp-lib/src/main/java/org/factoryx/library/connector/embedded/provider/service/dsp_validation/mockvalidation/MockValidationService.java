@@ -45,10 +45,11 @@ public class MockValidationService implements DspTokenValidationService {
             var authJson = JsonUtils.parse(token);
             String clientId = authJson.getString("clientId");
             String audience = authJson.getString("audience");
-            if (envService.getOwnDspUrl().equals(audience)) {
+            if (audience.startsWith(envService.getOwnDspUrl())) {
                 return Map.of(ReservedKeys.partnerId.toString(), clientId,
                         ReservedKeys.credentials.toString(), "dataspacemember");
             } else {
+                log.info("Rejected token {}", token);
                 return Map.of();
             }
         } catch (Exception e) {

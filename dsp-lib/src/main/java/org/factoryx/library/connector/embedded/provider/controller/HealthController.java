@@ -41,4 +41,29 @@ public class HealthController {
         log.info("/test POST received body: \n{}", body);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("UNSUPPORTED");
     }
+
+    @GetMapping("${org.factoryx.library.dspapiprefix:/dsp}/.well-known/dspace-version")
+    public ResponseEntity<String> protocolVersions() {
+        log.info("protocol versions request received");
+        return ResponseEntity.status(HttpStatus.OK).body(PROTOCOL_VERSION_RESPONSE);
+    }
+
+    private static final String PROTOCOL_VERSION_RESPONSE = """
+            {
+              "protocolVersions": [
+                {
+                  "version": "2025-1",
+                  "path": "/2025/1"
+                },
+                {
+                  "version": "v0.8",
+                  "path": "/"
+                },
+                {
+                  "version": "2024-1",
+                  "path": "/2024/1"
+                }
+              ]
+            }
+            """;
 }

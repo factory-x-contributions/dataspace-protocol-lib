@@ -17,9 +17,16 @@
 package org.factoryx.library.connector.embedded.provider.service.helpers;
 
 import com.apicatalog.jsonld.JsonLd;
+import com.apicatalog.jsonld.JsonLdOptions;
 import com.apicatalog.jsonld.document.JsonDocument;
+import com.apicatalog.jsonld.loader.DocumentLoader;
 import jakarta.json.*;
 import jakarta.json.stream.JsonGenerator;
+import org.factoryx.library.connector.embedded.provider.model.DspVersion;
+import org.factoryx.library.connector.embedded.provider.service.helpers.contextdefinitions.CacheProvider;
+import org.factoryx.library.connector.embedded.provider.service.helpers.contextdefinitions.UtilDocLoader;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayOutputStream;
 import java.io.StringReader;
@@ -38,16 +45,25 @@ public class JsonUtils {
     // Namespace constants:
     public static final String DSPACE_NAMESPACE = "https://w3id.org/dspace/v0.8/";
     public static final String ODRL_NAMESPACE = "http://www.w3.org/ns/odrl/2/";
+    private static final Logger log = LoggerFactory.getLogger(JsonUtils.class);
+    private static final DocumentLoader UTIL_DOCLOADER = new UtilDocLoader();
+    private static final JsonLdOptions JSONLD_OPTIONS = new JsonLdOptions();
+    private static final JsonDocument cachedDSP2025Context = CacheProvider.getDSP2025Context();
+
+    static
+    {
+        JSONLD_OPTIONS.setDocumentLoader(UTIL_DOCLOADER);
+    }
 
     // Internal constants:
     private static final JsonWriterFactory WRITER_FACTORY = Json
             .createWriterFactory(Map.of(JsonGenerator.PRETTY_PRINTING, true));
 
     /**
-     * Contains a template @context value (the same that the EDC Messages currently
+     * Contains a template @context value (the same that the EDC Messages under V.08 currently
      * contain).
      */
-    public static final JsonObject FULL_CONTEXT = Json.createObjectBuilder()
+    public static final JsonObject LEGACY_CONTEXT = Json.createObjectBuilder()
             .add("@vocab", "https://w3id.org/edc/v0.0.1/ns/")
             .add("edc", "https://w3id.org/edc/v0.0.1/ns/")
             .add("dcat", "http://www.w3.org/ns/dcat#")
@@ -55,6 +71,20 @@ public class JsonUtils {
             .add("odrl", ODRL_NAMESPACE)
             .add("dspace", DSPACE_NAMESPACE)
             .build();
+
+    public static final JsonArray DSP_2024_1_CONTEXT = Json.createArrayBuilder()
+            .add("https://w3id.org/dspace/2024/1/context.jsonld").build();
+
+    public static final JsonArray DSP_2025_1_CONTEXT = Json.createArrayBuilder()
+            .add("https://w3id.org/dspace/2025/1/context.jsonld").build();
+
+    public static JsonValue getContextForDspVersion(DspVersion version) {
+        return switch (version) {
+            case V_08 -> LEGACY_CONTEXT;
+            case V_2024_1 -> DSP_2024_1_CONTEXT;
+            case V_2025_1 -> DSP_2025_1_CONTEXT;
+        };
+    }
 
     /**
      * Expands a compact JSON-LD object
@@ -65,7 +95,7 @@ public class JsonUtils {
     public static JsonObject expand(JsonObject jsonObject) {
         try {
             JsonDocument jsonDocument = JsonDocument.of(jsonObject);
-            JsonArray array = JsonLd.expand(jsonDocument).get();
+            JsonArray array = JsonLd.expand(jsonDocument).options(JSONLD_OPTIONS).get();
             return array.getJsonObject(0);
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -141,14 +171,16 @@ public class JsonUtils {
      * @return - a JSON-LD response object
      */
     public static byte[] createErrorResponse(String providerPid, String consumerPid, String type,
-                                             List<String> reasons) {
+                                             List<String> reasons, DspVersion version) {
+        var context = getContextForDspVersion(version);
+        String prefix = DspVersion.V_08.equals(version) ? "dspace:" : "";
         JsonObjectBuilder responseBuilder = Json.createObjectBuilder()
-                .add("@context", FULL_CONTEXT)
-                .add("@type", "dspace:" + type)
-                .add("dspace:providerPid", providerPid)
-                .add("dspace:consumerPid", consumerPid)
+                .add("@context", context)
+                .add("@type", prefix + type)
+                .add(prefix + "providerPid", providerPid)
+                .add(prefix + "consumerPid", consumerPid)
                 // TODO: Examine possible error codes
-                .add("dspace:code", "400");
+                .add(prefix + "code", "400");
 
         if (reasons != null && !reasons.isEmpty()) {
             JsonArrayBuilder arrayBuilder = Json.createArrayBuilder();
@@ -159,7 +191,7 @@ public class JsonUtils {
                         .build();
                 arrayBuilder.add(reason);
             }
-            responseBuilder.add("dspace:reason", arrayBuilder.build());
+            responseBuilder.add(prefix + "reason", arrayBuilder.build());
         }
 
         return responseBuilder.build().toString().getBytes(StandardCharsets.UTF_8);

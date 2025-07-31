@@ -18,8 +18,11 @@ package org.factoryx.library.connector.embedded.provider.controller;
 
 import lombok.extern.slf4j.Slf4j;
 import org.factoryx.library.connector.embedded.provider.interfaces.DspTokenValidationService;
+import org.factoryx.library.connector.embedded.provider.model.DspVersion;
 import org.factoryx.library.connector.embedded.provider.model.ResponseRecord;
 import org.factoryx.library.connector.embedded.provider.service.DspTransferService;
+import org.factoryx.library.connector.embedded.provider.service.deserializers.DeserializerService;
+import org.factoryx.library.connector.embedded.provider.service.deserializers.service_dtos.*;
 import org.factoryx.library.connector.embedded.provider.service.helpers.DataAccessTokenValidationService;
 import org.factoryx.library.connector.embedded.provider.service.helpers.JsonUtils;
 import org.springframework.http.HttpStatus;
@@ -33,7 +36,7 @@ import java.util.UUID;
 @Slf4j
 /**
  * Endpoint for receiving DSP requests related to negotiations
- * 
+ *
  * @author dalmasoud
  */
 public class DspTransferController {
@@ -41,15 +44,18 @@ public class DspTransferController {
     private final DspTransferService dspTransferService;
     private final DspTokenValidationService dspTokenValidationService;
     private final DataAccessTokenValidationService dataAccessTokenValidationService;
+    private final DeserializerService deserializerService;
 
     private static final String GRANT_TYPE_REFRESH_TOKEN = "refresh_token";
 
     public DspTransferController(DspTransferService dspTransferService,
-            DspTokenValidationService dspTokenValidationService,
-            DataAccessTokenValidationService dataAccessTokenValidationService) {
+                                 DspTokenValidationService dspTokenValidationService,
+                                 DataAccessTokenValidationService dataAccessTokenValidationService,
+                                 DeserializerService deserializerService) {
         this.dspTransferService = dspTransferService;
         this.dspTokenValidationService = dspTokenValidationService;
         this.dataAccessTokenValidationService = dataAccessTokenValidationService;
+        this.deserializerService = deserializerService;
     }
 
     /**
@@ -61,16 +67,33 @@ public class DspTransferController {
      * @return - a response indicating the initiation status of the transfer process
      */
     @PostMapping("${org.factoryx.library.dspapiprefix:/dsp}/transfers/request")
-    public ResponseEntity<byte[]> createPullTransferProcess(@RequestBody String requestBody,
-                                                            @RequestHeader("Authorization") String authString) {
-        log.debug("transfers/request: \n{}", JsonUtils.prettyPrint(requestBody));
+    public ResponseEntity<byte[]> createPullTransferProcess_V_08(@RequestBody String requestBody,
+                                                                 @RequestHeader("Authorization") String authString) {
+        return handlePullTransferRequest(requestBody, authString, DspVersion.V_08);
+    }
+
+    @PostMapping("${org.factoryx.library.dspapiprefix:/dsp}/2024/1/transfers/request")
+    public ResponseEntity<byte[]> createPullTransferProcess_V_2024_1(@RequestBody String requestBody,
+                                                                     @RequestHeader("Authorization") String authString) {
+        return handlePullTransferRequest(requestBody, authString, DspVersion.V_2024_1);
+    }
+
+    @PostMapping("${org.factoryx.library.dspapiprefix:/dsp}/2025/1/transfers/request")
+    public ResponseEntity<byte[]> createPullTransferProcess_V_2025_1(@RequestBody String requestBody,
+                                                                     @RequestHeader("Authorization") String authString) {
+        return handlePullTransferRequest(requestBody, authString, DspVersion.V_2025_1);
+    }
+
+    private ResponseEntity<byte[]> handlePullTransferRequest(String requestBody, String authString, DspVersion version) {
+        log.info("transfers/request under version {}: \n{}", version, JsonUtils.prettyPrint(requestBody));
         try {
             Map<String, String> tokenValidationResult = dspTokenValidationService.validateToken(authString);
             String partnerId = tokenValidationResult.get(DspTokenValidationService.ReservedKeys.partnerId.toString());
             if (partnerId == null) {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
             }
-            ResponseRecord responseRecord = dspTransferService.handleNewTransfer(requestBody, partnerId, tokenValidationResult);
+            TransferRequestMessage transferRequestMessage = deserializerService.deserializeTransferRequestMessage(requestBody, version);
+            ResponseRecord responseRecord = dspTransferService.handleNewTransfer(transferRequestMessage, partnerId, tokenValidationResult, version);
             return ResponseEntity.status(responseRecord.statusCode()).body(responseRecord.responseBody());
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
@@ -78,8 +101,57 @@ public class DspTransferController {
     }
 
     @PostMapping("${org.factoryx.library.dspapiprefix:/dsp}/transfers/{providerPid}/completion")
-    public ResponseEntity<byte[]> completeTransfer(@RequestBody String requestBody,
-                                                   @RequestHeader("Authorization") String authString, @PathVariable("providerPid") UUID providerPid) {
+    public ResponseEntity<byte[]> transferCompletionEndpoint_V_08(@RequestBody String requestBody,
+                                                                  @RequestHeader("Authorization") String authString, @PathVariable("providerPid") UUID providerPid) {
+        return handleTransferCompletionMessage(requestBody, authString, providerPid, DspVersion.V_08);
+    }
+
+    @PostMapping("${org.factoryx.library.dspapiprefix:/dsp}/2024/1/transfers/{providerPid}/completion")
+    public ResponseEntity<byte[]> transferCompletionEndpoint_V_2024_1(@RequestBody String requestBody,
+                                                                      @RequestHeader("Authorization") String authString, @PathVariable("providerPid") UUID providerPid) {
+        return handleTransferCompletionMessage(requestBody, authString, providerPid, DspVersion.V_2024_1);
+    }
+
+    @PostMapping("${org.factoryx.library.dspapiprefix:/dsp}/2025/1/transfers/{providerPid}/completion")
+    public ResponseEntity<byte[]> transferCompletionEndpoint_V_2025_1(@RequestBody String requestBody,
+                                                                      @RequestHeader("Authorization") String authString, @PathVariable("providerPid") UUID providerPid) {
+        return handleTransferCompletionMessage(requestBody, authString, providerPid, DspVersion.V_2025_1);
+    }
+
+    private ResponseEntity<byte[]> handleTransferCompletionMessage(String requestBody, String authString, UUID providerPid, DspVersion version) {
+        try {
+            Map<String, String> tokenValidationResult = dspTokenValidationService.validateToken(authString);
+            String partnerId = tokenValidationResult.get(DspTokenValidationService.ReservedKeys.partnerId.toString());
+            if (partnerId == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+            }
+            TransferCompletionMessage transferCompletionMessage = deserializerService.deserializeTransferCompletionMessage(requestBody, version);
+            ResponseRecord responseRecord = dspTransferService.handleCompletionRequest(transferCompletionMessage, partnerId, providerPid, version);
+            return ResponseEntity.status(responseRecord.statusCode()).body(responseRecord.responseBody());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @GetMapping("${org.factoryx.library.dspapiprefix:/dsp}/transfers/{providerPid}")
+    public ResponseEntity<byte[]> transferGetStatusEndpoint_V_08(@RequestHeader("Authorization") String authString,
+                                                                 @PathVariable("providerPid") UUID providerPid) {
+        return handleGetTransferRequest(authString, providerPid, DspVersion.V_08);
+    }
+
+    @GetMapping("${org.factoryx.library.dspapiprefix:/dsp}/2024/1/transfers/{providerPid}")
+    public ResponseEntity<byte[]> transferGetStatusEndpoint_V_2024_1(@RequestHeader("Authorization") String authString,
+                                                                     @PathVariable("providerPid") UUID providerPid) {
+        return handleGetTransferRequest(authString, providerPid, DspVersion.V_2024_1);
+    }
+
+    @GetMapping("${org.factoryx.library.dspapiprefix:/dsp}/2025/1/transfers/{providerPid}")
+    public ResponseEntity<byte[]> transferGetStatusEndpoint_V_2025_1(@RequestHeader("Authorization") String authString,
+                                                                     @PathVariable("providerPid") UUID providerPid) {
+        return handleGetTransferRequest(authString, providerPid, DspVersion.V_2025_1);
+    }
+
+    private ResponseEntity<byte[]> handleGetTransferRequest(String authString, UUID providerPid, DspVersion version) {
         try {
             Map<String, String> tokenValidationResult = dspTokenValidationService.validateToken(authString);
             String partnerId = tokenValidationResult.get(DspTokenValidationService.ReservedKeys.partnerId.toString());
@@ -87,7 +159,117 @@ public class DspTransferController {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
             }
 
-            ResponseRecord responseRecord = dspTransferService.handleCompletionRequest(requestBody, partnerId, providerPid);
+            ResponseRecord responseRecord = dspTransferService.handleGetStatusRequest(providerPid, partnerId, version);
+            return ResponseEntity.status(responseRecord.statusCode()).body(responseRecord.responseBody());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @PostMapping("${org.factoryx.library.dspapiprefix:/dsp}/transfers/{providerPid}/termination")
+    public ResponseEntity<byte[]> transferTerminationEndpoint_V_08(@RequestBody String requestBody,
+                                                                   @RequestHeader("Authorization") String authString,
+                                                                   @PathVariable("providerPid") UUID providerPid) {
+        return handleTransferTerminationMessage(requestBody, authString, providerPid, DspVersion.V_08);
+    }
+
+    @PostMapping("${org.factoryx.library.dspapiprefix:/dsp}/2024/1/transfers/{providerPid}/termination")
+    public ResponseEntity<byte[]> transferTerminationEndpoint_V_2024_1(@RequestBody String requestBody,
+                                                                       @RequestHeader("Authorization") String authString,
+                                                                       @PathVariable("providerPid") UUID providerPid) {
+        return handleTransferTerminationMessage(requestBody, authString, providerPid, DspVersion.V_2024_1);
+    }
+
+    @PostMapping("${org.factoryx.library.dspapiprefix:/dsp}/2025/1/transfers/{providerPid}/termination")
+    public ResponseEntity<byte[]> transferTerminationEndpoint_V_2025_1(@RequestBody String requestBody,
+                                                                       @RequestHeader("Authorization") String authString,
+                                                                       @PathVariable("providerPid") UUID providerPid) {
+        return handleTransferTerminationMessage(requestBody, authString, providerPid, DspVersion.V_2025_1);
+    }
+
+    private ResponseEntity<byte[]> handleTransferTerminationMessage(String requestBody, String authString, UUID providerPid, DspVersion version) {
+        try {
+            Map<String, String> tokenValidationResult = dspTokenValidationService.validateToken(authString);
+            String partnerId = tokenValidationResult.get(DspTokenValidationService.ReservedKeys.partnerId.toString());
+            if (partnerId == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+            }
+            TransferTerminationMessage terminationMessage = deserializerService.deserializeTransferTerminationMessage(requestBody, version);
+            ResponseRecord responseRecord = dspTransferService.handleTerminationRequest(terminationMessage, partnerId, providerPid, version);
+            return ResponseEntity.status(responseRecord.statusCode()).body(responseRecord.responseBody());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @PostMapping("${org.factoryx.library.dspapiprefix:/dsp}/transfers/{providerPid}/suspension")
+    public ResponseEntity<byte[]> transferSuspensionEndpoint_V_08(@RequestBody String requestBody,
+                                                                  @RequestHeader("Authorization") String authString,
+                                                                  @PathVariable("providerPid") UUID providerPid) {
+        return handleTransferSuspensionMessage(requestBody, authString, providerPid, DspVersion.V_08);
+    }
+
+    @PostMapping("${org.factoryx.library.dspapiprefix:/dsp}/2024/1/transfers/{providerPid}/suspension")
+    public ResponseEntity<byte[]> transferSuspensionEndpoint_V_2024_1(@RequestBody String requestBody,
+                                                                      @RequestHeader("Authorization") String authString,
+                                                                      @PathVariable("providerPid") UUID providerPid) {
+        return handleTransferSuspensionMessage(requestBody, authString, providerPid, DspVersion.V_2024_1);
+    }
+
+    @PostMapping("${org.factoryx.library.dspapiprefix:/dsp}/2025/1/transfers/{providerPid}/suspension")
+    public ResponseEntity<byte[]> transferSuspensionEndpoint_V_2025_1(@RequestBody String requestBody,
+                                                                      @RequestHeader("Authorization") String authString,
+                                                                      @PathVariable("providerPid") UUID providerPid) {
+        return handleTransferSuspensionMessage(requestBody, authString, providerPid, DspVersion.V_2025_1);
+    }
+
+    private ResponseEntity<byte[]> handleTransferSuspensionMessage(String requestBody, String authString, UUID providerPid, DspVersion version) {
+        try {
+            Map<String, String> tokenValidationResult = dspTokenValidationService.validateToken(authString);
+            String partnerId = tokenValidationResult.get(DspTokenValidationService.ReservedKeys.partnerId.toString());
+            if (partnerId == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+            }
+            TransferSuspensionMessage suspensionMessage = deserializerService.deserializeTransferSuspensionMessage(requestBody, version);
+            ResponseRecord responseRecord = dspTransferService.handleSuspensionRequest(suspensionMessage, partnerId, providerPid, version);
+            return ResponseEntity.status(responseRecord.statusCode()).body(responseRecord.responseBody());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+
+    @PostMapping("${org.factoryx.library.dspapiprefix:/dsp}/transfers/{providerPid}/start")
+    public ResponseEntity<byte[]> transferStartEndpoint_V_08(@RequestBody String requestBody,
+                                                             @RequestHeader("Authorization") String authString,
+                                                             @PathVariable("providerPid") UUID providerPid) {
+        return handleTransferStartMessage(requestBody, authString, providerPid, DspVersion.V_08);
+    }
+
+    @PostMapping("${org.factoryx.library.dspapiprefix:/dsp}/2024/1/transfers/{providerPid}/start")
+    public ResponseEntity<byte[]> transferStartEndpoint_V_2024_1(@RequestBody String requestBody,
+                                                                 @RequestHeader("Authorization") String authString,
+                                                                 @PathVariable("providerPid") UUID providerPid) {
+        return handleTransferStartMessage(requestBody, authString, providerPid, DspVersion.V_2024_1);
+    }
+
+    @PostMapping("${org.factoryx.library.dspapiprefix:/dsp}/2025/1/transfers/{providerPid}/start")
+    public ResponseEntity<byte[]> transferStartEndpoint_V_2025_1(@RequestBody String requestBody,
+                                                                 @RequestHeader("Authorization") String authString,
+                                                                 @PathVariable("providerPid") UUID providerPid) {
+        return handleTransferStartMessage(requestBody, authString, providerPid, DspVersion.V_2025_1);
+    }
+
+
+    private ResponseEntity<byte[]> handleTransferStartMessage(String requestBody, String authString, UUID providerPid, DspVersion version) {
+        try {
+            Map<String, String> tokenValidationResult = dspTokenValidationService.validateToken(authString);
+            String partnerId = tokenValidationResult.get(DspTokenValidationService.ReservedKeys.partnerId.toString());
+            if (partnerId == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+            }
+            TransferStartMessage transferStartMessage = deserializerService.deserializeTransferStartMessage(requestBody, version);
+            ResponseRecord responseRecord = dspTransferService.handleStartRequest(transferStartMessage, partnerId, providerPid, version);
             return ResponseEntity.status(responseRecord.statusCode()).body(responseRecord.responseBody());
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
@@ -97,9 +279,9 @@ public class DspTransferController {
     /**
      * Endpoint for refreshing a token.
      *
-     * @param grantType   - the type of grant
+     * @param grantType    - the type of grant
      * @param refreshToken - the refresh token
-     * @param authString  - the Authorization header value
+     * @param authString   - the Authorization header value
      * @return - a response containing the new token
      */
     @PostMapping("${org.factoryx.library.dspapiprefix:/dsp}/transfers/refresh")
@@ -126,7 +308,7 @@ public class DspTransferController {
             }
 
             ResponseRecord response = dspTransferService.handleRefreshTokenRequest(refreshToken);
-                
+
             log.info("Response: {}", response.responseBody());
             return ResponseEntity.status(response.statusCode()).body(response.responseBody());
         } catch (Exception e) {

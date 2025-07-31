@@ -16,19 +16,26 @@
 
 package org.factoryx.library.connector.embedded.teststarter;
 
+import org.factoryx.library.connector.embedded.provider.model.negotiation.NegotiationRecord;
+import org.factoryx.library.connector.embedded.provider.repository.NegotiationRecordRepository;
+import org.factoryx.library.connector.embedded.provider.service.NegotiationRecordFactory;
 import org.factoryx.library.connector.embedded.provider.service.NegotiationRecordService;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.autoconfigure.domain.EntityScan;
-import org.springframework.context.annotation.ComponentScan;
-import org.springframework.context.annotation.FilterType;
-import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
-@SpringBootApplication
-@ComponentScan(basePackages = {"org.factoryx.library"}, excludeFilters = @ComponentScan.Filter(
-        type = FilterType.ASSIGNABLE_TYPE,
-        classes = NegotiationRecordService.class
-))
-@EnableJpaRepositories(basePackages = {"org.factoryx.library"})
-@EntityScan(basePackages = {"org.factoryx.library"})
-public class TestStarter {
+public class TckNegotiationRecordService extends NegotiationRecordService {
+
+
+    public TckNegotiationRecordService(NegotiationRecordFactory recordFactory, NegotiationRecordRepository repository) {
+        super(recordFactory, repository);
+    }
+
+
+    /**
+     * Only for usage in TCK tests, never use in production!
+     *
+     * @param negotiationRecord
+     * @return
+     */
+    public NegotiationRecord injectMockData(NegotiationRecord negotiationRecord) {
+        return repository.save(negotiationRecord);
+    }
 }
