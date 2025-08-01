@@ -26,9 +26,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import static org.factoryx.library.connector.embedded.provider.service.helpers.JsonUtils.createErrorResponse;
 import static org.factoryx.library.connector.embedded.provider.service.helpers.JsonUtils.prettyPrint;
 
 @RestController
@@ -93,7 +95,8 @@ public class DspCatalogController {
         // Check if body or token is null
         if (requestBody == null || deserializerService.deserializeCatalogRequestMessage(requestBody, version) == null
                 || authString == null || authString.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid request: Body and Authorization token are required.");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new String(createErrorResponse("unknown", "unknown",
+                    "CatalogError", List.of("Bad Request"), version)));
         }
 
         try {

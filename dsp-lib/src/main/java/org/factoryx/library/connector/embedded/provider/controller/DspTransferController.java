@@ -29,8 +29,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+
+import static org.factoryx.library.connector.embedded.provider.service.helpers.JsonUtils.createErrorResponse;
 
 @RestController
 @Slf4j
@@ -93,6 +96,11 @@ public class DspTransferController {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
             }
             TransferRequestMessage transferRequestMessage = deserializerService.deserializeTransferRequestMessage(requestBody, version);
+            if (transferRequestMessage == null) {
+                return ResponseEntity.status(400).body(
+                        createErrorResponse("unknown", "unknown",
+                                "TransferError", List.of("Bad Request"), version));
+            }
             ResponseRecord responseRecord = dspTransferService.handleNewTransfer(transferRequestMessage, partnerId, tokenValidationResult, version);
             return ResponseEntity.status(responseRecord.statusCode()).body(responseRecord.responseBody());
         } catch (Exception e) {
@@ -126,6 +134,11 @@ public class DspTransferController {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
             }
             TransferCompletionMessage transferCompletionMessage = deserializerService.deserializeTransferCompletionMessage(requestBody, version);
+            if (transferCompletionMessage == null) {
+                return ResponseEntity.status(400).body(
+                        createErrorResponse(providerPid.toString(), "unknown",
+                                "TransferError", List.of("Bad Request"), version));
+            }
             ResponseRecord responseRecord = dspTransferService.handleCompletionRequest(transferCompletionMessage, partnerId, providerPid, version);
             return ResponseEntity.status(responseRecord.statusCode()).body(responseRecord.responseBody());
         } catch (Exception e) {
@@ -195,6 +208,11 @@ public class DspTransferController {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
             }
             TransferTerminationMessage terminationMessage = deserializerService.deserializeTransferTerminationMessage(requestBody, version);
+            if (terminationMessage == null) {
+                return ResponseEntity.status(400).body(
+                        createErrorResponse(providerPid.toString(), "unknown",
+                                "TransferError", List.of("Bad Request"), version));
+            }
             ResponseRecord responseRecord = dspTransferService.handleTerminationRequest(terminationMessage, partnerId, providerPid, version);
             return ResponseEntity.status(responseRecord.statusCode()).body(responseRecord.responseBody());
         } catch (Exception e) {
@@ -231,6 +249,11 @@ public class DspTransferController {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
             }
             TransferSuspensionMessage suspensionMessage = deserializerService.deserializeTransferSuspensionMessage(requestBody, version);
+            if (suspensionMessage == null) {
+                return ResponseEntity.status(400).body(
+                        createErrorResponse(providerPid.toString(), "unknown",
+                                "TransferError", List.of("Bad Request"), version));
+            }
             ResponseRecord responseRecord = dspTransferService.handleSuspensionRequest(suspensionMessage, partnerId, providerPid, version);
             return ResponseEntity.status(responseRecord.statusCode()).body(responseRecord.responseBody());
         } catch (Exception e) {

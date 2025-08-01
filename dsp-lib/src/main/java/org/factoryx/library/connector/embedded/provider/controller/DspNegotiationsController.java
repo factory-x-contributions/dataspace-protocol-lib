@@ -30,8 +30,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+
+import static org.factoryx.library.connector.embedded.provider.service.helpers.JsonUtils.createErrorResponse;
 
 @RestController
 @Slf4j
@@ -106,7 +109,11 @@ public class DspNegotiationsController {
             log.info("Starting Deserialization");
             ContractRequestMessage contractRequestMessage =
                     deserializerService.deserializeContractRequestMessage(rawJson, version);
-            log.info("contractRequestMessage: {}", contractRequestMessage);
+            if (contractRequestMessage == null) {
+                return ResponseEntity.status(400).body(
+                        createErrorResponse("unknown", "unknown",
+                                "ContractNegotiationError", List.of("Bad Request"), version));
+            }
             ResponseRecord responseRecord =
                     dspNegotiationService.handleNewNegotiation(contractRequestMessage, partnerId, tokenValidationResult, version);
             return ResponseEntity.status(responseRecord.statusCode()).body(responseRecord.responseBody());
@@ -171,7 +178,11 @@ public class DspNegotiationsController {
             }
             ContractVerificationMessage contractVerificationMessage =
                     deserializerService.deserializeContractVerificationMessage(rawJson, version);
-            log.info("contractVerificationMessage: {}", contractVerificationMessage);
+            if (contractVerificationMessage == null) {
+                return ResponseEntity.status(400).body(
+                        createErrorResponse(providerPid.toString(), "unknown",
+                                "ContractNegotiationError", List.of("Bad Request"), version));
+            }
             ResponseRecord responseRecord =
                     dspNegotiationService.handleVerificationRequest(contractVerificationMessage, partnerId, providerPid, version);
             return ResponseEntity.status(responseRecord.statusCode()).build();
@@ -211,6 +222,12 @@ public class DspNegotiationsController {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Unauthorized request".getBytes());
             }
             NegotiationTerminationMessage terminationMessage = deserializerService.deserializeNegotiationTerminationMessage(rawJson, version);
+            if (terminationMessage == null) {
+                return ResponseEntity.status(400).body(
+                        createErrorResponse(providerPid.toString(), "unknown",
+                                "ContractNegotiationError", List.of("Bad Request"), version));
+            }
+
             ResponseRecord responseRecord = dspNegotiationService.handleNegotiationTerminationRequest(terminationMessage, partnerId, version);
             return ResponseEntity.status(responseRecord.statusCode()).body(responseRecord.responseBody());
         } catch (Exception e) {

@@ -32,6 +32,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import static org.factoryx.library.connector.embedded.provider.service.helpers.JsonUtils.createErrorResponse;
+
 @Service
 @Slf4j
 /**
@@ -138,10 +140,11 @@ public class DspCatalogService {
         return buildFinalCatalogResponse(getAllCatalogs(partnerId, partnerProperties, version), version);
     }
 
-    public JsonObject getDataset(String partnerId, Map<String, String> partnerProperties, UUID id, DspVersion version) {
+    public String getDataset(String partnerId, Map<String, String> partnerProperties, UUID id, DspVersion version) {
         DataAsset asset = dataManagementService.getByIdForProperties(id, partnerProperties);
         if (asset == null) {
-            return buildCatalogErrorResponse(version);
+            return new String(createErrorResponse("unknown", "unknown",
+                    "CatalogError", List.of("Bad Request"), version));
         }
         var datasetPolicy = Json.createObjectBuilder(
                 policyService.createOfferedPolicy(asset.getId().toString(),partnerId, version))
@@ -165,13 +168,6 @@ public class DspCatalogService {
                                         .add("endpointURL", envService.getOwnDspUrl() + version.PATH_SUFFIX)
                                         .build())
                 ));
-        return datasetBuilder.build();
-    }
-
-    private JsonObject buildCatalogErrorResponse(DspVersion version) {
-        JsonObjectBuilder errorBuilder = Json.createObjectBuilder();
-        errorBuilder.add("@context", JsonUtils.getContextForDspVersion(version));
-        errorBuilder.add("@type", "CatalogError");
-        return errorBuilder.build();
+        return datasetBuilder.build().toString();
     }
 }
