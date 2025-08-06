@@ -21,13 +21,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.factoryx.library.connector.embedded.provider.interfaces.DataAssetManagementService;
 import org.factoryx.library.connector.embedded.provider.service.helpers.DataAccessTokenValidationService;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.*;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.RestTemplate;
 
 import java.util.UUID;
 
@@ -44,6 +41,9 @@ public class DataAccessController {
 
     private final DataAssetManagementService dataAssetManagementService;
     private final DataAccessTokenValidationService dataAccessTokenValidationService;
+
+    @Autowired
+    private RestTemplate restTemplate;
 
     public DataAccessController(DataAssetManagementService dataAssetManagementService, DataAccessTokenValidationService dataAccessTokenValidationService) {
         this.dataAssetManagementService = dataAssetManagementService;
@@ -63,4 +63,34 @@ public class DataAccessController {
         return ResponseEntity.ok().contentType(MediaType.parseMediaType(asset.getContentType())).body(asset.getDtoRepresentation());
     }
 
+    @GetMapping("/data/{*path}")
+    public ResponseEntity<byte[]> forwardGetRequest(@RequestHeader("Authorization") String authToken, @PathVariable String path) {
+        return forwardRequest(HttpMethod.GET, authToken, path, null);
+    }
+
+    @PostMapping("/data/{*path}")
+    public ResponseEntity<byte[]> forwardPostRequest(@RequestHeader("Authorization") String authToken, @PathVariable String path, @RequestBody byte[] body) {
+        return forwardRequest(HttpMethod.POST, authToken, path, body);
+    }
+
+    @PutMapping("/data/{*path}")
+    public ResponseEntity<byte[]> forwardPutRequest(@RequestHeader("Authorization") String authToken, @PathVariable String path, @RequestBody byte[] body) {
+        return forwardRequest(HttpMethod.PUT, authToken, path, body);
+    }
+
+    @DeleteMapping("/data/{*path}")
+    public ResponseEntity<byte[]> forwardDeleteRequest(@RequestHeader("Authorization") String authToken, @PathVariable String path) {
+        return forwardRequest(HttpMethod.DELETE, authToken, path, null);
+    }
+
+    private ResponseEntity<byte[]> forwardRequest(HttpMethod method, String authToken, String path, byte[] body) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Authorization", authToken);
+        HttpEntity<byte[]> entity = new HttpEntity<>(body, headers);
+
+        String url = org.factoryx.library.aasdataaccess + path; // AAS Url + path variables
+        ResponseEntity<byte[]> response = restTemplate.exchange(url, method, entity, byte[].class);
+
+        return ResponseEntity.status(response.getStatusCode()).headers(response.getHeaders()).body(response.getBody());
+    }
 }
