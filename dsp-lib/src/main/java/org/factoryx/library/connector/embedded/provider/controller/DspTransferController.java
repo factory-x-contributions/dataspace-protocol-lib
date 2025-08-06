@@ -21,6 +21,7 @@ import org.factoryx.library.connector.embedded.provider.interfaces.DspTokenValid
 import org.factoryx.library.connector.embedded.provider.model.ResponseRecord;
 import org.factoryx.library.connector.embedded.provider.service.DspTransferService;
 import org.factoryx.library.connector.embedded.provider.service.helpers.DataAccessTokenValidationService;
+import org.factoryx.library.connector.embedded.provider.service.helpers.JsonUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -62,6 +63,7 @@ public class DspTransferController {
     @PostMapping("${org.factoryx.library.dspapiprefix:/dsp}/transfers/request")
     public ResponseEntity<byte[]> createPullTransferProcess(@RequestBody String requestBody,
                                                             @RequestHeader("Authorization") String authString) {
+        log.debug("transfers/request: \n{}", JsonUtils.prettyPrint(requestBody));
         try {
             Map<String, String> tokenValidationResult = dspTokenValidationService.validateToken(authString);
             String partnerId = tokenValidationResult.get(DspTokenValidationService.ReservedKeys.partnerId.toString());

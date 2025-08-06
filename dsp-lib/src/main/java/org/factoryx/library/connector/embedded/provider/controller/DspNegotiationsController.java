@@ -20,6 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.factoryx.library.connector.embedded.provider.interfaces.DspTokenValidationService;
 import org.factoryx.library.connector.embedded.provider.model.ResponseRecord;
 import org.factoryx.library.connector.embedded.provider.service.DspNegotiationService;
+import org.factoryx.library.connector.embedded.provider.service.helpers.JsonUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -53,6 +54,7 @@ public class DspNegotiationsController {
     @PostMapping("${org.factoryx.library.dspapiprefix:/dsp}/negotiations/request")
     public ResponseEntity<byte[]> postNegotiationsNewRequestController(@RequestBody String stringBody,
                                                                        @RequestHeader("Authorization") String authString) {
+        log.debug("negotiations/request: \n{}", JsonUtils.prettyPrint(stringBody));
         try {
             Map<String, String> tokenValidationResult = dspTokenValidationService.validateToken(authString);
             String partnerId = tokenValidationResult.get(DspTokenValidationService.ReservedKeys.partnerId.toString());
@@ -80,6 +82,7 @@ public class DspNegotiationsController {
     public ResponseEntity<byte[]> postNegotiationsVerificationController(@RequestBody String stringBody,
                                                                          @RequestHeader("Authorization") String authString,
                                                                          @PathVariable("providerPid") UUID providerPid) {
+        log.debug("negotiations/agreement/verification: \n{}", JsonUtils.prettyPrint(stringBody));
         try {
             Map<String, String> tokenValidationResult = dspTokenValidationService.validateToken(authString);
             String partnerId = tokenValidationResult.get(DspTokenValidationService.ReservedKeys.partnerId.toString());
