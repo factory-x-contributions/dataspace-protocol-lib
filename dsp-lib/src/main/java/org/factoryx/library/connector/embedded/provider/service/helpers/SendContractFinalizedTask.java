@@ -101,7 +101,7 @@ public class SendContractFinalizedTask implements Runnable {
     }
 
     private String buildContractFinalizedMessage(NegotiationRecord record) {
-        String prefix = DspVersion.V_08.equals(dspVersion) ? "dspace:" : "";
+        String prefix = dspVersion.ordinal() < DspVersion.V_2025_1.ordinal() ? "dspace:" : "";
         String eventPrefix = DspVersion.V_08.equals(dspVersion) ? "https://w3id.org/dspace/v0.8/" : "";
         return Json.createObjectBuilder()
                 .add("@context", JsonUtils.getContextForDspVersion(dspVersion))

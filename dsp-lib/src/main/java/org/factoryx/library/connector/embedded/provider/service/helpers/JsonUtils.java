@@ -73,7 +73,7 @@ public class JsonUtils {
             .build();
 
     public static final JsonArray DSP_2024_1_CONTEXT = Json.createArrayBuilder()
-            .add("https://w3id.org/dspace/2024/1/context.jsonld").build();
+            .add("https://w3id.org/dspace/2024/1/context.json").build();
 
     public static final JsonArray DSP_2025_1_CONTEXT = Json.createArrayBuilder()
             .add("https://w3id.org/dspace/2025/1/context.jsonld").build();

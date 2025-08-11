@@ -167,6 +167,24 @@ public abstract class DspPolicyService {
         if (obligation != null && obligation.isEmpty()) {
             offerBuilder.remove(ODRL_NAMESPACE + "obligation");
         }
+        for (JsonValue value : offer.getJsonArray(ODRL_NAMESPACE + "assignee")) {
+            if (value instanceof JsonObject object) {
+                var assignee = object.getJsonString("@id");
+                if (assignee != null) {
+                    offerBuilder.remove(ODRL_NAMESPACE + "assignee");
+                    offerBuilder.add(ODRL_NAMESPACE + "assignee", Json.createArrayBuilder().add(Json.createObjectBuilder().add("@value", assignee)));
+                }
+            }
+        }
+        for (JsonValue value : offer.getJsonArray(ODRL_NAMESPACE + "assigner")) {
+            if (value instanceof JsonObject object) {
+                var assigner = object.getJsonString("@id");
+                if (assigner != null) {
+                    offerBuilder.remove(ODRL_NAMESPACE + "assigner");
+                    offerBuilder.add(ODRL_NAMESPACE + "assigner", Json.createArrayBuilder().add(Json.createObjectBuilder().add("@value", assigner)));
+                }
+            }
+        }
         return offerBuilder.build();
     }
 
@@ -193,6 +211,7 @@ public abstract class DspPolicyService {
                     .getJsonArray(DSPACE_NAMESPACE + "Offer")
                     .getJsonObject(0);
         } catch (Exception e) {
+            log.error(e.getMessage(), e);
             throw new RuntimeException(e);
         }
     }

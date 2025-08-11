@@ -16,9 +16,21 @@
 
 package org.factoryx.library.connector.embedded.provider.service.deserializers;
 
+import jakarta.json.JsonArray;
+import jakarta.json.JsonObject;
+import lombok.Getter;
+import lombok.NonNull;
 import org.factoryx.library.connector.embedded.provider.service.deserializers.service_dtos.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import static org.factoryx.library.connector.embedded.provider.service.helpers.JsonUtils.*;
 
 public class V_2024_1_Deserializer {
+
+    private static final Logger log = LoggerFactory.getLogger(V_2024_1_Deserializer.class);
+
+    public final static String DSP_2024_NAMESPACE = "https://w3id.org/dspace/2024/1/";
 
     public static TransferStartMessage deserializeTransferStartMessage(String rawJson) {
         return V_2025_1_Deserializer.deserializeTransferStartMessage(rawJson);
@@ -49,7 +61,45 @@ public class V_2024_1_Deserializer {
     }
 
     public static ContractRequestMessage deserializeContractRequest(String json) {
-        return V_08_Deserializer.deserializeContractRequest(json);
+        try {
+            return new ContractRequestMessageImpl(json);
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+        }
+        return null;
+    }
+
+    @Getter
+    static class ContractRequestMessageImpl implements ContractRequestMessage {
+        @NonNull
+        private final String consumerPid;
+        @NonNull
+        private final String targetAssetId;
+        @NonNull
+        private final String partnerDspUrl;
+
+        private final JsonObject offer;
+
+        ContractRequestMessageImpl(String rawJson) {
+            JsonObject node = parse(rawJson);
+            String messageType = node.getString("@type");
+            if (!messageType.equals("dspace:ContractRequestMessage")) {
+                log.error("Invalid message type: {}", messageType);
+                throw new IllegalArgumentException("Invalid message type: " + messageType);
+            }
+            this.consumerPid = node.getJsonObject("dspace:consumerPid").getString("@id");
+            this.targetAssetId = node.getJsonObject("dspace:offer").getJsonObject("odrl:target").getString("@id");
+            this.partnerDspUrl = node.getString("dspace:callbackAddress");
+            JsonObject temp = null;
+            try {
+                var expandedNode = parseAndExpand(rawJson);
+                log.info("Parsing contract request: {}", prettyPrint(expandedNode));
+                temp = expandedNode.getJsonArray(DSP_2024_NAMESPACE + "offer").getJsonObject(0);
+            } catch (Exception e) {
+            }
+            this.offer = temp;
+
+        }
     }
 
     public static ContractVerificationMessage deserializeContractVerification(String json) {

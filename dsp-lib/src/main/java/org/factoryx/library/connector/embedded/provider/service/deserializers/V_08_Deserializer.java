@@ -69,10 +69,10 @@ public class V_08_Deserializer {
 
         TransferRequestMessageImpl(String rawJson) {
             JsonObject node = parse(rawJson);
-            this.consumerPid = node.getString("consumerPid");
-            this.agreementId = UUID.fromString(node.getString("agreementId"));
-            this.partnerDspUrl = node.getString("callbackAddress");
-            this.format = node.getString("format");
+            this.consumerPid = node.getString("dspace:consumerPid");
+            this.agreementId = UUID.fromString(node.getString("dspace:agreementId"));
+            this.partnerDspUrl = node.getString("dspace:callbackAddress");
+            this.format = node.getString("dct:format");
         }
     }
 

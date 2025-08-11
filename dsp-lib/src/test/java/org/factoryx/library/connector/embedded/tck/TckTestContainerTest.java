@@ -27,6 +27,8 @@ import org.factoryx.library.connector.embedded.teststarter.TckNegotiationRecordS
 import org.factoryx.library.connector.embedded.teststarter.TestStarter;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
@@ -58,12 +60,13 @@ import static org.junit.jupiter.api.Assertions.*;
 @SpringBootTest(classes = TestStarter.class, webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
 @EnabledIf(expression = "#{systemProperties['testcontainer.tck.disable'] == 'false'}")
 public class TckTestContainerTest {
+
+    final static Logger log = LoggerFactory.getLogger(TckTestContainerTest.class);
     final static DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     final static Path configFilePath = Paths.get("src/test/resources/tck.config").toAbsolutePath();
     final static Path outputFolderPath = Paths.get("src/test/resources/tck-logs/").toAbsolutePath();
 
-    final static UUID TP_02_01_MOCK_AGREEMENT_ID = UUID.fromString("ca38d696-e5b6-48b0-ac10-66edbb04ff4b");
-    final static UUID TP_02_02_MOCK_AGREEMENT_ID = UUID.fromString("ca38d696-e5b6-48b0-ac10-66edbb04ff4c");
+    final static UUID TP_02_AND_03_MOCK_AGREEMENT_ID = UUID.fromString("ca38d696-e5b6-48b0-ac10-66edbb04ff4b");
 
     @Autowired
     private SampleDataAssetManagementService sampleDataAssetManagementService;
@@ -88,12 +91,9 @@ public class TckTestContainerTest {
         sampleDataAssetManagementService.addTckDataAsset(SampleDataAsset.NEGOTIATION_ASSET_ID);
         assertNotNull(sampleDataAssetManagementService.getById(UUID.fromString(SampleDataAsset.CATALOG_ASSET_ID)));
         assertNotNull(sampleDataAssetManagementService.getById(UUID.fromString(SampleDataAsset.NEGOTIATION_ASSET_ID)));
-        negotiationRecordService.injectMockData(createNegotiationRecord(TP_02_01_MOCK_AGREEMENT_ID));
-        negotiationRecordService.injectMockData(createNegotiationRecord(TP_02_02_MOCK_AGREEMENT_ID));
+        negotiationRecordService.injectMockData(createNegotiationRecord(TP_02_AND_03_MOCK_AGREEMENT_ID));
 
-        NegotiationRecord record = negotiationRecordService.findByContractId(TP_02_01_MOCK_AGREEMENT_ID);
-        assertNotNull(record);
-        record = negotiationRecordService.findByContractId(TP_02_02_MOCK_AGREEMENT_ID);
+        NegotiationRecord record = negotiationRecordService.findByContractId(TP_02_AND_03_MOCK_AGREEMENT_ID);
         assertNotNull(record);
 
         assertThat(Files.exists(configFilePath)).isTrue();
@@ -133,13 +133,16 @@ public class TckTestContainerTest {
 
             String formattedDate = formatter.format(LocalDateTime.now());
             Files.writeString(outputFolderPath.resolve(formattedDate), logOutputBuffer.toString());
-            assertThat(foundSuccesses.containsAll(expectedSuccesses)).isTrue();
+
+            List<String> deltaList = new ArrayList<>(expectedSuccesses);
+            deltaList.removeAll(foundSuccesses);
+            assertThat(deltaList.isEmpty()).withFailMessage("Missing expected successes " + deltaList).isTrue();
             assertThat(latchResult).isTrue();
+
         }
     }
 
     static private boolean waitForProjectBooted() throws Exception {
-        System.out.println("Waiting for project booted...");
         int retries = 20;
         int interval = 1000;
         int count = 0;
@@ -153,15 +156,15 @@ public class TckTestContainerTest {
                 connection.connect();
                 success = connection.getResponseCode() == 200;
 
-                System.out.println("Attempt " + count + " success? " + success);
+                log.info("Attempt {} success? {}", count, success);
             } catch (Exception e) {
-                System.out.println("Exception: " + e);
+                log.error(e.getMessage());
             }
         } while (count < retries && !success);
         if (success) {
-            System.out.println("Project booted after " + count + " tries");
+            log.info("Project booted after {} tries", count);
         } else {
-            System.out.println("Project not booted after " + retries + " tries");
+            log.info("Project not booted after {} tries", retries);
         }
         return success;
 
@@ -178,7 +181,7 @@ public class TckTestContainerTest {
             negotiationRecord.setPartnerDspUrl("http://localhost:8083");
             return negotiationRecord;
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error(e.getMessage());
         }
         return null;
     }

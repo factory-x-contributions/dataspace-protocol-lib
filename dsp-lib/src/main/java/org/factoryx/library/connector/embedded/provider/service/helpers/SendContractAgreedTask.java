@@ -117,8 +117,8 @@ public class SendContractAgreedTask implements Runnable {
     }
 
     private String buildContractAgreedMessage(NegotiationRecord record) {
-        String odrlPrefix = DspVersion.V_08.equals(dspVersion) ? "odrl:" : "";
-        String dspacePrefix = DspVersion.V_08.equals(dspVersion) ? "dspace:" : "";
+        String odrlPrefix = dspVersion.ordinal() < DspVersion.V_2025_1.ordinal() ? "odrl:" : "";
+        String dspacePrefix = dspVersion.ordinal() < DspVersion.V_2025_1.ordinal() ? "dspace:" : "";
         var agreementBuilder = Json.createObjectBuilder()
                 .add("@type", odrlPrefix + "Agreement")
                 .add("@id", record.getContractId().toString())

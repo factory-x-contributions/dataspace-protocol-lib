@@ -53,15 +53,18 @@ public class HealthController {
               "protocolVersions": [
                 {
                   "version": "2025-1",
-                  "path": "/2025/1"
+                  "path": "/2025/1",
+                  "binding": "HTTPS"
                 },
                 {
                   "version": "v0.8",
-                  "path": "/"
+                  "path": "/",
+                  "binding": "HTTPS"
                 },
                 {
                   "version": "2024-1",
-                  "path": "/2024/1"
+                  "path": "/2024/1",
+                  "binding": "HTTPS"
                 }
               ]
             }
