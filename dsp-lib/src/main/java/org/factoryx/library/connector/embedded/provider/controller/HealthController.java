@@ -36,12 +36,6 @@ public class HealthController {
         return ResponseEntity.status(HttpStatus.OK).body("OK");
     }
 
-    @PostMapping("${org.factoryx.library.dspapiprefix:/dsp}/test")
-    public ResponseEntity<String> testPost(@RequestBody String body) {
-        log.info("/test POST received body: \n{}", body);
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("UNSUPPORTED");
-    }
-
     @GetMapping("${org.factoryx.library.dspapiprefix:/dsp}/.well-known/dspace-version")
     public ResponseEntity<String> protocolVersions() {
         log.info("protocol versions request received");
@@ -69,4 +63,10 @@ public class HealthController {
               ]
             }
             """;
+
+    @PostMapping("${org.factoryx.library.dspapiprefix:/dsp}/test")
+    public ResponseEntity<String> testPost(@RequestBody String body) {
+        log.info("/test POST received body: \n{}", body);
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("UNSUPPORTED");
+    }
 }
