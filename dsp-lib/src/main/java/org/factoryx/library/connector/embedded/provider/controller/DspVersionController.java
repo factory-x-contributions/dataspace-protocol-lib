@@ -37,6 +37,8 @@ import org.springframework.web.bind.annotation.RestController;
 @Slf4j
 public class DspVersionController {
 
+    private static String preparedResponse;
+
     private final DspTokenValidationService dspTokenValidationService;
 
     public DspVersionController(DspTokenValidationService dspTokenValidationService) {
@@ -52,17 +54,21 @@ public class DspVersionController {
     public ResponseEntity<String> protocolVersions() {
         log.info("protocol versions request received");
 
-        JsonValue authInfo = dspTokenValidationService.getAuthInfo();
-        JsonValue identifierTypeInfo = dspTokenValidationService.getIdentifierTypeInfo();
+        if (preparedResponse == null) {
+            JsonValue authInfo = dspTokenValidationService.getAuthInfo();
+            JsonValue identifierTypeInfo = dspTokenValidationService.getIdentifierTypeInfo();
 
-        JsonArrayBuilder protocolVersionsArray = Json.createArrayBuilder()
-                .add(buildVersion("2025-1", "/2025/1", authInfo, identifierTypeInfo))
-                .add(buildVersion("v0.8", "/", authInfo, identifierTypeInfo));
+            JsonArrayBuilder protocolVersionsArray = Json.createArrayBuilder()
+                    .add(buildVersion("2025-1", "/2025/1", authInfo, identifierTypeInfo))
+                    .add(buildVersion("v0.8", "/", authInfo, identifierTypeInfo));
 
-        JsonObjectBuilder protocolVersions = Json.createObjectBuilder()
-                .add("protocolVersions", protocolVersionsArray);
+            JsonObjectBuilder protocolVersions = Json.createObjectBuilder()
+                    .add("protocolVersions", protocolVersionsArray);
 
-        return ResponseEntity.ok().body(protocolVersions.build().toString());
+            preparedResponse = protocolVersions.build().toString();
+        }
+
+        return ResponseEntity.ok().body(preparedResponse);
     }
 
     /**
