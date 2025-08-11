@@ -16,11 +16,12 @@
 
 package org.factoryx.library.connector.embedded.provider.controller;
 
-import org.factoryx.library.connector.embedded.provider.metadata.VersionEntry;
-import org.factoryx.library.connector.embedded.provider.metadata.VersionResponse;
-import org.factoryx.library.connector.embedded.provider.profile.Auth;
-import org.factoryx.library.connector.embedded.provider.profile.DataspaceProfileContext;
-import org.factoryx.library.connector.embedded.provider.profile.DataspaceProfileContextRegistry;
+import jakarta.json.Json;
+import jakarta.json.JsonArrayBuilder;
+import jakarta.json.JsonObjectBuilder;
+import jakarta.json.JsonValue;
+import lombok.extern.slf4j.Slf4j;
+import org.factoryx.library.connector.embedded.provider.interfaces.DspTokenValidationService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -33,55 +34,60 @@ import org.springframework.web.bind.annotation.RestController;
  * @author tobias-urb
  */
 @RestController
+@Slf4j
 public class DspVersionController {
 
-    private final DataspaceProfileContextRegistry registry;
+    private final DspTokenValidationService dspTokenValidationService;
 
-    public DspVersionController(DataspaceProfileContextRegistry registry) {
-        this.registry = registry;
+    public DspVersionController(DspTokenValidationService dspTokenValidationService) {
+        this.dspTokenValidationService = dspTokenValidationService;
     }
 
     /**
      * Handles GET requests to /.well-known/dspace-version.
      *
-     * @return a JSON response containing all registered DSP version profiles
+     * @return a JSON response containing all DSP version profiles
      */
     @GetMapping("${org.factoryx.library.dspapiprefix:/dsp}/.well-known/dspace-version")
-    public ResponseEntity<VersionResponse> getProtocolVersions() {
-        return ResponseEntity.ok(new VersionResponse(
-                registry.getAll().stream().map(this::mapToVersionEntry).toList()
-        ));
+    public ResponseEntity<String> protocolVersions() {
+        log.info("protocol versions request received");
+
+        JsonValue authInfo = dspTokenValidationService.getAuthInfo();
+        JsonValue identifierTypeInfo = dspTokenValidationService.getIdentifierTypeInfo();
+
+        JsonArrayBuilder protocolVersionsArray = Json.createArrayBuilder()
+                .add(buildVersion("2025-1", "/2025/1", authInfo, identifierTypeInfo))
+                .add(buildVersion("v0.8", "/", authInfo, identifierTypeInfo));
+
+        JsonObjectBuilder protocolVersions = Json.createObjectBuilder()
+                .add("protocolVersions", protocolVersionsArray);
+
+        return ResponseEntity.ok().body(protocolVersions.build().toString());
     }
 
     /**
-     * Maps an internal DataspaceProfileContext to a public-facing VersionEntry.
+     * Builds a JSON object representing a DSP protocol version.
      *
-     * @param context the internal context
-     * @return version entry for client consumption
+     * @param version the protocol version
+     * @param path the path for the respective version
+     * @param authInfo a JSON object containing authentication details
+     * @param identifierTypeInfo a JSON object containing identifier type details
+     * @return a JsonObjectBuilder containing all required and optional fields
      */
-    private VersionEntry mapToVersionEntry(DataspaceProfileContext context) {
-        return new VersionEntry(
-                context.getVersion(),
-                context.getPath(),
-                context.getBinding(),
-                context.getServiceId(),
-                context.getIdentifierType(),
-                mapAuth(context.getAuth())
-        );
-    }
+    private JsonObjectBuilder buildVersion(String version, String path,
+                                           JsonValue authInfo, JsonValue identifierTypeInfo) {
+        JsonObjectBuilder builder = Json.createObjectBuilder()
+                .add("version", version)
+                .add("path", path)
+                .add("binding", "HTTPS");
 
-    /**
-     * Converts internal Auth DTO to public metadata Auth.
-     *
-     * @param auth internal auth configuration
-     * @return converted Auth or null
-     */
-    private Auth mapAuth(Auth auth) {
-        if (auth == null) return null;
-        return new Auth(
-                auth.getProtocol(),
-                auth.getVersion(),
-                auth.getProfile()
-        );
+        if (authInfo != null) {
+            builder.addAll(Json.createObjectBuilder(authInfo.asJsonObject()));
+        }
+        if (identifierTypeInfo != null) {
+            builder.addAll(Json.createObjectBuilder(identifierTypeInfo.asJsonObject()));
+        }
+
+        return builder;
     }
 }

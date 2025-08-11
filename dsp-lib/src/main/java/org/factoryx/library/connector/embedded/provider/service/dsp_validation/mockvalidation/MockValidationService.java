@@ -16,6 +16,8 @@
 
 package org.factoryx.library.connector.embedded.provider.service.dsp_validation.mockvalidation;
 
+import jakarta.json.JsonValue;
+import jakarta.json.Json;
 import lombok.extern.slf4j.Slf4j;
 import org.factoryx.library.connector.embedded.provider.interfaces.DspTokenValidationService;
 import org.factoryx.library.connector.embedded.provider.service.helpers.EnvService;
@@ -34,6 +36,16 @@ public class MockValidationService implements DspTokenValidationService {
 
     public MockValidationService(EnvService envService) {
         this.envService = envService;
+    }
+
+    @Override
+    public JsonValue getAuthInfo() {
+        return Json.createObjectBuilder().add("auth", Json.createObjectBuilder().add("protocol", "mock")).build();
+    }
+
+    @Override
+    public JsonValue getIdentifierTypeInfo() {
+        return Json.createObjectBuilder().add("identifierType", "did:web").build();
     }
 
     @Override
