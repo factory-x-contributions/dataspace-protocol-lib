@@ -197,7 +197,7 @@ public class DspNegotiationService {
 
     public ResponseRecord handleNegotiationTerminationRequest(NegotiationTerminationMessage terminationMessage, String partnerId, DspVersion version) {
         NegotiationRecord existingRecord = negotiationRecordService.findByNegotiationRecordId(terminationMessage.getProviderPid());
-        if (existingRecord == null || !existingRecord.getPartnerId().equals(terminationMessage.getConsumerPid()) ||
+        if (existingRecord == null || !existingRecord.getConsumerPid().equals(terminationMessage.getConsumerPid()) ||
                 !existingRecord.getPartnerId().equals(partnerId)) {
             return new ResponseRecord(createErrorResponse(terminationMessage.getProviderPid().toString(), terminationMessage.getConsumerPid(),
                     "ContractNegotiationError", List.of("Unknown Negotiation"), version), 400);

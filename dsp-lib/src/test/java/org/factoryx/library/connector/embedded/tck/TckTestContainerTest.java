@@ -112,7 +112,7 @@ public class TckTestContainerTest {
             assertEquals(8083, tckContainer.getMappedPort(8083));
 
             List<String> expectedSuccesses = List.of("MET:01-01", "CAT:01-01", "CAT:01-02", "CAT:01-03", "TP:02-01",
-                    "TP:02-02", "TP:02-03", "TP:03-03", "TP:03-04", "TP:03-05", "TP:03-06", "CN:03-01");
+                    "TP:02-02", "TP:02-03", "TP:03-03", "TP:03-04", "TP:03-05", "TP:03-06", "CN:01-04", "CN:02-02", "CN:02-03", "CN:03-01");
             List<String> foundSuccesses = new ArrayList<>();
 
             var latch = new CountDownLatch(1);
