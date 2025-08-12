@@ -23,46 +23,19 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
-@Slf4j
-@RestController
+
 /**
  * A simple health check endpoint
  * @author eschrewe
  */
+@Slf4j
+@RestController
 public class HealthController {
 
     @GetMapping("${org.factoryx.library.dspapiprefix:/dsp}/test")
     public ResponseEntity<String> test() {
         return ResponseEntity.status(HttpStatus.OK).body("OK");
     }
-
-    @GetMapping("${org.factoryx.library.dspapiprefix:/dsp}/.well-known/dspace-version")
-    public ResponseEntity<String> protocolVersions() {
-        log.info("protocol versions request received");
-        return ResponseEntity.status(HttpStatus.OK).body(PROTOCOL_VERSION_RESPONSE);
-    }
-
-    private static final String PROTOCOL_VERSION_RESPONSE = """
-            {
-              "protocolVersions": [
-                {
-                  "version": "2025-1",
-                  "path": "/2025/1",
-                  "binding": "HTTPS"
-                },
-                {
-                  "version": "v0.8",
-                  "path": "/",
-                  "binding": "HTTPS"
-                },
-                {
-                  "version": "2024-1",
-                  "path": "/2024/1",
-                  "binding": "HTTPS"
-                }
-              ]
-            }
-            """;
 
     @PostMapping("${org.factoryx.library.dspapiprefix:/dsp}/test")
     public ResponseEntity<String> testPost(@RequestBody String body) {
