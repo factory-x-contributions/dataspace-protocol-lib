@@ -16,6 +16,8 @@
 
 package org.factoryx.library.connector.embedded.provider.service.dsp_validation.mockvalidation;
 
+import jakarta.json.JsonValue;
+import jakarta.json.Json;
 import lombok.extern.slf4j.Slf4j;
 import org.factoryx.library.connector.embedded.provider.interfaces.DspTokenValidationService;
 import org.factoryx.library.connector.embedded.provider.service.helpers.EnvService;
@@ -37,6 +39,16 @@ public class MockValidationService implements DspTokenValidationService {
     }
 
     @Override
+    public JsonValue getAuthInfo() {
+        return Json.createObjectBuilder().add("auth", Json.createObjectBuilder().add("protocol", "mock")).build();
+    }
+
+    @Override
+    public JsonValue getIdentifierTypeInfo() {
+        return Json.createObjectBuilder().add("identifierType", "did:web").build();
+    }
+
+    @Override
     public Map<String, String> validateToken(String token) {
         try {
             if ("Bearer ".equalsIgnoreCase(token.substring(0, 7))) {
@@ -45,10 +57,11 @@ public class MockValidationService implements DspTokenValidationService {
             var authJson = JsonUtils.parse(token);
             String clientId = authJson.getString("clientId");
             String audience = authJson.getString("audience");
-            if (envService.getOwnDspUrl().equals(audience)) {
+            if (audience.startsWith(envService.getOwnDspUrl())) {
                 return Map.of(ReservedKeys.partnerId.toString(), clientId,
                         ReservedKeys.credentials.toString(), "dataspacemember");
             } else {
+                log.info("Rejected token {}", token);
                 return Map.of();
             }
         } catch (Exception e) {

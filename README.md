@@ -143,10 +143,22 @@ Please note that the DSP protocol URL will be a result of several settings:
 http<s>://<org.factoryx.library.hostname>:<server.port>/<org.factoryx.library.dspapiprefix>
 ```
 ### Running the tests
-This project includes a comprehensive suite of unit tests to ensure the quality and correctness of the library. To run all tests, simply execute:
+This project includes a comprehensive suite of unit tests to ensure the quality and correctness of the library. Beyond that 
+it also includes a special testing setup against the [DSP-TCK](https://github.com/eclipse-dataspacetck/dsp-tck), which is 
+based on the [Java Testcontainers Framework](https://java.testcontainers.org/). This requires you to have a proper 
+docker installation on your host machine, see the documentation of the Testcontainers project for details.  
+
+By default, the TCK Test will not be executed, so running ... 
 
 ```
-./gradlew test
+./gradlew clean test
+```
+... will execute all other tests, except for TCK.  
+
+If you explicitly want to execute them, then please run 
+
+```
+./gradlew clean test -Dtestcontainer.tck.disable=false
 ```
 
 

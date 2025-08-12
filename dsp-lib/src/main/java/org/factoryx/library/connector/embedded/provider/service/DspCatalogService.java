@@ -21,6 +21,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.factoryx.library.connector.embedded.provider.interfaces.DataAsset;
 import org.factoryx.library.connector.embedded.provider.interfaces.DataAssetManagementService;
 import org.factoryx.library.connector.embedded.provider.interfaces.DspPolicyService;
+import org.factoryx.library.connector.embedded.provider.model.DspVersion;
 import org.factoryx.library.connector.embedded.provider.service.helpers.EnvService;
 import org.factoryx.library.connector.embedded.provider.service.helpers.JsonUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,6 +31,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+
+import static org.factoryx.library.connector.embedded.provider.service.helpers.JsonUtils.createErrorResponse;
 
 @Service
 @Slf4j
@@ -50,7 +53,7 @@ public class DspCatalogService {
      * Constructor for injecting the DataManagementService and EnvService.
      *
      * @param dataManagementService the DataManagementService to be injected
-     * @param envService the EnvService to be injected
+     * @param envService            the EnvService to be injected
      */
     @Autowired
     public DspCatalogService(DataAssetManagementService dataManagementService, EnvService envService, DspPolicyService policyService) {
@@ -64,12 +67,12 @@ public class DspCatalogService {
      *
      * @return a list of JSON objects representing the DCAT datasets
      */
-    private List<JsonObject> getAllCatalogs(String partnerId, Map<String, String> partnerProperties){
+    private List<JsonObject> getAllCatalogs(String partnerId, Map<String, String> partnerProperties, DspVersion version) {
         List<? extends DataAsset> allDatasets = dataManagementService.getAll(partnerProperties);
         List<JsonObject> catalogs = new ArrayList<>();
 
         for (DataAsset dataset : allDatasets) {
-            catalogs.add(buildDcatDataset(dataset, partnerId));
+            catalogs.add(buildDcatDataset(dataset, partnerId, version));
         }
 
         return catalogs;
@@ -81,20 +84,23 @@ public class DspCatalogService {
      * @param dataset the dataset to be converted
      * @return a JSON object representing one DCAT dataset entry
      */
-    private JsonObject buildDcatDataset(DataAsset dataset, String partnerId) {
+    private JsonObject buildDcatDataset(DataAsset dataset, String partnerId, DspVersion version) {
+        String dcatPrefix = DspVersion.V_08.equals(version) ? "dcat:" : "";
+        String dctPrefix = DspVersion.V_08.equals(version) ? "dct:" : "";
+        String odrlPrefix = DspVersion.V_08.equals(version) ? "odrl:" : "";
         JsonObjectBuilder distributionBuilder = Json.createObjectBuilder()
-                .add("@type", "dcat:Distribution")
-                .add("dct:format", Json.createObjectBuilder()
-                        .add("@id", "HttpData-PULL"));
+                .add("@type", dcatPrefix + "Distribution")
+                .add(dctPrefix + "format", "HttpData-PULL")
+                .add(dcatPrefix + "accessService", UUID.randomUUID().toString());
         JsonObjectBuilder properties = Json.createObjectBuilder();
         dataset.getProperties().forEach(properties::add);
+        var policy = Json.createObjectBuilder(policyService.createOfferedPolicy(dataset.getId().toString(), partnerId, version)).remove("target");
         JsonObjectBuilder dcatDatasetBuilder = Json.createObjectBuilder()
                 .add("@id", String.valueOf(dataset.getId()))
-                .add("@type", "dcat:Dataset")
-                .add("odrl:hasPolicy", policyService.createOfferedPolicy(dataset.getId().toString(), partnerId))
-                .add("dcat:distribution", distributionBuilder)
+                .add("@type", dcatPrefix + "Dataset")
+                .add(odrlPrefix + "hasPolicy", Json.createArrayBuilder().add(policy))
+                .add(dcatPrefix + "distribution", Json.createArrayBuilder().add(distributionBuilder))
                 .add("properties", properties);
-
         return dcatDatasetBuilder.build();
     }
 
@@ -104,25 +110,23 @@ public class DspCatalogService {
      * @param catalogs the list of catalogs as JSON objects
      * @return a JSON object representing the complete catalog response
      */
-    private JsonObject buildFinalCatalogResponse(List<JsonObject> catalogs) {
+    private JsonObject buildFinalCatalogResponse(List<JsonObject> catalogs, DspVersion version) {
+        String dcatPrefix = DspVersion.V_08.equals(version) ? "dcat:" : "";
+        String dspacePrefix = DspVersion.V_08.equals(version) ? "dspace:" : "";
         JsonObjectBuilder body = Json.createObjectBuilder()
                 .add("@id", UUID.randomUUID().toString())
-                .add("@type", "dcat:Catalog");
+                .add("@type", dcatPrefix + "Catalog");
 
-        if (catalogs.size() != 1) {
-            JsonArrayBuilder datasetArrayBuilder = Json.createArrayBuilder();
-            catalogs.forEach(datasetArrayBuilder::add);
-            body.add("dcat:dataset", datasetArrayBuilder);
-        } else {
-            body.add("dcat:dataset", catalogs.getFirst());
-        }
-        body.add("dcat:service", Json.createObjectBuilder()
+        JsonArrayBuilder datasetArrayBuilder = Json.createArrayBuilder();
+        catalogs.forEach(datasetArrayBuilder::add);
+        body.add(dcatPrefix + "dataset", datasetArrayBuilder);
+        body.add(dcatPrefix + "service", Json.createArrayBuilder().add(Json.createObjectBuilder()
                         .add("@id", UUID.randomUUID().toString())
-                        .add("@type", "dcat:DataService")
-                        .add("dcat:endpointDescription", "dspace:connector")
-                        .add("dcat:endpointUrl", envService.getOwnDspUrl()))
-                .add("dspace:participantId", envService.getBackendId())
-                .add("@context", JsonUtils.FULL_CONTEXT);
+                        .add("@type", dcatPrefix + "DataService")
+                        .add(dcatPrefix + "endpointDescription", dspacePrefix + "connector")
+                        .add(dcatPrefix + "endpointURL", envService.getOwnDspUrl())))
+                .add(dspacePrefix + "participantId", envService.getBackendId())
+                .add("@context", JsonUtils.getContextForDspVersion(version));
         return body.build();
     }
 
@@ -132,7 +136,38 @@ public class DspCatalogService {
      * @param partnerId the partner
      * @return the catalog
      */
-    public JsonObject getFullCatalog(String partnerId, Map<String, String> partnerProperties) {
-        return buildFinalCatalogResponse(getAllCatalogs(partnerId, partnerProperties));
+    public JsonObject getFullCatalog(String partnerId, Map<String, String> partnerProperties, DspVersion version) {
+        return buildFinalCatalogResponse(getAllCatalogs(partnerId, partnerProperties, version), version);
+    }
+
+    public String getDataset(String partnerId, Map<String, String> partnerProperties, UUID id, DspVersion version) {
+        DataAsset asset = dataManagementService.getByIdForProperties(id, partnerProperties);
+        if (asset == null) {
+            return new String(createErrorResponse("unknown", "unknown",
+                    "CatalogError", List.of("Bad Request"), version));
+        }
+        var datasetPolicy = Json.createObjectBuilder(
+                policyService.createOfferedPolicy(asset.getId().toString(),partnerId, version))
+                .remove("target").build();
+
+        JsonObjectBuilder datasetBuilder = Json.createObjectBuilder();
+        datasetBuilder.add("@context",
+                JsonUtils.getContextForDspVersion(version));
+        datasetBuilder.add("@id", asset.getId().toString());
+        datasetBuilder.add("@type", "Dataset");
+        datasetBuilder.add("hasPolicy",
+                Json.createArrayBuilder().add(datasetPolicy));
+        datasetBuilder.add("distribution",
+                Json.createArrayBuilder().add(
+                        Json.createObjectBuilder()
+                                .add("@type", "Distribution")
+                                .add("format", "HttpData-PULL")
+                                .add("accessService", Json.createObjectBuilder()
+                                        .add("@id", UUID.randomUUID().toString())
+                                        .add("@type", "DataService")
+                                        .add("endpointURL", envService.getOwnDspUrl() + version.PATH_SUFFIX)
+                                        .build())
+                ));
+        return datasetBuilder.build().toString();
     }
 }
