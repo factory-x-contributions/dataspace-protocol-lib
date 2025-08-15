@@ -17,16 +17,20 @@
 package org.factoryx.library.connector.embedded.provider.service;
 
 import jakarta.json.Json;
-import jakarta.json.JsonArray;
 import jakarta.json.JsonObject;
 import lombok.extern.slf4j.Slf4j;
 import org.factoryx.library.connector.embedded.provider.interfaces.DataAssetManagementService;
 import org.factoryx.library.connector.embedded.provider.interfaces.DspPolicyService;
 import org.factoryx.library.connector.embedded.provider.interfaces.DspTokenProviderService;
+import org.factoryx.library.connector.embedded.provider.model.DspVersion;
 import org.factoryx.library.connector.embedded.provider.model.ResponseRecord;
 import org.factoryx.library.connector.embedded.provider.model.negotiation.NegotiationRecord;
 import org.factoryx.library.connector.embedded.provider.model.negotiation.NegotiationState;
+import org.factoryx.library.connector.embedded.provider.service.deserializers.service_dtos.ContractRequestMessage;
+import org.factoryx.library.connector.embedded.provider.service.deserializers.service_dtos.ContractVerificationMessage;
+import org.factoryx.library.connector.embedded.provider.service.deserializers.service_dtos.NegotiationTerminationMessage;
 import org.factoryx.library.connector.embedded.provider.service.helpers.EnvService;
+import org.factoryx.library.connector.embedded.provider.service.helpers.JsonUtils;
 import org.factoryx.library.connector.embedded.provider.service.helpers.SendContractAgreedTask;
 import org.factoryx.library.connector.embedded.provider.service.helpers.SendContractFinalizedTask;
 import org.springframework.stereotype.Service;
@@ -45,7 +49,6 @@ import static org.factoryx.library.connector.embedded.provider.service.helpers.J
  * This service contains the logic for handling incoming negotiation requests in the DSP context
  *
  * @author eschrewe
- *
  */
 @Service
 @Slf4j
@@ -81,41 +84,24 @@ public class DspNegotiationService {
     /**
      * This method handles new incoming contract negotiation requests from the /dsp/negotiations/request endpoint.
      *
-     * @param requestBody - the request body of the incoming message
-     * @param partnerId - the id of the requesting party as retrieved from the HTTP auth token
+     * @param contractRequestMessage - the request body of the incoming message
+     * @param partnerId              - the id of the requesting party as retrieved from the HTTP auth token
+     * @param dspVersion             - the protocol version under which the request was sent
      * @return - a response ACK-body and code 201, if successful
      */
-    public ResponseRecord handleNewNegotiation(String requestBody, String partnerId, Map<String, String> partnerProperties) {
-        JsonObject requestJson = parseAndExpand(requestBody);
-        String consumerPid, messageType, partnerDspUrl, targetAssetId;
-        JsonObject offer;
-        int offerSize;
-        try {
-            consumerPid = requestJson.getJsonArray(DSPACE_NAMESPACE + "consumerPid").getJsonObject(0).getString("@value");
-            messageType = requestJson.getJsonArray("@type").getString(0);
-            partnerDspUrl = requestJson.getJsonArray(DSPACE_NAMESPACE + "callbackAddress").getJsonObject(0).getString("@value");
-            JsonArray offers = requestJson.getJsonArray(DSPACE_NAMESPACE + "offer");
-            offerSize = offers.size();
-            offer = offers.getJsonObject(0);
-            targetAssetId = offer.getJsonArray(ODRL_NAMESPACE + "target").getJsonObject(0).getString("@id");
-        } catch (Exception e) {
-            return new ResponseRecord("Invalid request.".getBytes(StandardCharsets.UTF_8), 400);
-        }
-        NegotiationRecord newRecord = negotiationRecordService.createNegotiationRecord(consumerPid, partnerId, partnerDspUrl,
-                targetAssetId);
+    public ResponseRecord handleNewNegotiation(ContractRequestMessage contractRequestMessage, String partnerId,
+                                               Map<String, String> partnerProperties, DspVersion dspVersion) {
+        String consumerPid = contractRequestMessage.getConsumerPid();
+        String targetAssetId = contractRequestMessage.getTargetAssetId();
+        JsonObject offer = contractRequestMessage.getOffer();
+        NegotiationRecord newRecord = negotiationRecordService.createNegotiationRecord(consumerPid, partnerId,
+                contractRequestMessage.getPartnerDspUrl(), targetAssetId);
 
-        if (!messageType.equals(DSPACE_NAMESPACE + "ContractRequestMessage")) {
-            log.warn("Wrong message type: {} at /negotiations/request", messageType);
-            newRecord = negotiationRecordService.updateNegotiationRecordToState(newRecord.getOwnPid(), NegotiationState.TERMINATED);
-            return new ResponseRecord(createErrorResponse(newRecord.getOwnPid().toString(), consumerPid, "ContractNegotiationError",
-                    List.of("Wrong message type: " + messageType)), 400);
-        }
-
-        if (offerSize != 1 || !policyService.validateOffer(offer, newRecord.getTargetAssetId(), partnerId)) {
+        if (offer != null && !policyService.validateOffer(offer, newRecord.getTargetAssetId(), partnerId, dspVersion)) {
             log.warn("Unexpected offer, rejecting contract negotiation");
             newRecord = negotiationRecordService.updateNegotiationRecordToState(newRecord.getOwnPid(), NegotiationState.TERMINATED);
             return new ResponseRecord(createErrorResponse(newRecord.getOwnPid().toString(), consumerPid, "ContractNegotiationError",
-                    List.of("Unexpected offer, rejecting contract negotiation")), 400);
+                    List.of("Unexpected offer, rejecting contract negotiation"), dspVersion), 400);
         }
 
         try {
@@ -124,36 +110,33 @@ public class DspNegotiationService {
                 log.warn("Unknown target asset id: {}", targetAssetId);
                 newRecord = negotiationRecordService.updateNegotiationRecordToState(newRecord.getOwnPid(), NegotiationState.TERMINATED);
                 return new ResponseRecord(createErrorResponse(newRecord.getOwnPid().toString(), consumerPid, "ContractNegotiationError",
-                        List.of("Unknown target asset id: " + targetAssetId)), 400);
+                        List.of("Unknown target asset id: " + targetAssetId), dspVersion), 400);
             }
         } catch (Exception e) {
             log.warn("Invalid target asset id: {}", targetAssetId);
             newRecord = negotiationRecordService.updateNegotiationRecordToState(newRecord.getOwnPid(), NegotiationState.TERMINATED);
             return new ResponseRecord(createErrorResponse(newRecord.getOwnPid().toString(), consumerPid, "ContractNegotiationError",
-                    List.of("Invalid target asset id: " + targetAssetId)), 400);
+                    List.of("Invalid target asset id: " + targetAssetId), dspVersion), 400);
         }
 
-        String ackResponse = createResponse(newRecord);
+        String ackResponse = createResponse(newRecord, dspVersion);
 
-        log.info("Negotiations Request endpoint received new partner request:\n {}", prettyPrint(requestJson));
-
-        log.debug("Sending Response:\n{}", prettyPrint(ackResponse));
+        log.info("Sending Response:\n{}", prettyPrint(ackResponse));
 
         executorService.submit(new SendContractAgreedTask(newRecord.getOwnPid(), negotiationRecordService, restClient,
-                envService, dspTokenProviderService, policyService));
+                envService, dspTokenProviderService, policyService, dspVersion));
 
         return new ResponseRecord(ackResponse.getBytes(StandardCharsets.UTF_8), 201);
     }
 
-    private static String createResponse(NegotiationRecord entry) {
-        String type = entry.getState().equals(NegotiationState.TERMINATED) ?
-                "dspace:ContractNegotiationError" : "dspace:ContractNegotiation";
+    private static String createResponse(NegotiationRecord entry, DspVersion dspVersion) {
+        String prefix = DspVersion.V_08.equals(dspVersion) ? "dspace:" : "";
         return Json.createObjectBuilder()
-                .add("@context", FULL_CONTEXT)
-                .add("@type", type)
-                .add("dspace:providerPid", entry.getOwnPid().toString())
-                .add("dspace:consumerPid", entry.getConsumerPid())
-                .add("dspace:state", "dspace:" + entry.getState())
+                .add("@context", JsonUtils.getContextForDspVersion(dspVersion))
+                .add("@type", prefix + "ContractNegotiation")
+                .add(prefix + "providerPid", entry.getOwnPid().toString())
+                .add(prefix + "consumerPid", entry.getConsumerPid())
+                .add(prefix + "state", prefix + entry.getState())
                 .build()
                 .toString();
     }
@@ -162,61 +145,91 @@ public class DspNegotiationService {
      * This method handles new incoming contract verification requests from the
      * /dsp/negotiations/{providerPid}/agreement/verification endpoint.
      *
-     * @param requestBody - the request body of the incoming message
-     * @param partnerId - the id of the requesting party as retrieved from the HTTP auth token
+     * @param contractVerificationMessage - the request body of the incoming message
+     * @param partnerId                   - the id of the requesting party as retrieved from the HTTP auth token
      * @return - code 200, if successful
      */
-    public ResponseRecord handleVerificationRequest(String requestBody, String partnerId, UUID providerPid) {
-        JsonObject requestJson = parseAndExpand(requestBody);
-        String messageType = requestJson.getJsonArray("@type").getString(0);
+    public ResponseRecord handleVerificationRequest(ContractVerificationMessage contractVerificationMessage, String partnerId,
+                                                    UUID providerPid, DspVersion version) {
 
-        String consumerPid = requestJson.getJsonArray(DSPACE_NAMESPACE + "consumerPid").getJsonObject(0).getString("@value");
-        String providerBodyPid = requestJson.getJsonArray(DSPACE_NAMESPACE + "providerPid").getJsonObject(0).getString("@value");
+        String consumerPid = contractVerificationMessage.getConsumerPid();
+        String providerBodyPid = contractVerificationMessage.getProviderPid();
         NegotiationRecord existingRecord = negotiationRecordService.findByNegotiationRecordId(providerPid);
 
         if (existingRecord == null) {
             log.warn("Unknown provider negotiation id: {}", providerPid);
             return new ResponseRecord(createErrorResponse(providerPid.toString(), consumerPid, "ContractNegotiationError",
-                    List.of("Unknown provider negotiation id: " + providerPid)), 400);
+                    List.of("Unknown provider negotiation id: " + providerPid), version), 400);
         }
 
         if (!existingRecord.getState().equals(NegotiationState.AGREED)) {
             log.warn("Negotiation record expected in state AGREED, but found {}", existingRecord.getState());
             return new ResponseRecord(createErrorResponse(providerPid.toString(), consumerPid, "ContractNegotiationError",
-                    List.of("Negotiation record expected in state AGREED, but found " + existingRecord.getState())), 400);
+                    List.of("Negotiation record expected in state AGREED, but found " + existingRecord.getState()), version), 400);
         }
 
         if (!providerPid.toString().equals(providerBodyPid)) {
             negotiationRecordService.updateNegotiationRecordToState(providerPid, NegotiationState.TERMINATED);
             log.warn("Contradictory provider negotiation id: {} vs {}", providerPid, providerBodyPid);
             return new ResponseRecord(createErrorResponse(providerPid.toString(), consumerPid, "ContractNegotiationError",
-                    List.of("Contradictory provider negotiation id: " + providerPid + " vs " + providerBodyPid)), 400);
-        }
-
-        if (!messageType.equals(DSPACE_NAMESPACE + "ContractAgreementVerificationMessage")) {
-            negotiationRecordService.updateNegotiationRecordToState(providerPid, NegotiationState.TERMINATED);
-            log.warn("Wrong message type: {} at /negotiations/{providerPid}/agreement/verification", messageType);
-            return new ResponseRecord(createErrorResponse(providerPid.toString(), consumerPid, "ContractNegotiationError",
-                    List.of("Wrong message type: ", messageType)), 400);
+                    List.of("Contradictory provider negotiation id: " + providerPid + " vs " + providerBodyPid), version), 400);
         }
 
         if (!existingRecord.getPartnerId().equals(partnerId)) {
             negotiationRecordService.updateNegotiationRecordToState(providerPid, NegotiationState.TERMINATED);
             log.warn("Contradictory client id: {} vs {}", existingRecord.getPartnerId(), partnerId);
             return new ResponseRecord(createErrorResponse(providerPid.toString(), consumerPid, "ContractNegotiationError",
-                    List.of("Contradictory client id: " + existingRecord.getPartnerId() + " vs " + partnerId)), 400);
+                    List.of("Contradictory client id: " + existingRecord.getPartnerId() + " vs " + partnerId), version), 400);
         }
-
 
         existingRecord = negotiationRecordService.updateNegotiationRecordToState(providerPid, NegotiationState.VERIFIED);
 
         if (existingRecord != null) {
             // Initiate FINALIZED Message
             executorService.submit(new SendContractFinalizedTask(providerPid, negotiationRecordService, restClient,
-                    dspTokenProviderService));
+                    dspTokenProviderService, version));
+            log.info("Responding with code 200 to verification request");
             return new ResponseRecord(null, 200);
         }
         return new ResponseRecord(createErrorResponse(providerPid.toString(), consumerPid, "ContractNegotiationError",
-                List.of("Internal Error")), 500);
+                List.of("Internal Error"), version), 500);
+    }
+
+    public ResponseRecord handleNegotiationTerminationRequest(NegotiationTerminationMessage terminationMessage, String partnerId, DspVersion version) {
+        NegotiationRecord existingRecord = negotiationRecordService.findByNegotiationRecordId(terminationMessage.getProviderPid());
+        if (existingRecord == null || !existingRecord.getConsumerPid().equals(terminationMessage.getConsumerPid()) ||
+                !existingRecord.getPartnerId().equals(partnerId)) {
+            return new ResponseRecord(createErrorResponse(terminationMessage.getProviderPid().toString(), terminationMessage.getConsumerPid(),
+                    "ContractNegotiationError", List.of("Unknown Negotiation"), version), 400);
+        }
+        if (existingRecord.getState().equals(NegotiationState.FINALIZED)) {
+            return new ResponseRecord(createErrorResponse(terminationMessage.getProviderPid().toString(), terminationMessage.getConsumerPid(),
+                    "ContractNegotiationError", List.of("Can't terminate finalized negotiation"), version), 400);
+        }
+        existingRecord = negotiationRecordService.updateNegotiationRecordToState(
+                terminationMessage.getProviderPid(), NegotiationState.TERMINATED);
+        return new ResponseRecord(createResponse(existingRecord, version).getBytes(StandardCharsets.UTF_8), 200);
+
+    }
+
+    public ResponseRecord handleGetNegotiationStatusRequest(UUID providerPid, String partnerId, DspVersion version) {
+        NegotiationRecord existingRecord = negotiationRecordService.findByNegotiationRecordId(providerPid);
+        if (existingRecord == null || !existingRecord.getPartnerId().equals(partnerId)) {
+            return new ResponseRecord(createErrorResponse(providerPid.toString(), null,
+                    "ContractNegotiationError", List.of("Unknown Negotiation"), version), 400);
+        }
+        return new ResponseRecord(createNegotiationStatusResponse(existingRecord, version).getBytes(StandardCharsets.UTF_8), 200);
+    }
+
+    private String createNegotiationStatusResponse(NegotiationRecord negotiationRecord, DspVersion version) {
+        return Json.createObjectBuilder()
+                .add("@context", getContextForDspVersion(version))
+                .add("@type", "ContractNegotiation")
+                .add("providerPid", negotiationRecord.getOwnPid().toString())
+                .add("consumerPid", negotiationRecord.getConsumerPid())
+                .add("state", negotiationRecord.getState().toString())
+                .build()
+                .toString();
+
     }
 }
