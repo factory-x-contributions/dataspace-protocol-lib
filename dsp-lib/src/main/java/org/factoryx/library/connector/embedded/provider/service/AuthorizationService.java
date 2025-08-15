@@ -30,6 +30,7 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Base64;
 import java.util.Date;
+import java.util.UUID;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -52,6 +53,7 @@ public class AuthorizationService {
     public final static String CONTRACT_ID = "cid";
     public final static String DATA_ADDRESS = "dad";
     public final static String TOKEN = "token";
+    public final static String ASSET_ID = "assetId";
     private final EnvService envService;
 
     private JWSSigner signer;
@@ -80,6 +82,31 @@ public class AuthorizationService {
         byte[] key = new byte[32];
         new SecureRandom().nextBytes(key);
         return Base64.getEncoder().encodeToString(key);
+    }
+
+
+    public String issueWriteAccessToken(String contractId, UUID assetId) {
+        rotateKeys();
+        lock.readLock().lock();
+        try {
+            long now = System.currentTimeMillis();
+            JWTClaimsSet claimsSet = new JWTClaimsSet.Builder()
+                    .issuer(envService.getApiAssetWriteAccessIssuer())
+                    .claim(CONTRACT_ID, contractId)
+                    .claim(ASSET_ID, assetId.toString())
+                    .issueTime(new Date(now))
+                    .expirationTime(new Date(now + tokenValidityInMilliSeconds))
+                    .build();
+
+            SignedJWT signedJWT = new SignedJWT(new JWSHeader(JWSAlgorithm.HS256), claimsSet);
+            signedJWT.sign(signer);
+
+            return signedJWT.serialize();
+        } catch (JOSEException e) {
+            throw new RuntimeException("Error signing JWT", e);
+        } finally {
+            lock.readLock().unlock();
+        }
     }
 
     /**
@@ -151,9 +178,9 @@ public class AuthorizationService {
 
     /**
      * Issues a refresh token for the given client ID.
-     * 
+     *
      * @param accessToken the access token associated with the refresh token
-     * @param partnerId the ID of the partner requesting the refresh token
+     * @param partnerId   the ID of the partner requesting the refresh token
      * @return the refresh token
      */
     public String issueRefreshToken(String accessToken, String partnerId) {

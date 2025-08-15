@@ -16,6 +16,12 @@
 
 package org.factoryx.library.connector.embedded.provider.interfaces;
 
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.util.MultiValueMap;
+
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -65,4 +71,9 @@ public interface DataAssetManagementService {
      * @return the list of DataAssets
      */
     List<? extends DataAsset> getAll(Map<String, String> partnerProperties);
+
+    default ResponseEntity<byte[]> forwardToApiAsset(UUID apiAssetId, HttpMethod method, byte[] requestBody,
+                                                     HttpHeaders headers, String path, MultiValueMap<String, String> incomingQueryParams) {
+        return new ResponseEntity<>(HttpStatus.NOT_IMPLEMENTED);
+    }
 }

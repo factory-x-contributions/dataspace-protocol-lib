@@ -83,4 +83,8 @@ public class EnvService {
     public String getSingleAssetReadOnlyDataAccessIssuer() {
         return backendId + "/singleAssetReadOnlyDataAccessIssuer";
     }
+
+    public String getApiAssetWriteAccessIssuer() {
+        return backendId + "/apiAssetWriteAccessIssuer";
+    }
 }
