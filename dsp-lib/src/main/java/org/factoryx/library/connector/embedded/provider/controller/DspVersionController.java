@@ -88,10 +88,10 @@ public class DspVersionController {
                 .add("binding", "HTTPS");
 
         if (authInfo != null) {
-            builder.addAll(Json.createObjectBuilder(authInfo.asJsonObject()));
+            builder.add("auth", authInfo);
         }
         if (identifierTypeInfo != null) {
-            builder.addAll(Json.createObjectBuilder(identifierTypeInfo.asJsonObject()));
+            builder.add("identifierType", identifierTypeInfo);
         }
 
         return builder;
