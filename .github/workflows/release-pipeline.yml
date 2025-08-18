@@ -11,7 +11,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Extract version from Gradle (strip -SNAPSHOT)
         id: extract_version
@@ -45,7 +45,7 @@ jobs:
 
     steps:
     - name: Checkout Code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
     
     - name: Set up JDK
       uses: actions/setup-java@v4
