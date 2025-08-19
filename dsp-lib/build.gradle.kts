@@ -32,7 +32,7 @@ repositories {
 
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter-web")
-    implementation("org.springframework.data:spring-data-commons:3.5.1")
+    implementation("org.springframework.data:spring-data-commons:3.5.3")
 
     implementation("org.apache.logging.log4j:log4j-api:2.25.0")
     implementation("org.apache.logging.log4j:log4j-core:2.25.0")
