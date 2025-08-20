@@ -53,7 +53,7 @@ public class AuthorizationService {
     public final static String CONTRACT_ID = "cid";
     public final static String DATA_ADDRESS = "dad";
     public final static String TOKEN = "token";
-    public final static String ASSET_ID = "assetId";
+    public final static String API_ASSET_ID = "apiAssetId";
     private final EnvService envService;
 
     private JWSSigner signer;
@@ -93,7 +93,7 @@ public class AuthorizationService {
             JWTClaimsSet claimsSet = new JWTClaimsSet.Builder()
                     .issuer(envService.getApiAssetWriteAccessIssuer())
                     .claim(CONTRACT_ID, contractId)
-                    .claim(ASSET_ID, assetId.toString())
+                    .claim(API_ASSET_ID, assetId.toString())
                     .issueTime(new Date(now))
                     .expirationTime(new Date(now + tokenValidityInMilliSeconds))
                     .build();
