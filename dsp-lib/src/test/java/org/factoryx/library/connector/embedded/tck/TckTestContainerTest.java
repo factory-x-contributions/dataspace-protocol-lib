@@ -38,6 +38,7 @@ import org.springframework.test.context.junit.jupiter.EnabledIf;
 import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.SelinuxContext;
+import org.testcontainers.utility.MountableFile;
 
 import java.io.IOException;
 import java.net.HttpURLConnection;
@@ -104,10 +105,17 @@ public class TckTestContainerTest {
         // docker pull eclipsedataspacetck/dsp-tck-runtime:latest
 
         try (GenericContainer<?> tckContainer = new GenericContainer<>("eclipsedataspacetck/dsp-tck-runtime:latest")) {
-            tckContainer.addFileSystemBind(configFilePath.toString(), "/etc/tck/config.properties", BindMode.READ_ONLY, SelinuxContext.SINGLE);
+            tckContainer.withCopyFileToContainer(
+                    MountableFile.forHostPath(configFilePath.toString()),
+                    "/etc/tck/config.properties"
+            );
             tckContainer.withExtraHost("host.docker.internal", "host-gateway");
             tckContainer.setPortBindings(List.of("8083:8083"));
             tckContainer.start();
+
+            var res = tckContainer.execInContainer("sh","-lc",
+                    "ls -l /etc/tck && echo --- && sed -n '1,80p' /etc/tck/config.properties || true");
+            log.info("TCK config inside container:\n{}", res.getStdout());
 
             assertEquals(8083, tckContainer.getMappedPort(8083));
 
