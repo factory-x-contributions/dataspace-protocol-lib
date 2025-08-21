@@ -38,6 +38,7 @@ import org.springframework.test.context.junit.jupiter.EnabledIf;
 import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.SelinuxContext;
+import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.utility.MountableFile;
 
 import java.io.IOException;
@@ -101,10 +102,10 @@ public class TckTestContainerTest {
 
         // Note: Since there is currently no proper release version of the published TCK docker image, you may occasionally
         // want to ensure you have the actual 'latest version' in your local docker repo by manually executing in your shell:
-        //
+        // eclipsedataspacetck/dsp-tck-runtime:sha-c440924
         // docker pull eclipsedataspacetck/dsp-tck-runtime:latest
 
-        try (GenericContainer<?> tckContainer = new GenericContainer<>("eclipsedataspacetck/dsp-tck-runtime:latest")) {
+        try (GenericContainer<?> tckContainer = new GenericContainer<>("eclipsedataspacetck/dsp-tck-runtime:sha-c440924")) {
             tckContainer.withCopyFileToContainer(
                     MountableFile.forHostPath(configFilePath.toString()),
                     "/etc/tck/config.properties"
@@ -112,10 +113,6 @@ public class TckTestContainerTest {
             tckContainer.withExtraHost("host.docker.internal", "host-gateway");
             tckContainer.setPortBindings(List.of("8083:8083"));
             tckContainer.start();
-
-            var res = tckContainer.execInContainer("sh","-lc",
-                    "ls -l /etc/tck && echo --- && sed -n '1,80p' /etc/tck/config.properties || true");
-            log.info("TCK config inside container:\n{}", res.getStdout());
 
             assertEquals(8083, tckContainer.getMappedPort(8083));
 
