@@ -130,7 +130,7 @@ public class TckTestContainerTest {
             });
 
             boolean latchResult = latch.await(8, TimeUnit.MINUTES);
-
+            log.info("Dump container logs \n{}", logOutputBuffer);
             String formattedDate = formatter.format(LocalDateTime.now());
             Files.writeString(outputFolderPath.resolve(formattedDate), logOutputBuffer.toString());
 
