@@ -102,10 +102,10 @@ public class TckTestContainerTest {
 
         // Note: Since there is currently no proper release version of the published TCK docker image, you may occasionally
         // want to ensure you have the actual 'latest version' in your local docker repo by manually executing in your shell:
-        // eclipsedataspacetck/dsp-tck-runtime:sha-c440924
+        //
         // docker pull eclipsedataspacetck/dsp-tck-runtime:latest
 
-        try (GenericContainer<?> tckContainer = new GenericContainer<>("eclipsedataspacetck/dsp-tck-runtime:sha-c440924")) {
+        try (GenericContainer<?> tckContainer = new GenericContainer<>("eclipsedataspacetck/dsp-tck-runtime:latest")) {
             tckContainer.withCopyFileToContainer(
                     MountableFile.forHostPath(configFilePath.toString()),
                     "/etc/tck/config.properties"
