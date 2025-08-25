@@ -21,6 +21,8 @@ import jakarta.json.JsonArrayBuilder;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 import lombok.extern.slf4j.Slf4j;
+import org.factoryx.library.connector.embedded.provider.interfaces.ApiAsset;
+import org.factoryx.library.connector.embedded.provider.interfaces.DataAsset;
 import org.factoryx.library.connector.embedded.provider.interfaces.DspTokenProviderService;
 import org.factoryx.library.connector.embedded.provider.model.DspVersion;
 import org.factoryx.library.connector.embedded.provider.model.transfer.TransferRecord;
@@ -32,16 +34,17 @@ import org.springframework.web.client.RestClient;
 import java.util.UUID;
 
 import static org.factoryx.library.connector.embedded.provider.service.helpers.JsonUtils.LEGACY_CONTEXT;
+import static org.factoryx.library.connector.embedded.provider.service.helpers.JsonUtils.prettyPrint;
 
-@Slf4j
+
 /**
  * This class represents a task to send a "TransferStarted" message in the
  * context of a specific transfer request. Should be initiated, after a valid transfer
  * request has been received by a consumer partner.
  *
  * @author dalmasoud
- *
  */
+@Slf4j
 public class SendTransferStartedTask implements Runnable {
     private final UUID transferId;
     private final TransferRecordService transferRecordService;
@@ -50,11 +53,12 @@ public class SendTransferStartedTask implements Runnable {
     private final EnvService envService;
     private final DspTokenProviderService dspTokenProviderService;
     private final DspVersion dspVersion;
+    private final DataAsset dataAsset;
 
 
     public SendTransferStartedTask(UUID transferId, TransferRecordService transferRecordService,
                                    AuthorizationService authorizationService, RestClient restClient,
-                                   EnvService envService, DspTokenProviderService dspTokenProviderService, DspVersion dspVersion) {
+                                   EnvService envService, DspTokenProviderService dspTokenProviderService, DspVersion dspVersion, DataAsset dataAsset) {
         this.transferId = transferId;
         this.transferRecordService = transferRecordService;
         this.authorizationService = authorizationService;
@@ -62,6 +66,7 @@ public class SendTransferStartedTask implements Runnable {
         this.envService = envService;
         this.dspTokenProviderService = dspTokenProviderService;
         this.dspVersion = dspVersion;
+        this.dataAsset = dataAsset;
     }
 
     @Override
@@ -85,10 +90,10 @@ public class SendTransferStartedTask implements Runnable {
         String targetURL = transferRecord.getPartnerDspUrl() + "/transfers/" + transferRecord.getConsumerPid()
                 + "/start";
         String requestBody = switch (dspVersion) {
-            case V_08 -> buildTransferStartedMessage_V_08(transferRecordUpdated);
-            default -> buildTransferStartedMessage(transferRecordUpdated);
+            case V_08 -> buildTransferStartedMessage_V_08(transferRecordUpdated, dataAsset);
+            default -> buildTransferStartedMessage(transferRecordUpdated, dataAsset);
         };
-
+        log.info("Generated TransferStartMessage: \n{}", prettyPrint(requestBody));
         try {
             restClient
                     .post()
@@ -116,8 +121,11 @@ public class SendTransferStartedTask implements Runnable {
     }
 
 
-    private String buildTransferStartedMessage(TransferRecord transferRecord) {
+    private String buildTransferStartedMessage(TransferRecord transferRecord, DataAsset asset) {
         try {
+            String dataAccessToken = asset instanceof ApiAsset ?
+                    authorizationService.issueWriteAccessToken(transferRecord.getContractId(), transferRecord.getDatasetId())
+                    : authorizationService.issueDataAccessToken(transferRecord.getContractId(), transferRecord.getDatasetAddressUrl());
             JsonObjectBuilder message = Json.createObjectBuilder();
             message.add("@context", JsonUtils.getContextForDspVersion(dspVersion));
             message.add("@type", "TransferStartMessage");
@@ -132,15 +140,19 @@ public class SendTransferStartedTask implements Runnable {
             JsonArrayBuilder endpointProperties = Json.createArrayBuilder();
             JsonObjectBuilder authorizationProperty = Json.createObjectBuilder();
             authorizationProperty.add("@type", "EndpointProperty");
-            authorizationProperty.add("name", "authorization");
-            authorizationProperty.add("value", authorizationService.issueDataAccessToken(transferRecord.getContractId(),
-                    transferRecord.getDatasetAddressUrl()));
+            authorizationProperty.add("name", "https://w3id.org/edc/v0.0.1/ns/authorization");
+            authorizationProperty.add("value", dataAccessToken);
             JsonObjectBuilder authTypeProperty = Json.createObjectBuilder();
             authTypeProperty.add("@type", "EndpointProperty");
-            authTypeProperty.add("name", "authType");
+            authTypeProperty.add("name", "https://w3id.org/edc/v0.0.1/ns/authType");
             authTypeProperty.add("value", "bearer");
+            JsonObjectBuilder endpointProperty = Json.createObjectBuilder();
+            endpointProperty.add("@type", "EndpointProperty");
+            endpointProperty.add("name", "https://w3id.org/edc/v0.0.1/ns/endpoint");
+            endpointProperty.add("value", transferRecord.getDatasetAddressUrl());
             endpointProperties.add(authorizationProperty);
             endpointProperties.add(authTypeProperty);
+            endpointProperties.add(endpointProperty);
             dataAddress.add("endpointProperties", endpointProperties);
 
             message.add("dataAddress", dataAddress.build());
@@ -152,10 +164,12 @@ public class SendTransferStartedTask implements Runnable {
     }
 
 
-    private String buildTransferStartedMessage_V_08(TransferRecord record) {
+    private String buildTransferStartedMessage_V_08(TransferRecord record, DataAsset asset) {
         String datasetAddressUrl = record.getDatasetAddressUrl();
         String contractId = record.getContractId();
-        String dataAccessToken = authorizationService.issueDataAccessToken(contractId, datasetAddressUrl);
+        String dataAccessToken = asset instanceof ApiAsset ?
+                authorizationService.issueWriteAccessToken(contractId, record.getDatasetId())
+                : authorizationService.issueDataAccessToken(contractId, datasetAddressUrl);
         String partnerId = record.getPartnerId();
         String refreshTokenValue = authorizationService.issueRefreshToken(dataAccessToken, partnerId);
         String expiresInValue = "300";

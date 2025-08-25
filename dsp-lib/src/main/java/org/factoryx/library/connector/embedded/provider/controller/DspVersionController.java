@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024. Fraunhofer-Gesellschaft zur Foerderung der angewandten Forschung e.V. (represented by Fraunhofer ISST)
+ * Copyright (c) 2025. Fraunhofer-Gesellschaft zur Foerderung der angewandten Forschung e.V. (represented by Fraunhofer ISST)
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -88,10 +88,10 @@ public class DspVersionController {
                 .add("binding", "HTTPS");
 
         if (authInfo != null) {
-            builder.addAll(Json.createObjectBuilder(authInfo.asJsonObject()));
+            builder.add("auth", authInfo);
         }
         if (identifierTypeInfo != null) {
-            builder.addAll(Json.createObjectBuilder(identifierTypeInfo.asJsonObject()));
+            builder.add("identifierType", identifierTypeInfo);
         }
 
         return builder;

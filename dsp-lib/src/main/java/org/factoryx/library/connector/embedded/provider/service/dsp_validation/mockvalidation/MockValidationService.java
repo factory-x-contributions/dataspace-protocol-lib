@@ -16,6 +16,7 @@
 
 package org.factoryx.library.connector.embedded.provider.service.dsp_validation.mockvalidation;
 
+import jakarta.json.JsonString;
 import jakarta.json.JsonValue;
 import jakarta.json.Json;
 import lombok.extern.slf4j.Slf4j;
@@ -26,6 +27,8 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
 import java.util.Map;
+
+import static jakarta.json.JsonValue.ValueType.STRING;
 
 @Service
 @Slf4j
@@ -45,7 +48,22 @@ public class MockValidationService implements DspTokenValidationService {
 
     @Override
     public JsonValue getIdentifierTypeInfo() {
-        return Json.createObjectBuilder().add("identifierType", "did:web").build();
+        return new JsonString() {
+            @Override
+            public String getString() {
+                return "did:web";
+            }
+
+            @Override
+            public CharSequence getChars() {
+                return getString();
+            }
+
+            @Override
+            public ValueType getValueType() {
+                return STRING;
+            }
+        };
     }
 
     @Override

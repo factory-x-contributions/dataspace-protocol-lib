@@ -26,8 +26,7 @@ import org.springframework.stereotype.Service;
 import java.util.Objects;
 import java.util.UUID;
 
-import static org.factoryx.library.connector.embedded.provider.service.AuthorizationService.CONTRACT_ID;
-import static org.factoryx.library.connector.embedded.provider.service.AuthorizationService.DATA_ADDRESS;
+import static org.factoryx.library.connector.embedded.provider.service.AuthorizationService.*;
 
 @Service
 @Slf4j
@@ -42,12 +41,39 @@ public class DataAccessTokenValidationService {
 
     private final AuthorizationService authorizationService;
     private final ContractRecordService contractRecordService;
-    private final String expectedIssuer;
+    private final String expectedReadOnlyIssuer;
+    private final String expectedWriteAccessIssuer;
 
     public DataAccessTokenValidationService(AuthorizationService authorizationService, ContractRecordService contractRecordService, EnvService envService) {
         this.authorizationService = authorizationService;
         this.contractRecordService = contractRecordService;
-        this.expectedIssuer = envService.getSingleAssetReadOnlyDataAccessIssuer();
+        this.expectedReadOnlyIssuer = envService.getSingleAssetReadOnlyDataAccessIssuer();
+        this.expectedWriteAccessIssuer = envService.getApiAssetWriteAccessIssuer();
+    }
+
+    public boolean validateWriteAccessTokenForAssetId(String token, String assetId) {
+        try {
+            Objects.requireNonNull(token, "Token must not be null");
+            Objects.requireNonNull(assetId, "AssetId must not be null");
+            token = token.replace("Bearer ", "").replace("bearer ", "");
+            var claims = authorizationService.extractAllClaims(token);
+            String contractId = claims.getStringClaim(CONTRACT_ID);
+            String claimsAssetId = claims.getStringClaim(API_ASSET_ID);
+            String claimsIssuer = claims.getIssuer();
+            NegotiationRecord negotiationRecord = contractRecordService.findByContractId(UUID.fromString(contractId));
+            boolean result = negotiationRecord != null
+                    && assetId.equals(claimsAssetId)
+                    && claimsIssuer.equals(expectedWriteAccessIssuer)
+                    && NegotiationState.FINALIZED.equals(negotiationRecord.getState())
+                    && authorizationService.validateToken(token);
+            if (result) {
+                log.info("Granted write access for partner {}", negotiationRecord.getPartnerId());
+            }
+            return result;
+        } catch (Exception e) {
+            log.error("Failure while validating token", e);
+            return false;
+        }
     }
 
     public boolean validateDataAccessTokenForAssetId(String token, String assetId) {
@@ -65,7 +91,7 @@ public class DataAccessTokenValidationService {
                     && NegotiationState.FINALIZED.equals(negotiationRecord.getState())
                     && authorizationService.validateToken(token)
                     && dataAddress.endsWith(assetId)
-                    && expectedIssuer.equals(issuer);
+                    && expectedReadOnlyIssuer.equals(issuer);
         } catch (Exception e) {
             log.error("Failure while validating token", e);
             return false;
@@ -92,8 +118,8 @@ public class DataAccessTokenValidationService {
 
             return negotiationRecord != null
                     && NegotiationState.FINALIZED.equals(negotiationRecord.getState())
-                    && expectedIssuer.equals(accessTokenIssuer)
-                    && expectedIssuer.equals(refreshTokenIssuer)
+                    && expectedReadOnlyIssuer.equals(accessTokenIssuer)
+                    && expectedReadOnlyIssuer.equals(refreshTokenIssuer)
                     && partnerId.equals(refreshTokenSubject)
                     && dataAddress.endsWith(negotiationRecord.getTargetAssetId())
                     && authorizationService.validateToken(refreshToken);

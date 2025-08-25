@@ -21,25 +21,22 @@ import lombok.extern.slf4j.Slf4j;
 import org.factoryx.library.connector.embedded.provider.interfaces.DataAssetManagementService;
 import org.factoryx.library.connector.embedded.provider.service.helpers.DataAccessTokenValidationService;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.*;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
 
-@RestController
-@Slf4j
-@ConditionalOnProperty(name = "org.factoryx.library.usebuiltindataccess", havingValue = "true", matchIfMissing = true)
+
 /**
  *
  * Default Endpoint for servicing DSP-data-pull requests
  *
  * @author eschrewe
  */
+@RestController
+@Slf4j
+@ConditionalOnProperty(name = "org.factoryx.library.usebuiltindataccess", havingValue = "true", matchIfMissing = true)
 public class DataAccessController {
 
     private final DataAssetManagementService dataAssetManagementService;
@@ -50,8 +47,8 @@ public class DataAccessController {
         this.dataAccessTokenValidationService = dataAccessTokenValidationService;
     }
 
-    @GetMapping("${org.factoryx.library.dspapiprefix:/dsp}/data-access/{assetid}")
-    public ResponseEntity<byte[]> dataAccess(@RequestHeader("Authorization") String authToken, @PathVariable("assetid") UUID assetId) {
+    @GetMapping("${org.factoryx.library.dspapiprefix:/dsp}/data-access/{assetId}")
+    public ResponseEntity<byte[]> dataAccess(@RequestHeader("Authorization") String authToken, @PathVariable("assetId") UUID assetId) {
         boolean tokenValidation = dataAccessTokenValidationService.validateDataAccessTokenForAssetId(authToken, assetId.toString());
         if (!tokenValidation) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
@@ -63,4 +60,33 @@ public class DataAccessController {
         return ResponseEntity.ok().contentType(MediaType.parseMediaType(asset.getContentType())).body(asset.getDtoRepresentation());
     }
 
+    @PostMapping("${org.factoryx.library.dspapiprefix:/dsp}/data-access/{assetId}/{*path}")
+    public ResponseEntity<byte[]> forwardPostRequest(@RequestHeader("Authorization") String authToken, @PathVariable("assetId") UUID assetId,
+                                                     @PathVariable String path, @RequestBody byte[] body, @RequestHeader HttpHeaders incomingHeaders,
+                                                     @RequestParam MultiValueMap<String, String> incomingQueryParams) {
+        return forwardApiAssetRequest(assetId, HttpMethod.POST, authToken, path, body, incomingHeaders, incomingQueryParams);
+    }
+
+    @PutMapping("${org.factoryx.library.dspapiprefix:/dsp}/data-access/{assetId}/{*path}")
+    public ResponseEntity<byte[]> forwardPutRequest(@RequestHeader("Authorization") String authToken, @PathVariable("assetId") UUID assetId,
+                                                    @PathVariable String path, @RequestBody byte[] body, @RequestHeader HttpHeaders incomingHeaders,
+                                                    @RequestParam MultiValueMap<String, String> incomingQueryParams) {
+        return forwardApiAssetRequest(assetId, HttpMethod.PUT, authToken, path, body, incomingHeaders, incomingQueryParams);
+    }
+
+    @DeleteMapping("${org.factoryx.library.dspapiprefix:/dsp}/data-access/{assetId}/{*path}")
+    public ResponseEntity<byte[]> forwardDeleteRequest(@RequestHeader("Authorization") String authToken, @PathVariable("assetId") UUID assetId,
+                                                       @PathVariable String path, @RequestHeader HttpHeaders incomingHeaders,
+                                                       @RequestParam MultiValueMap<String, String> incomingQueryParams) {
+        return forwardApiAssetRequest(assetId, HttpMethod.DELETE, authToken, path, null, incomingHeaders, incomingQueryParams);
+    }
+
+    private ResponseEntity<byte[]> forwardApiAssetRequest(UUID assetId, HttpMethod method, String authToken, String path, byte[] body,
+                                                          HttpHeaders incomingHeaders, MultiValueMap<String, String> incomingQueryParams) {
+        boolean tokenValidation = dataAccessTokenValidationService.validateWriteAccessTokenForAssetId(authToken, assetId.toString());
+        if (!tokenValidation) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+        return dataAssetManagementService.forwardToApiAsset(assetId, method, body, incomingHeaders, path, incomingQueryParams);
+    }
 }

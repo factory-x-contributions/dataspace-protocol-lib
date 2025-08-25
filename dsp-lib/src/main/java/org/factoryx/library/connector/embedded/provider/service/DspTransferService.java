@@ -132,7 +132,7 @@ public class DspTransferService {
         log.debug("Sending Response:\n{}", prettyPrint(new String(ackResponse)));
 
         executorService.submit(new SendTransferStartedTask(newRecord.getOwnPid(), transferRecordService,
-                authorizationService, restClient, envService, dspTokenProviderService, version));
+                authorizationService, restClient, envService, dspTokenProviderService, version, dataset));
 
         return new ResponseRecord(ackResponse, 201);
     }
