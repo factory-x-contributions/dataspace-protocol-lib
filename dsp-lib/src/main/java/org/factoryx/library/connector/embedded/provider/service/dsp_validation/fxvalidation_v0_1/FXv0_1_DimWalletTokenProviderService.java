@@ -18,15 +18,13 @@ package org.factoryx.library.connector.embedded.provider.service.dsp_validation.
 
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
-import jakarta.json.JsonObjectBuilder;
 import lombok.extern.slf4j.Slf4j;
-import org.factoryx.library.connector.embedded.provider.interfaces.DspTokenProviderService;
 import org.factoryx.library.connector.embedded.provider.model.negotiation.NegotiationRecord;
 import org.factoryx.library.connector.embedded.provider.model.transfer.TransferRecord;
 import org.factoryx.library.connector.embedded.provider.service.helpers.EnvService;
 import org.factoryx.library.connector.embedded.provider.service.helpers.JsonUtils;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
@@ -34,15 +32,13 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestClient;
 
-import java.util.List;
-
 import static org.factoryx.library.connector.embedded.provider.service.helpers.JsonUtils.parse;
 import static org.factoryx.library.connector.embedded.provider.service.helpers.JsonUtils.prettyPrint;
 
 @Service
 @Slf4j
-@ConditionalOnProperty(name = "org.factoryx.library.validationservice", havingValue = "fxv0_1")
-public class FXv0_1_TokenProviderService implements DspTokenProviderService {
+@ConditionalOnExpression("'${org.factoryx.library.validationservice:}'=='fxv0_1' and '${org.factoryx.library.validationservice.stsapi:}'=='dim-wallet'")
+public class FXv0_1_DimWalletTokenProviderService extends FXv0_1_AbstractTokenProviderService {
 
     private final EnvService envService;
     private final RestClient restClient;
@@ -70,7 +66,7 @@ public class FXv0_1_TokenProviderService implements DspTokenProviderService {
      */
     private String dimTokenAccessSecret;
 
-    public FXv0_1_TokenProviderService(EnvService envService, RestClient restClient) {
+    public FXv0_1_DimWalletTokenProviderService(EnvService envService, RestClient restClient) {
         this.envService = envService;
         this.restClient = restClient;
     }
@@ -102,11 +98,11 @@ public class FXv0_1_TokenProviderService implements DspTokenProviderService {
     String getWrappedToken(String partnerDid, String tokenFromPartner) {
         JsonObject payload = Json.createObjectBuilder()
                 .add("signToken", Json.createObjectBuilder()
-                    .add("issuer", envService.getBackendId())
-                    .add("subject", envService.getBackendId())
-                    .add("audience", partnerDid)
-                    .add("token", tokenFromPartner)
-                    .build()).build();
+                        .add("issuer", envService.getBackendId())
+                        .add("subject", envService.getBackendId())
+                        .add("audience", partnerDid)
+                        .add("token", tokenFromPartner)
+                        .build()).build();
         return obtainSelfSignedSignatureFromSTS(payload.toString());
     }
 

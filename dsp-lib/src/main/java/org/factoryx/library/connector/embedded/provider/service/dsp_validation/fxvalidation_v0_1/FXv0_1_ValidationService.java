@@ -45,7 +45,6 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 
 import static org.factoryx.library.connector.embedded.provider.service.helpers.JsonUtils.parse;
@@ -88,10 +87,10 @@ public class FXv0_1_ValidationService implements DspTokenValidationService {
 
     private final RestClient restClient;
     private final EnvService envService;
-    private final FXv0_1_TokenProviderService fXv01TokenProviderService;
+    private final FXv0_1_AbstractTokenProviderService fXv01TokenProviderService;
     private final BouncyCastleProvider bouncyCastleProvider = new BouncyCastleProvider();
 
-    public FXv0_1_ValidationService(RestClient restClient, EnvService envService, FXv0_1_TokenProviderService fXv01TokenProviderService) {
+    public FXv0_1_ValidationService(RestClient restClient, EnvService envService, FXv0_1_DimWalletTokenProviderService fXv01TokenProviderService) {
         this.restClient = restClient;
         this.envService = envService;
         this.fXv01TokenProviderService = fXv01TokenProviderService;
