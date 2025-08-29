@@ -16,7 +16,9 @@
 
 package org.factoryx.library.connector.embedded.provider.service.dsp_validation.fxvalidation_v0_1;
 
+import jakarta.json.Json;
 import jakarta.json.JsonObject;
+import jakarta.json.JsonObjectBuilder;
 import lombok.extern.slf4j.Slf4j;
 import org.factoryx.library.connector.embedded.provider.interfaces.DspTokenProviderService;
 import org.factoryx.library.connector.embedded.provider.model.negotiation.NegotiationRecord;
@@ -35,6 +37,7 @@ import org.springframework.web.client.RestClient;
 import java.util.List;
 
 import static org.factoryx.library.connector.embedded.provider.service.helpers.JsonUtils.parse;
+import static org.factoryx.library.connector.embedded.provider.service.helpers.JsonUtils.prettyPrint;
 
 @Service
 @Slf4j
@@ -53,13 +56,19 @@ public class FXv0_1_TokenProviderService implements DspTokenProviderService {
     @Value("${org.factoryx.library.fxv01.vaultsecretalias:did%3Aweb%3Aprovider-identityhub%253A7083%3Aprovider-sts-client-secret}")
     private String vaultSecretAlias;
 
-    @Value("${org.factoryx.library.fxv01.ststokenurl:http://provider-sts-service:8082/api/sts/token}")
-    private String stsTokenUrl;
+    @Value("${org.factoryx.library.fxv01.dimtokenurl:http://my-dim-token-url}")
+    private String dimTokenUrl;
+
+    @Value("${org.factoryx.library.fxv01.dimclientid:my-client-id}")
+    private String dimClientId;
+
+    @Value("${org.factoryx.library.fxv01.dimurl:http://my-dim-url}")
+    private String dimUrl;
 
     /**
      * Is initialized at runtime via request to the vault
      */
-    private String stsSecret;
+    private String dimTokenAccessSecret;
 
     public FXv0_1_TokenProviderService(EnvService envService, RestClient restClient) {
         this.envService = envService;
@@ -77,9 +86,28 @@ public class FXv0_1_TokenProviderService implements DspTokenProviderService {
     }
 
     private String provideTokenForPartner(String partnerDid) {
-        return obtainSelfSignedSignatureFromSTS(partnerDid,
-                List.of("bearer_access_scope",
-                        "org.eclipse.edc.vc.type:MembershipCredential:read"));
+
+        JsonObject payload = Json.createObjectBuilder()
+                .add("grantAccess", Json.createObjectBuilder()
+                        .add("scope", "read")
+                        .add("credentialTypes", Json.createArrayBuilder()
+                                .add("VerifiableCredential")
+                                .add("MembershipCredential"))
+                        .add("consumerDid", envService.getBackendId())
+                        .add("providerDid", partnerDid)
+                        .build()).build();
+        return obtainSelfSignedSignatureFromSTS(payload.toString());
+    }
+
+    String getWrappedToken(String partnerDid, String tokenFromPartner) {
+        JsonObject payload = Json.createObjectBuilder()
+                .add("signToken", Json.createObjectBuilder()
+                    .add("issuer", envService.getBackendId())
+                    .add("subject", envService.getBackendId())
+                    .add("audience", partnerDid)
+                    .add("token", tokenFromPartner)
+                    .build()).build();
+        return obtainSelfSignedSignatureFromSTS(payload.toString());
     }
 
     /**
@@ -88,45 +116,63 @@ public class FXv0_1_TokenProviderService implements DspTokenProviderService {
      * interpreted as key-value pairs, notable keys include "token" or "bearer_access_scope". Also note, that potentially
      * we could provide multiple values for one key (that's why a "List" instead of a "Map" is used here).
      *
-     * @param audience                the audience of the token
-     * @param additionalKeyValuePairs each two consecutive items are interpreted as key-value pairs
+     * @param payload                 the payload for the token service
      * @return the token from the STS
      */
-    String obtainSelfSignedSignatureFromSTS(String audience, List<String> additionalKeyValuePairs) {
-        if (stsSecret == null) {
+    private String obtainSelfSignedSignatureFromSTS(String payload) {
+        String dimCurrentToken = obtainDimAccessToken();
+        log.info("Sending \n{}", prettyPrint(payload));
+        String dimResponse = restClient.post()
+                .uri(dimUrl)
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("Authorization", "Bearer " + dimCurrentToken)
+                .body(payload)
+                .retrieve()
+                .onStatus(HttpStatusCode::isError, (req, res) -> {
+                    log.info("dim request status: " + res.getStatusCode());
+                })
+                .onStatus(HttpStatusCode::is2xxSuccessful, (req, res) -> {
+                    log.info("dim request status: " + res.getStatusCode());
+                })
+                .body(String.class);
+        log.info("dim response: \n{}", dimResponse);
+        var stsResponseObject = JsonUtils.parse(dimResponse);
+        return stsResponseObject.getString("jwt");
+    }
+
+    String obtainDimAccessToken() {
+        if (dimTokenAccessSecret == null) {
+            String vaultRequestUrl = vaultBaseUrl + "/v1/secret/data/" + vaultSecretAlias;
             String vaultResponse = restClient.get()
-                    .uri(vaultBaseUrl + "/v1/secret/data/" + vaultSecretAlias)
+                    .uri(vaultRequestUrl)
                     .header("X-Vault-Token", vaultRootToken)
                     .retrieve()
                     .body(String.class);
             JsonObject vaultResponseJson = parse(vaultResponse);
-            stsSecret = vaultResponseJson.getJsonObject("data").getJsonObject("data").getString("content");
-            if (stsSecret != null) {
-                log.info("STS Secret found");
+            dimTokenAccessSecret = vaultResponseJson.getJsonObject("data").getJsonObject("data").getString("content");
+            if (dimTokenAccessSecret != null) {
+                dimTokenAccessSecret = dimTokenAccessSecret.strip();
+                log.info("dimTokenAccessSecret found");
             }
         }
-        MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
-        form.add("grant_type", "client_credentials");
-        form.add("client_secret", stsSecret);
-        form.add("client_id", envService.getBackendId());
-        form.add("audience", audience);
-        for (int i = 0; i < additionalKeyValuePairs.size(); i += 2) {
-            form.add(additionalKeyValuePairs.get(i), additionalKeyValuePairs.get(i + 1));
-        }
-
-        String stsResponse = restClient.post()
-                .uri(stsTokenUrl)
+        MultiValueMap<String, String> requestBody = new LinkedMultiValueMap<>();
+        requestBody.add("grant_type", "client_credentials");
+        requestBody.add("client_id", dimClientId);
+        requestBody.add("client_secret", dimTokenAccessSecret);
+        String dimTokenResponse = restClient.post()
+                .uri(dimTokenUrl)
+                .body(requestBody)
                 .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                .body(form)
                 .retrieve()
                 .onStatus(HttpStatusCode::isError, (req, res) -> {
-                    log.info("STS request status: " + res.getStatusCode());
+                    log.info("dim token request status: {}", res.getStatusCode());
                 })
                 .onStatus(HttpStatusCode::is2xxSuccessful, (req, res) -> {
-                    log.info("STS request status: " + res.getStatusCode());
+                    log.info("dim token request status: {}", res.getStatusCode());
                 })
                 .body(String.class);
-        var stsResponseObject = JsonUtils.parse(stsResponse);
-        return "Bearer " + stsResponseObject.getString("access_token");
+        log.info("dim token response body: \n{}", dimTokenResponse);
+        JsonObject jsonResponseBody = parse(dimTokenResponse);
+        return jsonResponseBody.getString("access_token").strip();
     }
 }
