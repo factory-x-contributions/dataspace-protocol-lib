@@ -43,6 +43,7 @@ dependencies {
 
     implementation("com.nimbusds:nimbus-jose-jwt:10.4.2")
     implementation("com.google.crypto.tink:tink:1.18.0")
+    implementation("org.bouncycastle:bcprov-jdk18on:1.81")
 
     compileOnly("org.projectlombok:lombok")
     annotationProcessor("org.projectlombok:lombok")

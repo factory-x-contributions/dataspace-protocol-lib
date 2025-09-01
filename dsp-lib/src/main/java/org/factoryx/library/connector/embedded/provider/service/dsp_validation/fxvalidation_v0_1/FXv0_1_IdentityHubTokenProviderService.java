@@ -1,30 +1,13 @@
-/*
- * Copyright (c) 2024. Fraunhofer-Gesellschaft zur Foerderung der angewandten Forschung e.V. (represented by Fraunhofer ISST)
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- */
-
 package org.factoryx.library.connector.embedded.provider.service.dsp_validation.fxvalidation_v0_1;
 
 import jakarta.json.JsonObject;
 import lombok.extern.slf4j.Slf4j;
-import org.factoryx.library.connector.embedded.provider.interfaces.DspTokenProviderService;
 import org.factoryx.library.connector.embedded.provider.model.negotiation.NegotiationRecord;
 import org.factoryx.library.connector.embedded.provider.model.transfer.TransferRecord;
 import org.factoryx.library.connector.embedded.provider.service.helpers.EnvService;
 import org.factoryx.library.connector.embedded.provider.service.helpers.JsonUtils;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
@@ -32,36 +15,34 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestClient;
 
-import java.util.List;
-
 import static org.factoryx.library.connector.embedded.provider.service.helpers.JsonUtils.parse;
 
 @Service
 @Slf4j
-@ConditionalOnProperty(name = "org.factoryx.library.validationservice", havingValue = "fxv0_1")
-public class FXv0_1_TokenProviderService implements DspTokenProviderService {
+@ConditionalOnExpression("'${org.factoryx.library.validationservice:}'=='fxv0_1' and '${org.factoryx.library.validationservice.stsapi:}'=='identityhub'")
+public class FXv0_1_IdentityHubTokenProviderService extends FXv0_1_AbstractTokenProviderService {
 
     private final EnvService envService;
     private final RestClient restClient;
 
-    @Value("${org.factoryx.library.fxv01.vaultroottoken:root}")
+    @Value("${org.factoryx.library.mvd.vaultroottoken:root}")
     private String vaultRootToken;
 
-    @Value("${org.factoryx.library.fxv01.vaulturl:http://provider-vault:8200}")
+    @Value("${org.factoryx.library.mvd.vaulturl:http://provider-vault:8200}")
     private String vaultBaseUrl;
 
-    @Value("${org.factoryx.library.fxv01.vaultsecretalias:did%3Aweb%3Aprovider-identityhub%253A7083%3Aprovider-sts-client-secret}")
+    @Value("${org.factoryx.library.mvd.vaultsecretalias:did%3Aweb%3Aprovider-identityhub%253A7083%3Aprovider-sts-client-secret}")
     private String vaultSecretAlias;
 
-    @Value("${org.factoryx.library.fxv01.ststokenurl:http://provider-sts-service:8082/api/sts/token}")
-    private String stsTokenUrl;
+    @Value("${org.factoryx.library.mvd.identityhub.tokenurl:http://provider-sts-service:8082/api/sts/token}")
+    private String identityHubTokenUrl;
 
     /**
      * Is initialized at runtime via request to the vault
      */
     private String stsSecret;
 
-    public FXv0_1_TokenProviderService(EnvService envService, RestClient restClient) {
+    public FXv0_1_IdentityHubTokenProviderService(EnvService envService, RestClient restClient) {
         this.envService = envService;
         this.restClient = restClient;
     }
@@ -76,10 +57,28 @@ public class FXv0_1_TokenProviderService implements DspTokenProviderService {
         return provideTokenForPartner(record.getPartnerId());
     }
 
+
+    @Override
+    String getWrappedToken(String partnerDid, String tokenFromPartner) {
+        MultiValueMap<String, String> requestBody = new LinkedMultiValueMap<>();
+        requestBody.add("grant_type", "client_credentials");
+        requestBody.add("client_secret", stsSecret);
+        requestBody.add("client_id", envService.getBackendId());
+        requestBody.add("audience", partnerDid);
+        requestBody.add("token", tokenFromPartner);
+        return obtainSelfSignedSignatureFromSTS(requestBody);
+    }
+
+
+
     private String provideTokenForPartner(String partnerDid) {
-        return obtainSelfSignedSignatureFromSTS(partnerDid,
-                List.of("bearer_access_scope",
-                        "org.eclipse.edc.vc.type:MembershipCredential:read"));
+        MultiValueMap<String, String> requestBody = new LinkedMultiValueMap<>();
+        requestBody.add("grant_type", "client_credentials");
+        requestBody.add("client_secret", stsSecret);
+        requestBody.add("client_id", envService.getBackendId());
+        requestBody.add("audience", partnerDid);
+        requestBody.add("bearer_access_scope", "org.eclipse.edc.vc.type:MembershipCredential:read org.eclipse.edc.vc.type:DataProcessorCredential:read");
+        return obtainSelfSignedSignatureFromSTS(requestBody);
     }
 
     /**
@@ -88,11 +87,10 @@ public class FXv0_1_TokenProviderService implements DspTokenProviderService {
      * interpreted as key-value pairs, notable keys include "token" or "bearer_access_scope". Also note, that potentially
      * we could provide multiple values for one key (that's why a "List" instead of a "Map" is used here).
      *
-     * @param audience                the audience of the token
-     * @param additionalKeyValuePairs each two consecutive items are interpreted as key-value pairs
+
      * @return the token from the STS
      */
-    String obtainSelfSignedSignatureFromSTS(String audience, List<String> additionalKeyValuePairs) {
+    String obtainSelfSignedSignatureFromSTS(MultiValueMap<String, String> requestBody) {
         if (stsSecret == null) {
             String vaultResponse = restClient.get()
                     .uri(vaultBaseUrl + "/v1/secret/data/" + vaultSecretAlias)
@@ -105,19 +103,10 @@ public class FXv0_1_TokenProviderService implements DspTokenProviderService {
                 log.info("STS Secret found");
             }
         }
-        MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
-        form.add("grant_type", "client_credentials");
-        form.add("client_secret", stsSecret);
-        form.add("client_id", envService.getBackendId());
-        form.add("audience", audience);
-        for (int i = 0; i < additionalKeyValuePairs.size(); i += 2) {
-            form.add(additionalKeyValuePairs.get(i), additionalKeyValuePairs.get(i + 1));
-        }
-
         String stsResponse = restClient.post()
-                .uri(stsTokenUrl)
+                .uri(identityHubTokenUrl)
                 .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                .body(form)
+                .body(requestBody)
                 .retrieve()
                 .onStatus(HttpStatusCode::isError, (req, res) -> {
                     log.info("STS request status: " + res.getStatusCode());
@@ -127,6 +116,6 @@ public class FXv0_1_TokenProviderService implements DspTokenProviderService {
                 })
                 .body(String.class);
         var stsResponseObject = JsonUtils.parse(stsResponse);
-        return "Bearer " + stsResponseObject.getString("access_token");
+        return stsResponseObject.getString("access_token").strip();
     }
 }
