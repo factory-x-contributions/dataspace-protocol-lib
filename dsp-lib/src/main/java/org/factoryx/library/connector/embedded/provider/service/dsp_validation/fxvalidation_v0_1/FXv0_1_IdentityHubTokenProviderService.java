@@ -25,16 +25,16 @@ public class FXv0_1_IdentityHubTokenProviderService extends FXv0_1_AbstractToken
     private final EnvService envService;
     private final RestClient restClient;
 
-    @Value("${org.factoryx.library.mvd.vaultroottoken:root}")
+    @Value("${org.factoryx.library.fxv01.vaultroottoken:root}")
     private String vaultRootToken;
 
-    @Value("${org.factoryx.library.mvd.vaulturl:http://provider-vault:8200}")
+    @Value("${org.factoryx.library.fxv01.vaulturl:http://provider-vault:8200}")
     private String vaultBaseUrl;
 
-    @Value("${org.factoryx.library.mvd.vaultsecretalias:did%3Aweb%3Aprovider-identityhub%253A7083%3Aprovider-sts-client-secret}")
+    @Value("${org.factoryx.library.fxv01.vaultsecretalias:did%3Aweb%3Aprovider-identityhub%253A7083%3Aprovider-sts-client-secret}")
     private String vaultSecretAlias;
 
-    @Value("${org.factoryx.library.mvd.identityhub.tokenurl:http://provider-sts-service:8082/api/sts/token}")
+    @Value("${org.factoryx.library.fxv01.identityhub.tokenurl:http://provider-sts-service:8082/api/sts/token}")
     private String identityHubTokenUrl;
 
     /**

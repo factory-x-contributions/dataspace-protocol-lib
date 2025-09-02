@@ -18,10 +18,7 @@ package org.factoryx.library.connector.embedded.provider.interfaces;
 
 import com.apicatalog.jsonld.JsonLd;
 import com.apicatalog.jsonld.document.JsonDocument;
-import jakarta.json.Json;
-import jakarta.json.JsonArray;
-import jakarta.json.JsonObject;
-import jakarta.json.JsonValue;
+import jakarta.json.*;
 import lombok.extern.slf4j.Slf4j;
 import org.factoryx.library.connector.embedded.provider.model.DspVersion;
 import org.factoryx.library.connector.embedded.provider.service.helpers.EnvService;
@@ -94,30 +91,43 @@ public abstract class DspPolicyService {
                 .add(prefix + "assignee", partnerId)
                 .add(prefix + "target", Json.createObjectBuilder().add(ID, assetId).build());
         var permission = getPermission(assetId, partnerId, version);
-        if (permission != null && !permission.isEmpty()) {
+        if (permission != null && !isEmpty(permission)) {
             builder.add(prefix + "permission", permission);
         }
         var prohibition = getProhibition(assetId, partnerId, version);
-        if (prohibition != null && !prohibition.isEmpty()) {
+        if (prohibition != null && !isEmpty(prohibition)) {
             builder.add(prefix + "prohibition", prohibition);
         }
         var obligation = getObligation(assetId, partnerId, version);
-        if (obligation != null && !obligation.isEmpty()) {
+        if (obligation != null && !isEmpty(obligation)) {
             builder.add(prefix + "obligation", obligation);
         }
         return builder.build();
 
     }
 
-    public JsonArray getPermission(String assetId, String partnerId, DspVersion version) {
+    public static boolean isEmpty(JsonValue value) {
+        if (value instanceof JsonArray array) {
+            return array.isEmpty();
+        }
+        if (value instanceof JsonObject object) {
+            return object.isEmpty();
+        }
+        if (value instanceof JsonString string) {
+            return string.getString().isEmpty();
+        }
+        throw new IllegalArgumentException("Unsupported value type: " + value.getClass());
+    }
+
+    public JsonValue getPermission(String assetId, String partnerId, DspVersion version) {
         return JsonValue.EMPTY_JSON_ARRAY;
     }
 
-    public JsonArray getProhibition(String assetId, String partnerId, DspVersion version) {
+    public JsonValue getProhibition(String assetId, String partnerId, DspVersion version) {
         return JsonValue.EMPTY_JSON_ARRAY;
     }
 
-    public JsonArray getObligation(String assetId, String partnerId, DspVersion version) {
+    public JsonValue getObligation(String assetId, String partnerId, DspVersion version) {
         return JsonValue.EMPTY_JSON_ARRAY;
     }
 
