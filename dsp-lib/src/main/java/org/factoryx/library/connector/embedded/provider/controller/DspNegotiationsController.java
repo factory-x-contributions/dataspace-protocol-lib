@@ -35,6 +35,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import static org.factoryx.library.connector.embedded.provider.service.helpers.JsonUtils.createErrorResponse;
+import static org.factoryx.library.connector.embedded.provider.service.helpers.JsonUtils.prettyPrint;
 
 @RestController
 @Slf4j
@@ -97,7 +98,7 @@ public class DspNegotiationsController {
 
     private ResponseEntity<byte[]> handleNegotiationRequest(String rawJson,  String authString, DspVersion version) {
         log.info("negotiations/request on version{}: \n{}", version, JsonUtils.prettyPrint(rawJson));
-        log.info("Auth: {}", authString);
+        log.info("Raw body \n{}", prettyPrint(rawJson));
         try {
             log.info("Starting validation");
             Map<String, String> tokenValidationResult = dspTokenValidationService.validateToken(authString);

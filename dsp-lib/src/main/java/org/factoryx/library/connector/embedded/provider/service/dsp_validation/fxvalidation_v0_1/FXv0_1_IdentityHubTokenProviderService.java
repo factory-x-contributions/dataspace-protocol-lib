@@ -37,6 +37,9 @@ public class FXv0_1_IdentityHubTokenProviderService extends FXv0_1_AbstractToken
     @Value("${org.factoryx.library.fxv01.identityhub.tokenurl:http://provider-sts-service:8082/api/sts/token}")
     private String identityHubTokenUrl;
 
+    @Value("${org.factoryx.library.fxv01.bearer:false}")
+    private boolean addBearer;
+
     /**
      * Is initialized at runtime via request to the vault
      */
@@ -49,12 +52,12 @@ public class FXv0_1_IdentityHubTokenProviderService extends FXv0_1_AbstractToken
 
     @Override
     public String provideTokenForPartner(NegotiationRecord record) {
-        return provideTokenForPartner(record.getPartnerId());
+        return (addBearer ? "Bearer " : "") + provideTokenForPartner(record.getPartnerId());
     }
 
     @Override
     public String provideTokenForPartner(TransferRecord record) {
-        return provideTokenForPartner(record.getPartnerId());
+        return (addBearer ? "Bearer " : "") + provideTokenForPartner(record.getPartnerId());
     }
 
 

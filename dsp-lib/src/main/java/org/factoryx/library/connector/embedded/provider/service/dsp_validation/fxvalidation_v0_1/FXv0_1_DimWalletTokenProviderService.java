@@ -61,6 +61,9 @@ public class FXv0_1_DimWalletTokenProviderService extends FXv0_1_AbstractTokenPr
     @Value("${org.factoryx.library.fxv01.dimurl:http://my-dim-url}")
     private String dimUrl;
 
+    @Value("${org.factoryx.library.fxv01.bearer:false}")
+    private boolean addBearer;
+
     /**
      * Is initialized at runtime via request to the vault
      */
@@ -73,12 +76,12 @@ public class FXv0_1_DimWalletTokenProviderService extends FXv0_1_AbstractTokenPr
 
     @Override
     public String provideTokenForPartner(NegotiationRecord record) {
-        return provideTokenForPartner(record.getPartnerId());
+        return (addBearer ? "Bearer " : "") + provideTokenForPartner(record.getPartnerId());
     }
 
     @Override
     public String provideTokenForPartner(TransferRecord record) {
-        return provideTokenForPartner(record.getPartnerId());
+        return (addBearer ? "Bearer " : "") + provideTokenForPartner(record.getPartnerId());
     }
 
     private String provideTokenForPartner(String partnerDid) {
