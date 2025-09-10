@@ -19,6 +19,7 @@ package org.factoryx.library.connector.embedded.teststarter;
 import jakarta.json.Json;
 import jakarta.json.JsonArray;
 import jakarta.json.JsonObject;
+import jakarta.json.JsonValue;
 import org.factoryx.library.connector.embedded.provider.interfaces.DspPolicyService;
 import org.factoryx.library.connector.embedded.provider.model.DspVersion;
 import org.factoryx.library.connector.embedded.provider.service.helpers.EnvService;
@@ -34,7 +35,7 @@ public class TckPolicyService extends DspPolicyService {
     }
 
     @Override
-    public JsonArray getPermission(String assetId, String partnerId, DspVersion version) {
+    public JsonValue getPermission(String assetId, String partnerId, DspVersion version) {
         return switch (assetId) {
             case SampleDataAsset.CATALOG_ASSET_ID -> getCatalogTestContent();
             case SampleDataAsset.NEGOTIATION_ASSET_ID -> getNegotiationTestContent(assetId);
@@ -64,7 +65,7 @@ public class TckPolicyService extends DspPolicyService {
     }
 
     @Override
-    public JsonArray getProhibition(String assetId, String partnerId, DspVersion version) {
+    public JsonValue getProhibition(String assetId, String partnerId, DspVersion version) {
         return switch (assetId) {
             case SampleDataAsset.CATALOG_ASSET_ID -> getCatalogTestContent();
             default -> super.getPermission(assetId, partnerId, version);
@@ -72,7 +73,7 @@ public class TckPolicyService extends DspPolicyService {
     }
 
     @Override
-    public JsonArray getObligation(String assetId, String partnerId, DspVersion version) {
+    public JsonValue getObligation(String assetId, String partnerId, DspVersion version) {
         return switch (assetId) {
             case SampleDataAsset.CATALOG_ASSET_ID -> getCatalogTestContent();
             default -> super.getPermission(assetId, partnerId, version);

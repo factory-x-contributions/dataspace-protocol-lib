@@ -30,8 +30,10 @@ import org.springframework.web.client.RestClient;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
 import java.util.UUID;
 
+import static org.factoryx.library.connector.embedded.provider.interfaces.DspPolicyService.isEmpty;
 import static org.factoryx.library.connector.embedded.provider.service.helpers.JsonUtils.prettyPrint;
 
 /**
@@ -97,6 +99,13 @@ public class SendContractAgreedTask implements Runnable {
                             (request, resp) -> {
                                 log.warn("Error sending AGREED MESSAGE to {} for {}", targetURL, negotiationId);
                                 log.warn("Status code: {}", resp.getStatusCode());
+                                var respBytes = resp.getBody().readAllBytes();
+                                try {
+                                    log.warn("Response from consumer\n{}", prettyPrint(new String(respBytes)));
+                                } catch (Exception e) {
+                                    log.warn("Response from consumer\n{}", new String(respBytes));
+                                    log.warn("As bytes: {}", Arrays.toString(respBytes));
+                                }
                                 log.warn("Body: \n{}", prettyPrint(requestBody));
                             })
                     .onStatus(HttpStatusCode::is2xxSuccessful,
@@ -127,15 +136,15 @@ public class SendContractAgreedTask implements Runnable {
                 .add(odrlPrefix + "assignee", record.getPartnerId())
                 .add(odrlPrefix + "assigner", envService.getBackendId());
         var permission = dspPolicyService.getPermission(record.getTargetAssetId(), record.getPartnerId(), dspVersion);
-        if (permission != null && !permission.isEmpty()) {
+        if (permission != null && !isEmpty(permission)) {
             agreementBuilder.add(odrlPrefix + "permission", permission);
         }
         var prohibition = dspPolicyService.getProhibition(record.getTargetAssetId(), record.getPartnerId(), dspVersion);
-        if (prohibition != null && !prohibition.isEmpty()) {
+        if (prohibition != null && !isEmpty(prohibition)) {
             agreementBuilder.add(odrlPrefix + "prohibition", prohibition);
         }
         var obligation = dspPolicyService.getObligation(record.getTargetAssetId(), record.getPartnerId(), dspVersion);
-        if (obligation != null && !obligation.isEmpty()) {
+        if (obligation != null && !isEmpty(prohibition)) {
             agreementBuilder.add(odrlPrefix + "obligation", obligation);
         }
         var builder = Json.createObjectBuilder()

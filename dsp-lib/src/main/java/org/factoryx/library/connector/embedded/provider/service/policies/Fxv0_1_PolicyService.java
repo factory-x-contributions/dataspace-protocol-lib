@@ -1,8 +1,7 @@
 package org.factoryx.library.connector.embedded.provider.service.policies;
 
 import jakarta.json.Json;
-import jakarta.json.JsonArray;
-import jakarta.json.JsonValue;
+import jakarta.json.JsonObject;
 import org.factoryx.library.connector.embedded.provider.interfaces.DspPolicyService;
 import org.factoryx.library.connector.embedded.provider.model.DspVersion;
 import org.factoryx.library.connector.embedded.provider.service.helpers.EnvService;
@@ -13,47 +12,31 @@ import org.springframework.stereotype.Service;
 @ConditionalOnProperty(name = "org.factoryx.library.policyservice", havingValue = "fxv0_1")
 public class Fxv0_1_PolicyService extends DspPolicyService {
 
-    protected Fxv0_1_PolicyService(EnvService envService) {
+    public Fxv0_1_PolicyService(EnvService envService) {
         super(envService);
     }
 
-
     /**
-     * Returns a permission JSON structure based on the hash value of assetId.
-     * The output varies but is not random; it depends on whether the hash value is even or odd.
+     * Returns a permission JSON structure based according to the latest specification.
      *
-     * @param assetId the id of the asset
+     * @param assetId   the id of the asset
      * @param partnerId the id of the negotiation partner
      * @return A JSON representation of the permission policy.
      */
     @Override
-    public JsonArray getPermission(String assetId, String partnerId, DspVersion version) {
-        int hash = assetId.hashCode();
+    public JsonObject getPermission(String assetId, String partnerId, DspVersion version) {
         String prefix = DspVersion.V_08.equals(version) ? "odrl:" : "";
+        var permission = Json.createObjectBuilder();
+        permission.add(prefix + "action",
+                Json.createObjectBuilder()
+                        .add("@id", prefix + "use"));
 
-        if (hash % 2 == 0) {
-            return Json.createArrayBuilder().add(Json.createObjectBuilder()
-                    .add(prefix  +"action", Json.createObjectBuilder()
-                            .add("@id", prefix + "use"))
-                    .add(prefix + "constraint", Json.createObjectBuilder()
-                            .add(prefix + "leftOperand", Json.createObjectBuilder()
-                                    .add("@id", "https://w3id.org/factory-x/policy/v1.0/MembershipConstraint"))
-                            .add(prefix + "operator", Json.createObjectBuilder()
-                                    .add("@id", prefix + "eq"))
-                            .add(prefix + "rightOperand", "active"))
-                    .build()).build();
-        } else {
-            return Json.createArrayBuilder().add(Json.createObjectBuilder()
-                    .add(prefix + "permission", Json.createObjectBuilder()
-                            .add(prefix + "action", Json.createObjectBuilder()
-                                    .add("@id",prefix +  "use"))
-                            .add(prefix + "constraint", Json.createObjectBuilder()
-                                    .add(prefix + "leftOperand", Json.createObjectBuilder()
-                                            .add("@id", "https://w3id.org/factoryx/policy/certification"))
-                                    .add(prefix + "operator", Json.createObjectBuilder()
-                                            .add("@id",prefix +  "eq"))
-                                    .add(prefix + "rightOperand", "MyCertification")))
-                    .build()).build();
-        }
+        permission.add(prefix + "constraint",
+                Json.createObjectBuilder()
+                        .add(prefix + "leftOperand", Json.createObjectBuilder().add("@id", "https://w3id.org/factoryx/policy/v1.0/Membership"))
+                        .add(prefix + "operator", Json.createObjectBuilder().add("@id", prefix + "eq"))
+                        .add(prefix + "rightOperand", "active")
+        );
+        return permission.build();
     }
 }

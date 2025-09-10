@@ -99,6 +99,7 @@ public class DspNegotiationService {
 
         if (offer != null && !policyService.validateOffer(offer, newRecord.getTargetAssetId(), partnerId, dspVersion)) {
             log.warn("Unexpected offer, rejecting contract negotiation");
+            log.info("Request: {}", prettyPrint(contractRequestMessage.getOffer()));
             newRecord = negotiationRecordService.updateNegotiationRecordToState(newRecord.getOwnPid(), NegotiationState.TERMINATED);
             return new ResponseRecord(createErrorResponse(newRecord.getOwnPid().toString(), consumerPid, "ContractNegotiationError",
                     List.of("Unexpected offer, rejecting contract negotiation"), dspVersion), 400);
