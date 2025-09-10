@@ -17,8 +17,7 @@ public class Fxv0_1_PolicyService extends DspPolicyService {
     }
 
     /**
-     * Returns a permission JSON structure based on the hash value of assetId.
-     * The output varies but is not random; it depends on whether the hash value is even or odd.
+     * Returns a permission JSON structure based according to the latest specification.
      *
      * @param assetId   the id of the asset
      * @param partnerId the id of the negotiation partner
