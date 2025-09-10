@@ -38,15 +38,3 @@ configurations {
 
 val mockitoAgent = configurations.create("mockitoAgent")
 
-dependencies {
-    implementation("org.springframework.boot:spring-boot-starter-web")
-
-    implementation("org.apache.logging.log4j:log4j-core:2.25.0")
-    implementation("org.apache.logging.log4j:log4j-api:2.25.0")
-
-    compileOnly("org.projectlombok:lombok")
-    annotationProcessor("org.projectlombok:lombok")
-    testImplementation("org.springframework.boot:spring-boot-starter-test")
-    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
-    mockitoAgent("org.mockito:mockito-core") { isTransitive = false }
-}

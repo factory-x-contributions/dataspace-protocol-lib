@@ -41,7 +41,7 @@ dependencies {
     implementation("org.eclipse.parsson:parsson:1.1.7")
     implementation("com.apicatalog:titanium-json-ld:1.6.0")
 
-    implementation("com.nimbusds:nimbus-jose-jwt:10.4.2")
+    implementation("com.nimbusds:nimbus-jose-jwt:10.5")
     implementation("com.google.crypto.tink:tink:1.18.0")
     implementation("org.bouncycastle:bcprov-jdk18on:1.81")
 
