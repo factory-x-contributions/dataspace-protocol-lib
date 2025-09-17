@@ -34,7 +34,7 @@ public class FXv0_1_IdentityHubTokenProviderService extends FXv0_1_AbstractToken
     @Value("${org.factoryx.library.fxv01.vaultsecretalias:did%3Aweb%3Aprovider-identityhub%253A7083%3Aprovider-sts-client-secret}")
     private String vaultSecretAlias;
 
-    @Value("${org.factoryx.library.fxv01.identityhub.tokenurl:http://provider-sts-service:8082/api/sts/token}")
+    @Value("${org.factoryx.library.fxv01.identityhub.url:http://provider-sts-service:8082/api/sts/token}")
     private String identityHubTokenUrl;
 
     @Value("${org.factoryx.library.fxv01.bearer:false}")

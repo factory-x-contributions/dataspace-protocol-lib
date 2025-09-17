@@ -38,3 +38,6 @@ out/
 
 ### Logging Output ###
 /dsp-lib/src/test/resources/tck-logs/
+
+### Test Secrets ###
+/testsecrets
