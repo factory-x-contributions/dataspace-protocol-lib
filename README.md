@@ -120,20 +120,25 @@ By default, the library is using the "/dsp/**" path. But you can configure this 
 
 Your importing project should provide the following properties: 
 
-| Property name                              | Meaning                                                                                | Default setting                                                        |
-|--------------------------------------------|----------------------------------------------------------------------------------------|------------------------------------------------------------------------|
-| org.factoryx.library.hostname              | The dns name of the host, the application is running on.                               | localhost                                                              |
-| org.factoryx.library.usetls                | boolean flag that indicates whether TLS is to be used                                  | false                                                                  |
-| org.factoryx.library.id                    | The id, that you are using in your dataspace                                           | provider                                                               |
-| org.factoryx.library.dspapiprefix          | The prefix that all library-related endpoints are using                                | /dsp                                                                   |
-| org.factoryx.library.usebuiltindataccess   | "false" disables the built-in dataacces (not recommended!)                             | true                                                                   | 
-| org.factoryx.library.alternativedataaccess | set the host adress and path to an alternative data access endpoint (not recommended!) | localhost                                                              |
-| org.factoryx.library.validationservice     | set the type of validation for DSP (currently supported: "mock", "mvd")                | mock                                                                   | 
-| org.factoryx.library.mvd.vaultroottoken    | set the token for authorizing access to the MVD provider vault                         | root                                                                   | 
-| org.factoryx.library.mvd.vaulturl          | set the url for the MVD provider vault                                                 | http://provider-vault:8200                                             | 
-| org.factoryx.library.mvd.vaultsecretalias  | set the secret alias for accessing the provider STS                                    | did%3Aweb%3Aprovider-identityhub%253A7083%3Aprovider-sts-client-secret | 
-| org.factoryx.library.mvd.ststokenurl       | set the url of the STS token endpoint                                                  | http://provider-sts-service:8082/api/sts/token                         | 
-| org.factoryx.library.mvd.trustedissuer     | set the ID of the MVD trusted issuer                                                   | did:web:dataspace-issuer                                               | 
+| Property name                                 | Meaning                                                                                | Default setting                                                        |
+|-----------------------------------------------|----------------------------------------------------------------------------------------|------------------------------------------------------------------------|
+| org.factoryx.library.hostname                 | The dns name of the host, the application is running on.                               | localhost                                                              |
+| org.factoryx.library.usetls                   | boolean flag that indicates whether TLS is to be used                                  | false                                                                  |
+| org.factoryx.library.id                       | The id, that you are using in your dataspace                                           | provider                                                               |
+| org.factoryx.library.dspapiprefix             | The prefix that all library-related endpoints are using                                | /dsp                                                                   |
+| org.factoryx.library.usebuiltindataccess      | "false" disables the built-in dataacces (not recommended!)                             | true                                                                   | 
+| org.factoryx.library.alternativedataaccess    | set the host adress and path to an alternative data access endpoint (not recommended!) | localhost                                                              |
+| org.factoryx.library.validationservice        | set the type of validation for DSP (currently supported: "mock", "mvd")                | mock                                                                   |
+| org.factoryx.library.validationservice.stsapi | set the type of the api of your tokenprovider (either "dim-wallet" or "identityhub")   | <none>                                                                 |
+| org.factoryx.library.fxv01.trustedissuer      | set the ID of the fx trusted issuer                                                    | did:web:dataspace-issuer                                               | 
+| org.factoryx.library.fxv01.bearer             | toggle, whether a "Bearer" prefix is added in auth headers, you are sending            | false                                                                  |  
+| org.factoryx.library.fxv01.vaultroottoken     | set the token for authorizing access to the MVD provider vault                         | root                                                                   | 
+| org.factoryx.library.fxv01.vaulturl           | set the url for the vault vault that stores your shared secret for your id-service     | http://provider-vault:8200                                             | 
+| org.factoryx.library.fxv01.vaultsecretalias   | set the secret alias for accessing the provider STS                                    | did%3Aweb%3Aprovider-identityhub%253A7083%3Aprovider-sts-client-secret | 
+| org.factoryx.library.fxv01.dimtokenurl        | set the url of the oauth token endpoint, when dim-wallet is selected                   | http://provider-sts-service:8082/api/sts/token                         |
+| org.factoryx.library.fxv01.dimclientid        | set the id to be used against the oauth token provider, when dim-wallet is selected    | my-client-id                                                           |
+| org.factoryx.library.fxv01.dimurl             | set the url of your dim-wallet, when dim-wallet is selected                            | http://my-dim-url                                                      | 
+| org.factoryx.library.fxv01.identityhub.url    | set  the url of the token endpoint on your id-hub, when identityhub is selected        | http://provider-sts-service:8082/api/sts/token                         |                                                                                    
 
 
 
@@ -153,14 +158,20 @@ By default, the TCK Test will not be executed, so running ...
 ```
 ./gradlew clean test
 ```
-... will execute all other tests, except for TCK.  
+... will execute all other tests, except for TCK and FxIntTests.  
 
-If you explicitly want to execute them, then please run 
+If you explicitly want to execute the TCK test, then please run 
 
 ```
 ./gradlew clean test -Dtestcontainer.tck.disable=false
 ```
 
+If you want to run the FxIntDimWallet test, then please run  
+```
+bash inttest.sh
+``` 
+
+But please note that you need to provide secrets via a source file with valid data.  
 
 
 

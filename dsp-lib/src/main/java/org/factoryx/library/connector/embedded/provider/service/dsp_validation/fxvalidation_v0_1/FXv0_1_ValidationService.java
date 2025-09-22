@@ -327,7 +327,7 @@ public class FXv0_1_ValidationService implements DspTokenValidationService {
             JsonObject credServiceResponseJson = parse(credServiceResponse);
             log.info("Got Response from CredentialService \n{}", prettyPrint(credServiceResponseJson));
             boolean vcExpectationSatisfied = false;
-            if (credServiceResponseJson.getString("@type").equals("PresentationResponseMessage")) {
+            if (credServiceResponseJson.getString("type").equals("PresentationResponseMessage")) {
                 JsonArray presentationsArray = credServiceResponseJson.getJsonArray("presentation");
                 for (var item : presentationsArray) {
                     if (item instanceof JsonString jsonString) {
@@ -407,7 +407,7 @@ public class FXv0_1_ValidationService implements DspTokenValidationService {
         var context = Json.createArrayBuilder();
         context.add("https://w3id.org/dspace-dcp/v1.0/dcp.jsonld");
         presentationQuery.add("@context", context.build());
-        presentationQuery.add("@type", "PresentationQueryMessage");
+        presentationQuery.add("type", "PresentationQueryMessage");
         return presentationQuery.build().toString();
     }
 

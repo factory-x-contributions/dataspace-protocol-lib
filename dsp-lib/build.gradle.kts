@@ -32,7 +32,7 @@ repositories {
 
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter-web")
-    implementation("org.springframework.data:spring-data-commons:3.5.3")
+    implementation("org.springframework.data:spring-data-commons:3.5.4")
 
     implementation("org.apache.logging.log4j:log4j-api:2.25.1")
     implementation("org.apache.logging.log4j:log4j-core:2.25.1")
@@ -52,6 +52,8 @@ dependencies {
     mockitoAgent("org.mockito:mockito-core") { isTransitive = false }
 
     testImplementation("org.testcontainers:testcontainers:1.21.3")
+    testImplementation("org.testcontainers:postgresql:1.21.3")
+    testImplementation("org.testcontainers:vault:1.21.3")
     testImplementation("org.testcontainers:junit-jupiter:1.21.3")
 
     testImplementation("org.hsqldb:hsqldb:2.7.4")
@@ -76,4 +78,5 @@ tasks {
 
 tasks.test {
     systemProperty("testcontainer.tck.disable", System.getProperty("testcontainer.tck.disable", "true"))
+    systemProperty("testcontainer.fxint.dim.disable", System.getProperty("testcontainer.fxint.dim.disable", "true"))
 }

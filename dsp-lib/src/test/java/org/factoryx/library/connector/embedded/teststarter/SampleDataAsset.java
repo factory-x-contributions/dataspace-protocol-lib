@@ -61,7 +61,11 @@ public class SampleDataAsset implements DataAsset {
     @Override
     public byte[] getDtoRepresentation() {
         try {
-            return MAPPER.writeValueAsBytes(this);
+            return ("{" +
+                    "\"id\": \"" + id + "\"," +
+                    "\"fieldA\": \"" + fieldA + "\"," +
+                    "\"fieldB\": \"" + fieldB + "\"" +
+                    "}").getBytes();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
