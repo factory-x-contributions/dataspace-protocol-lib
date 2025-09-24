@@ -18,6 +18,7 @@ package org.factoryx.library.connector.embedded.provider.service.helpers;
 
 import jakarta.json.Json;
 import lombok.extern.slf4j.Slf4j;
+import org.factoryx.library.connector.embedded.provider.interfaces.DataAsset;
 import org.factoryx.library.connector.embedded.provider.interfaces.DspPolicyService;
 import org.factoryx.library.connector.embedded.provider.interfaces.DspTokenProviderService;
 import org.factoryx.library.connector.embedded.provider.model.DspVersion;
@@ -52,10 +53,11 @@ public class SendContractAgreedTask implements Runnable {
     private final DspTokenProviderService dspTokenProviderService;
     private final DspPolicyService dspPolicyService;
     private final DspVersion dspVersion;
+    private final DataAsset dataAsset;
 
     public SendContractAgreedTask(UUID negotiationId, NegotiationRecordService negotiationRecordService, RestClient restClient,
                                   EnvService envService, DspTokenProviderService dspTokenProviderService, DspPolicyService dspPolicyService,
-                                  DspVersion dspVersion) {
+                                  DspVersion dspVersion, DataAsset dataAsset) {
         this.negotiationId = negotiationId;
         this.negotiationRecordService = negotiationRecordService;
         this.restClient = restClient;
@@ -63,6 +65,7 @@ public class SendContractAgreedTask implements Runnable {
         this.dspTokenProviderService = dspTokenProviderService;
         this.dspPolicyService = dspPolicyService;
         this.dspVersion = dspVersion;
+        this.dataAsset = dataAsset;
     }
 
     @Override
@@ -135,15 +138,15 @@ public class SendContractAgreedTask implements Runnable {
                 .add(dspacePrefix + "timestamp", getTimestampForZuluTimeZone())
                 .add(odrlPrefix + "assignee", record.getPartnerId())
                 .add(odrlPrefix + "assigner", envService.getBackendId());
-        var permission = dspPolicyService.getPermission(record.getTargetAssetId(), record.getPartnerId(), dspVersion);
+        var permission = dspPolicyService.getPermission(dataAsset, record.getPartnerId(), dspVersion);
         if (permission != null && !isEmpty(permission)) {
             agreementBuilder.add(odrlPrefix + "permission", permission);
         }
-        var prohibition = dspPolicyService.getProhibition(record.getTargetAssetId(), record.getPartnerId(), dspVersion);
+        var prohibition = dspPolicyService.getProhibition(dataAsset, record.getPartnerId(), dspVersion);
         if (prohibition != null && !isEmpty(prohibition)) {
             agreementBuilder.add(odrlPrefix + "prohibition", prohibition);
         }
-        var obligation = dspPolicyService.getObligation(record.getTargetAssetId(), record.getPartnerId(), dspVersion);
+        var obligation = dspPolicyService.getObligation(dataAsset, record.getPartnerId(), dspVersion);
         if (obligation != null && !isEmpty(prohibition)) {
             agreementBuilder.add(odrlPrefix + "obligation", obligation);
         }

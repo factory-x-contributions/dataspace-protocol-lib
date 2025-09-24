@@ -78,9 +78,9 @@ public class SendTransferStartedTask implements Runnable {
             return;
         }
 
-        UUID datasetId = transferRecord.getDatasetId();
+        String datasetId = transferRecord.getDatasetId();
 
-        String datasetUrl = envService.getDatasetUrl(datasetId);
+        String datasetUrl = envService.getEdrEndpoint(dataAsset);
 
         log.info("Starting transfer process {} for dataset {} under version {}", transferId, datasetId, dspVersion);
 
@@ -145,7 +145,7 @@ public class SendTransferStartedTask implements Runnable {
             JsonObjectBuilder authTypeProperty = Json.createObjectBuilder();
             authTypeProperty.add("@type", "EndpointProperty");
             authTypeProperty.add("name", "https://w3id.org/edc/v0.0.1/ns/authType");
-            authTypeProperty.add("value", "bearer");
+            authTypeProperty.add("value", authorizationService.getAuthType());
             JsonObjectBuilder endpointProperty = Json.createObjectBuilder();
             endpointProperty.add("@type", "EndpointProperty");
             endpointProperty.add("name", "https://w3id.org/edc/v0.0.1/ns/endpoint");
@@ -183,7 +183,7 @@ public class SendTransferStartedTask implements Runnable {
         JsonObject authType = Json.createObjectBuilder()
                 .add("@type", "dspace:EndpointProperty")
                 .add("dspace:name", "authType")
-                .add("dspace:value", "Bearer")
+                .add("dspace:value", authorizationService.getAuthType())
                 .build();
 
         // The following properties are currently necessary for compatibility with the EDC connector

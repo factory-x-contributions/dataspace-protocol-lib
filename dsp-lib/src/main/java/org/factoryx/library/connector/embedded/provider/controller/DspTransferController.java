@@ -75,12 +75,6 @@ public class DspTransferController {
         return handlePullTransferRequest(requestBody, authString, DspVersion.V_08);
     }
 
-    @PostMapping("${org.factoryx.library.dspapiprefix:/dsp}/2024/1/transfers/request")
-    public ResponseEntity<byte[]> createPullTransferProcess_V_2024_1(@RequestBody String requestBody,
-                                                                     @RequestHeader("Authorization") String authString) {
-        return handlePullTransferRequest(requestBody, authString, DspVersion.V_2024_1);
-    }
-
     @PostMapping("${org.factoryx.library.dspapiprefix:/dsp}/2025/1/transfers/request")
     public ResponseEntity<byte[]> createPullTransferProcess_V_2025_1(@RequestBody String requestBody,
                                                                      @RequestHeader("Authorization") String authString) {
@@ -112,12 +106,6 @@ public class DspTransferController {
     public ResponseEntity<byte[]> transferCompletionEndpoint_V_08(@RequestBody String requestBody,
                                                                   @RequestHeader("Authorization") String authString, @PathVariable("providerPid") UUID providerPid) {
         return handleTransferCompletionMessage(requestBody, authString, providerPid, DspVersion.V_08);
-    }
-
-    @PostMapping("${org.factoryx.library.dspapiprefix:/dsp}/2024/1/transfers/{providerPid}/completion")
-    public ResponseEntity<byte[]> transferCompletionEndpoint_V_2024_1(@RequestBody String requestBody,
-                                                                      @RequestHeader("Authorization") String authString, @PathVariable("providerPid") UUID providerPid) {
-        return handleTransferCompletionMessage(requestBody, authString, providerPid, DspVersion.V_2024_1);
     }
 
     @PostMapping("${org.factoryx.library.dspapiprefix:/dsp}/2025/1/transfers/{providerPid}/completion")
@@ -152,12 +140,6 @@ public class DspTransferController {
         return handleGetTransferRequest(authString, providerPid, DspVersion.V_08);
     }
 
-    @GetMapping("${org.factoryx.library.dspapiprefix:/dsp}/2024/1/transfers/{providerPid}")
-    public ResponseEntity<byte[]> transferGetStatusEndpoint_V_2024_1(@RequestHeader("Authorization") String authString,
-                                                                     @PathVariable("providerPid") UUID providerPid) {
-        return handleGetTransferRequest(authString, providerPid, DspVersion.V_2024_1);
-    }
-
     @GetMapping("${org.factoryx.library.dspapiprefix:/dsp}/2025/1/transfers/{providerPid}")
     public ResponseEntity<byte[]> transferGetStatusEndpoint_V_2025_1(@RequestHeader("Authorization") String authString,
                                                                      @PathVariable("providerPid") UUID providerPid) {
@@ -184,13 +166,6 @@ public class DspTransferController {
                                                                    @RequestHeader("Authorization") String authString,
                                                                    @PathVariable("providerPid") UUID providerPid) {
         return handleTransferTerminationMessage(requestBody, authString, providerPid, DspVersion.V_08);
-    }
-
-    @PostMapping("${org.factoryx.library.dspapiprefix:/dsp}/2024/1/transfers/{providerPid}/termination")
-    public ResponseEntity<byte[]> transferTerminationEndpoint_V_2024_1(@RequestBody String requestBody,
-                                                                       @RequestHeader("Authorization") String authString,
-                                                                       @PathVariable("providerPid") UUID providerPid) {
-        return handleTransferTerminationMessage(requestBody, authString, providerPid, DspVersion.V_2024_1);
     }
 
     @PostMapping("${org.factoryx.library.dspapiprefix:/dsp}/2025/1/transfers/{providerPid}/termination")
@@ -227,13 +202,6 @@ public class DspTransferController {
         return handleTransferSuspensionMessage(requestBody, authString, providerPid, DspVersion.V_08);
     }
 
-    @PostMapping("${org.factoryx.library.dspapiprefix:/dsp}/2024/1/transfers/{providerPid}/suspension")
-    public ResponseEntity<byte[]> transferSuspensionEndpoint_V_2024_1(@RequestBody String requestBody,
-                                                                      @RequestHeader("Authorization") String authString,
-                                                                      @PathVariable("providerPid") UUID providerPid) {
-        return handleTransferSuspensionMessage(requestBody, authString, providerPid, DspVersion.V_2024_1);
-    }
-
     @PostMapping("${org.factoryx.library.dspapiprefix:/dsp}/2025/1/transfers/{providerPid}/suspension")
     public ResponseEntity<byte[]> transferSuspensionEndpoint_V_2025_1(@RequestBody String requestBody,
                                                                       @RequestHeader("Authorization") String authString,
@@ -267,13 +235,6 @@ public class DspTransferController {
                                                              @RequestHeader("Authorization") String authString,
                                                              @PathVariable("providerPid") UUID providerPid) {
         return handleTransferStartMessage(requestBody, authString, providerPid, DspVersion.V_08);
-    }
-
-    @PostMapping("${org.factoryx.library.dspapiprefix:/dsp}/2024/1/transfers/{providerPid}/start")
-    public ResponseEntity<byte[]> transferStartEndpoint_V_2024_1(@RequestBody String requestBody,
-                                                                 @RequestHeader("Authorization") String authString,
-                                                                 @PathVariable("providerPid") UUID providerPid) {
-        return handleTransferStartMessage(requestBody, authString, providerPid, DspVersion.V_2024_1);
     }
 
     @PostMapping("${org.factoryx.library.dspapiprefix:/dsp}/2025/1/transfers/{providerPid}/start")

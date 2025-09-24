@@ -44,8 +44,8 @@ public class SampleDataAsset implements DataAsset {
     }
 
     @Override
-    public UUID getId() {
-        return id;
+    public String getDspId() {
+        return id.toString();
     }
 
     @Override

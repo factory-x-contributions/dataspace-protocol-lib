@@ -19,8 +19,7 @@ package org.factoryx.library.connector.embedded.provider.model;
 public enum DspVersion {
 
     V_08(""),
-    V_2024_1("/2024/1"),
-    V_2025_1("/2025/1"),;
+    V_2025_1("/2025/1");
 
     public final String PATH_SUFFIX;
 

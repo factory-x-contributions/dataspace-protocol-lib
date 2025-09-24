@@ -27,10 +27,7 @@ import org.factoryx.library.connector.embedded.provider.service.helpers.JsonUtil
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 import static org.factoryx.library.connector.embedded.provider.service.helpers.JsonUtils.createErrorResponse;
 
@@ -72,7 +69,7 @@ public class DspCatalogService {
         List<JsonObject> catalogs = new ArrayList<>();
 
         for (DataAsset dataset : allDatasets) {
-            catalogs.add(buildDcatDataset(dataset, partnerId, version));
+            catalogs.add(buildDcatDataset(dataset, partnerId, partnerProperties, version));
         }
 
         return catalogs;
@@ -81,10 +78,10 @@ public class DspCatalogService {
     /**
      * Builds a DCAT dataset JSON object from a dataset.
      *
-     * @param dataset the dataset to be converted
+     * @param dataAsset the dataset to be converted
      * @return a JSON object representing one DCAT dataset entry
      */
-    private JsonObject buildDcatDataset(DataAsset dataset, String partnerId, DspVersion version) {
+    private JsonObject buildDcatDataset(DataAsset dataAsset, String partnerId, Map<String, String> partnerProperties, DspVersion version) {
         String dcatPrefix = DspVersion.V_08.equals(version) ? "dcat:" : "";
         String dctPrefix = DspVersion.V_08.equals(version) ? "dct:" : "";
         String odrlPrefix = DspVersion.V_08.equals(version) ? "odrl:" : "";
@@ -93,10 +90,10 @@ public class DspCatalogService {
                 .add(dctPrefix + "format", "HttpData-PULL")
                 .add(dcatPrefix + "accessService", UUID.randomUUID().toString());
         JsonObjectBuilder properties = Json.createObjectBuilder();
-        dataset.getProperties().forEach(properties::add);
-        var policy = Json.createObjectBuilder(policyService.createOfferedPolicy(dataset.getId().toString(), partnerId, version)).remove("target");
+        dataAsset.getProperties().forEach(properties::add);
+        var policy = Json.createObjectBuilder(policyService.createOfferedPolicy(dataAsset, partnerId, partnerProperties, version)).remove("target");
         JsonObjectBuilder dcatDatasetBuilder = Json.createObjectBuilder()
-                .add("@id", String.valueOf(dataset.getId()))
+                .add("@id", String.valueOf(dataAsset.getDspId()))
                 .add("@type", dcatPrefix + "Dataset")
                 .add(odrlPrefix + "hasPolicy", Json.createArrayBuilder().add(policy))
                 .add(dcatPrefix + "distribution", Json.createArrayBuilder().add(distributionBuilder))
@@ -140,20 +137,20 @@ public class DspCatalogService {
         return buildFinalCatalogResponse(getAllCatalogs(partnerId, partnerProperties, version), version);
     }
 
-    public String getDataset(String partnerId, Map<String, String> partnerProperties, UUID id, DspVersion version) {
+    public String getDataset(String partnerId, Map<String, String> partnerProperties, String id, DspVersion version) {
         DataAsset asset = dataManagementService.getByIdForProperties(id, partnerProperties);
         if (asset == null) {
             return new String(createErrorResponse("unknown", "unknown",
                     "CatalogError", List.of("Bad Request"), version));
         }
         var datasetPolicy = Json.createObjectBuilder(
-                policyService.createOfferedPolicy(asset.getId().toString(),partnerId, version))
+                policyService.createOfferedPolicy(asset,partnerId, partnerProperties, version))
                 .remove("target").build();
 
         JsonObjectBuilder datasetBuilder = Json.createObjectBuilder();
         datasetBuilder.add("@context",
                 JsonUtils.getContextForDspVersion(version));
-        datasetBuilder.add("@id", asset.getId().toString());
+        datasetBuilder.add("@id", asset.getDspId());
         datasetBuilder.add("@type", "Dataset");
         datasetBuilder.add("hasPolicy",
                 Json.createArrayBuilder().add(datasetPolicy));

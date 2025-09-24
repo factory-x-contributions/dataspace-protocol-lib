@@ -66,19 +66,6 @@ public class DspCatalogController {
     }
 
     /**
-     * Endpoint for requesting the catalog under DSP 2024/1
-     *
-     * @param body  the request body as a String
-     * @param authString the Authorization header
-     * @return a ResponseEntity with the JSON response and HTTP status code 200
-     */
-    @PostMapping("${org.factoryx.library.dspapiprefix:/dsp}/2024/1/catalog/request")
-    public ResponseEntity<String> catalogRequestV_2024_1(@RequestBody(required = false) String body,
-                                                     @RequestHeader(value = "Authorization", required = false) String authString) {
-        return handleCatalogRequest(body, authString, DspVersion.V_2024_1);
-    }
-
-    /**
      * Endpoint for requesting the catalog under DSP 2025/1.
      *
      * @param body  the request body as a String
@@ -118,23 +105,17 @@ public class DspCatalogController {
 
     @GetMapping("${org.factoryx.library.dspapiprefix:/dsp}/catalog/datasets/{id}")
     public ResponseEntity<String> datasetRequestV_08(@RequestHeader(value = "Authorization") String authString,
-                                                     @PathVariable UUID id) {
+                                                     @PathVariable String id) {
         return handleDatasetRequest(authString, id, DspVersion.V_08);
-    }
-
-    @GetMapping("${org.factoryx.library.dspapiprefix:/dsp}/2024/1/catalog/datasets/{id}")
-    public ResponseEntity<String> datasetRequestV_2024_1(@RequestHeader(value = "Authorization") String authString,
-                                                     @PathVariable UUID id) {
-        return handleDatasetRequest(authString, id, DspVersion.V_2024_1);
     }
 
     @GetMapping("${org.factoryx.library.dspapiprefix:/dsp}/2025/1/catalog/datasets/{id}")
     public ResponseEntity<String> datasetRequestV_2025_1(@RequestHeader(value = "Authorization") String authString,
-                                                         @PathVariable UUID id) {
+                                                         @PathVariable String id) {
         return handleDatasetRequest(authString, id, DspVersion.V_2025_1);
     }
 
-    private ResponseEntity<String> handleDatasetRequest(String authString, UUID id, DspVersion version) {
+    private ResponseEntity<String> handleDatasetRequest(String authString, String id, DspVersion version) {
         try {
             log.info("Starting token validation");
             Map<String, String> tokenValidationResult = dspTokenValidationService.validateToken(authString);

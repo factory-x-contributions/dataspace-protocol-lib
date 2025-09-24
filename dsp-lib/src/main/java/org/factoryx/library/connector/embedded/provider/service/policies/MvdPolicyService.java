@@ -20,6 +20,7 @@ import jakarta.json.Json;
 import jakarta.json.JsonArray;
 import jakarta.json.JsonValue;
 import lombok.extern.slf4j.Slf4j;
+import org.factoryx.library.connector.embedded.provider.interfaces.DataAsset;
 import org.factoryx.library.connector.embedded.provider.interfaces.DspPolicyService;
 import org.factoryx.library.connector.embedded.provider.model.DspVersion;
 import org.factoryx.library.connector.embedded.provider.service.helpers.EnvService;
@@ -43,7 +44,7 @@ public class MvdPolicyService extends DspPolicyService {
     }
 
     @Override
-    public JsonArray getObligation(String assetId, String partnerId, DspVersion version) {
+    public JsonArray getObligation(DataAsset dataAsset, String partnerId, DspVersion version) {
         String prefix = DspVersion.V_08.equals(version) ? "odrl:" : "";
         var obligationsObject = Json.createObjectBuilder();
         obligationsObject.add(prefix + "action", Json.createObjectBuilder().add(ID, prefix + "use").build());

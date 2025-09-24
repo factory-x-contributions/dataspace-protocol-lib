@@ -20,11 +20,14 @@ import jakarta.json.Json;
 import jakarta.json.JsonArray;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonValue;
+import org.factoryx.library.connector.embedded.provider.interfaces.DataAsset;
 import org.factoryx.library.connector.embedded.provider.interfaces.DspPolicyService;
 import org.factoryx.library.connector.embedded.provider.model.DspVersion;
 import org.factoryx.library.connector.embedded.provider.service.helpers.EnvService;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
+
+import java.util.Map;
 
 @Service
 @ConditionalOnProperty(name = "org.factoryx.library.policyservice", havingValue = "tck")
@@ -35,11 +38,11 @@ public class TckPolicyService extends DspPolicyService {
     }
 
     @Override
-    public JsonValue getPermission(String assetId, String partnerId, DspVersion version) {
-        return switch (assetId) {
+    public JsonValue getPermission(DataAsset dataAsset, String partnerId, DspVersion version) {
+        return switch (dataAsset.getDspId()) {
             case SampleDataAsset.CATALOG_ASSET_ID -> getCatalogTestContent();
-            case SampleDataAsset.NEGOTIATION_ASSET_ID -> getNegotiationTestContent(assetId);
-            default -> super.getPermission(assetId, partnerId, version);
+            case SampleDataAsset.NEGOTIATION_ASSET_ID -> getNegotiationTestContent(dataAsset.getDspId());
+            default -> super.getPermission(dataAsset, partnerId, version);
         };
     }
 
@@ -65,23 +68,23 @@ public class TckPolicyService extends DspPolicyService {
     }
 
     @Override
-    public JsonValue getProhibition(String assetId, String partnerId, DspVersion version) {
-        return switch (assetId) {
+    public JsonValue getProhibition(DataAsset dataAsset, String partnerId, DspVersion version) {
+        return switch (dataAsset.getDspId()) {
             case SampleDataAsset.CATALOG_ASSET_ID -> getCatalogTestContent();
-            default -> super.getPermission(assetId, partnerId, version);
+            default -> super.getPermission(dataAsset, partnerId, version);
         };
     }
 
     @Override
-    public JsonValue getObligation(String assetId, String partnerId, DspVersion version) {
-        return switch (assetId) {
+    public JsonValue getObligation(DataAsset dataAsset, String partnerId, DspVersion version) {
+        return switch (dataAsset.getDspId()) {
             case SampleDataAsset.CATALOG_ASSET_ID -> getCatalogTestContent();
-            default -> super.getPermission(assetId, partnerId, version);
+            default -> super.getPermission(dataAsset, partnerId, version);
         };
     }
 
     @Override
-    public boolean validateOffer(JsonObject offer, String targetAssetId, String partnerId, DspVersion version) {
+    public boolean validateOffer(JsonObject offer, DataAsset dataAsset, String partnerId, Map<String, String> partnerProperties, DspVersion version) {
         return true;
     }
 }

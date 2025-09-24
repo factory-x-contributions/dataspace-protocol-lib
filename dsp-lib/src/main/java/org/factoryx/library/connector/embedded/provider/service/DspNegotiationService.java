@@ -19,6 +19,7 @@ package org.factoryx.library.connector.embedded.provider.service;
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import lombok.extern.slf4j.Slf4j;
+import org.factoryx.library.connector.embedded.provider.interfaces.DataAsset;
 import org.factoryx.library.connector.embedded.provider.interfaces.DataAssetManagementService;
 import org.factoryx.library.connector.embedded.provider.interfaces.DspPolicyService;
 import org.factoryx.library.connector.embedded.provider.interfaces.DspTokenProviderService;
@@ -94,10 +95,26 @@ public class DspNegotiationService {
         String consumerPid = contractRequestMessage.getConsumerPid();
         String targetAssetId = contractRequestMessage.getTargetAssetId();
         JsonObject offer = contractRequestMessage.getOffer();
+
         NegotiationRecord newRecord = negotiationRecordService.createNegotiationRecord(consumerPid, partnerId,
                 contractRequestMessage.getPartnerDspUrl(), targetAssetId);
 
-        if (offer != null && !policyService.validateOffer(offer, newRecord.getTargetAssetId(), partnerId, dspVersion)) {
+        if (offer == null) {
+            newRecord = negotiationRecordService.updateNegotiationRecordToState(newRecord.getOwnPid(), NegotiationState.TERMINATED);
+            return new ResponseRecord(createErrorResponse(newRecord.getOwnPid().toString(), consumerPid, "ContractNegotiationError",
+                    List.of("Missing offer, rejecting contract negotiation"), dspVersion), 400);
+        }
+
+        DataAsset dataAsset = dataManagementService.getByIdForProperties(targetAssetId, partnerProperties);
+
+        if (dataAsset == null) {
+            log.warn("Unknown target asset id: {}", targetAssetId);
+            newRecord = negotiationRecordService.updateNegotiationRecordToState(newRecord.getOwnPid(), NegotiationState.TERMINATED);
+            return new ResponseRecord(createErrorResponse(newRecord.getOwnPid().toString(), consumerPid, "ContractNegotiationError",
+                    List.of("Unknown target asset id: " + targetAssetId), dspVersion), 400);
+        }
+
+        if (!policyService.validateOffer(offer, dataAsset, partnerId, partnerProperties, dspVersion)) {
             log.warn("Unexpected offer, rejecting contract negotiation");
             log.info("Request: {}", prettyPrint(contractRequestMessage.getOffer()));
             newRecord = negotiationRecordService.updateNegotiationRecordToState(newRecord.getOwnPid(), NegotiationState.TERMINATED);
@@ -105,27 +122,11 @@ public class DspNegotiationService {
                     List.of("Unexpected offer, rejecting contract negotiation"), dspVersion), 400);
         }
 
-        try {
-            UUID assetId = UUID.fromString(targetAssetId);
-            if (dataManagementService.getByIdForProperties(assetId, partnerProperties) == null) {
-                log.warn("Unknown target asset id: {}", targetAssetId);
-                newRecord = negotiationRecordService.updateNegotiationRecordToState(newRecord.getOwnPid(), NegotiationState.TERMINATED);
-                return new ResponseRecord(createErrorResponse(newRecord.getOwnPid().toString(), consumerPid, "ContractNegotiationError",
-                        List.of("Unknown target asset id: " + targetAssetId), dspVersion), 400);
-            }
-        } catch (Exception e) {
-            log.warn("Invalid target asset id: {}", targetAssetId);
-            newRecord = negotiationRecordService.updateNegotiationRecordToState(newRecord.getOwnPid(), NegotiationState.TERMINATED);
-            return new ResponseRecord(createErrorResponse(newRecord.getOwnPid().toString(), consumerPid, "ContractNegotiationError",
-                    List.of("Invalid target asset id: " + targetAssetId), dspVersion), 400);
-        }
-
         String ackResponse = createResponse(newRecord, dspVersion);
-
-        log.info("Sending Response:\n{}", prettyPrint(ackResponse));
+        log.debug("Sending Response:\n{}", prettyPrint(ackResponse));
 
         executorService.submit(new SendContractAgreedTask(newRecord.getOwnPid(), negotiationRecordService, restClient,
-                envService, dspTokenProviderService, policyService, dspVersion));
+                envService, dspTokenProviderService, policyService, dspVersion, dataAsset));
 
         return new ResponseRecord(ackResponse.getBytes(StandardCharsets.UTF_8), 201);
     }
@@ -152,7 +153,6 @@ public class DspNegotiationService {
      */
     public ResponseRecord handleVerificationRequest(ContractVerificationMessage contractVerificationMessage, String partnerId,
                                                     UUID providerPid, DspVersion version) {
-
         String consumerPid = contractVerificationMessage.getConsumerPid();
         String providerBodyPid = contractVerificationMessage.getProviderPid();
         NegotiationRecord existingRecord = negotiationRecordService.findByNegotiationRecordId(providerPid);

@@ -72,16 +72,12 @@ public class JsonUtils {
             .add("dspace", DSPACE_NAMESPACE)
             .build();
 
-    public static final JsonArray DSP_2024_1_CONTEXT = Json.createArrayBuilder()
-            .add("https://w3id.org/dspace/2024/1/context.json").build();
-
     public static final JsonArray DSP_2025_1_CONTEXT = Json.createArrayBuilder()
             .add("https://w3id.org/dspace/2025/1/context.jsonld").build();
 
     public static JsonValue getContextForDspVersion(DspVersion version) {
         return switch (version) {
             case V_08 -> LEGACY_CONTEXT;
-            case V_2024_1 -> DSP_2024_1_CONTEXT;
             case V_2025_1 -> DSP_2025_1_CONTEXT;
         };
     }

@@ -32,17 +32,17 @@ public class SampleDataAssetManagementService implements DataAssetManagementServ
 
 
     @Override
-    public DataAsset getById(UUID id) {
-        return dataAssets.stream().filter(dataAsset -> dataAsset.getId().equals(id)).findFirst().orElse(null);
+    public DataAsset getById(String id) {
+        return dataAssets.stream().filter(dataAsset -> dataAsset.getDspId().equals(id)).findFirst().orElse(null);
     }
 
     @Override
-    public DataAsset getByIdForProperties(UUID id, Map<String, String> partnerProperties) {
+    public DataAsset getByIdForProperties(String id, Map<String, String> partnerProperties) {
         return getById(id);
     }
 
     @Override
-    public List<? extends DataAsset> getAll(Map<String, String> partnerProperties) {
+    public List<DataAsset> getAll(Map<String, String> partnerProperties) {
         return new ArrayList<>(dataAssets);
     }
 
@@ -51,12 +51,4 @@ public class SampleDataAssetManagementService implements DataAssetManagementServ
         dataAssets.add(new SampleDataAsset(UUID.fromString(id)));
     }
 
-
-    static List<DataAsset> getDataAssets(int count) {
-        List<DataAsset> dataAssets = new ArrayList<>();
-        for (int i = 0; i < count; i++) {
-            dataAssets.add(new SampleDataAsset());
-        }
-        return dataAssets;
-    }
 }

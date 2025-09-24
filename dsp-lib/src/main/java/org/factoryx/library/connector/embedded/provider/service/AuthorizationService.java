@@ -84,8 +84,12 @@ public class AuthorizationService {
         return Base64.getEncoder().encodeToString(key);
     }
 
+    public String getAuthType() {
+        return "Bearer";
+    }
 
-    public String issueWriteAccessToken(String contractId, UUID assetId) {
+
+    public String issueWriteAccessToken(String contractId, String assetId) {
         rotateKeys();
         lock.readLock().lock();
         try {
