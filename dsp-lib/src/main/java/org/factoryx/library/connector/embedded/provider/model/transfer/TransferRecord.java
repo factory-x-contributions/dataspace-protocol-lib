@@ -69,7 +69,7 @@ public abstract class TransferRecord {
     /**
      * The id of the dataset, which is the subject of this transfer
      */
-    private UUID datasetId;
+    private String datasetId;
 
     /**
      * The format of the transfer, usually "HTTP_PUSH" or "HTTP_PULL"

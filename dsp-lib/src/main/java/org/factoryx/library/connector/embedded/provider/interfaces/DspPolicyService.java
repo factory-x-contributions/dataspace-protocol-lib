@@ -23,6 +23,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.factoryx.library.connector.embedded.provider.model.DspVersion;
 import org.factoryx.library.connector.embedded.provider.service.helpers.EnvService;
 
+import java.util.Map;
 import java.util.UUID;
 
 import static org.factoryx.library.connector.embedded.provider.service.helpers.JsonUtils.*;
@@ -78,27 +79,27 @@ public abstract class DspPolicyService {
      * Note that you can and should provide customized implementations of the getPermission, getProhibition
      * and getObligation methods as required by the framework agreements of the dataspace you want to participate in.
      *
-     * @param assetId the id of the asset in question
+     * @param dataAsset the asset in question
      * @param partnerId the id of the partner who is interested in the given asset
      * @return the JSON object
      */
-    public final JsonObject createOfferedPolicy(String assetId, String partnerId, DspVersion version) {
+    public final JsonObject createOfferedPolicy(DataAsset dataAsset, String partnerId, Map<String, String> partnerProperties, DspVersion version) {
         String prefix = DspVersion.V_08.equals(version) ? "odrl:" : "";
         var builder = Json.createObjectBuilder()
                 .add("@id", UUID.randomUUID().toString())
                 .add("@type", prefix + "Offer")
                 .add(prefix + "assigner", envService.getBackendId())
                 .add(prefix + "assignee", partnerId)
-                .add(prefix + "target", Json.createObjectBuilder().add(ID, assetId).build());
-        var permission = getPermission(assetId, partnerId, version);
+                .add(prefix + "target", Json.createObjectBuilder().add(ID, dataAsset.getDspId()).build());
+        var permission = getPermission(dataAsset, partnerId, version);
         if (permission != null && !isEmpty(permission)) {
             builder.add(prefix + "permission", permission);
         }
-        var prohibition = getProhibition(assetId, partnerId, version);
+        var prohibition = getProhibition(dataAsset, partnerId, version);
         if (prohibition != null && !isEmpty(prohibition)) {
             builder.add(prefix + "prohibition", prohibition);
         }
-        var obligation = getObligation(assetId, partnerId, version);
+        var obligation = getObligation(dataAsset, partnerId, version);
         if (obligation != null && !isEmpty(obligation)) {
             builder.add(prefix + "obligation", obligation);
         }
@@ -119,15 +120,15 @@ public abstract class DspPolicyService {
         throw new IllegalArgumentException("Unsupported value type: " + value.getClass());
     }
 
-    public JsonValue getPermission(String assetId, String partnerId, DspVersion version) {
+    public JsonValue getPermission(DataAsset dataAsset, String partnerId, DspVersion version) {
         return JsonValue.EMPTY_JSON_ARRAY;
     }
 
-    public JsonValue getProhibition(String assetId, String partnerId, DspVersion version) {
+    public JsonValue getProhibition(DataAsset dataAsset, String partnerId, DspVersion version) {
         return JsonValue.EMPTY_JSON_ARRAY;
     }
 
-    public JsonValue getObligation(String assetId, String partnerId, DspVersion version) {
+    public JsonValue getObligation(DataAsset dataAsset, String partnerId, DspVersion version) {
         return JsonValue.EMPTY_JSON_ARRAY;
     }
 
@@ -137,14 +138,14 @@ public abstract class DspPolicyService {
      *
      *
      * @param offer the offer object
-     * @param targetAssetId the target asset id
+     * @param dataAsset the target asset
      * @param partnerId the id of the negotiation partner
      * @return true if the offer is valid.
      */
-    public boolean validateOffer(JsonObject offer, String targetAssetId, String partnerId, DspVersion version) {
+    public boolean validateOffer(JsonObject offer, DataAsset dataAsset, String partnerId, Map<String, String> partnerProperties, DspVersion version) {
         try {
             JsonObject offerObject = sanitizeOffer(offer);
-            JsonObject expectedObject = sanitizeOffer(createExpandedPolicy(targetAssetId, partnerId, version));
+            JsonObject expectedObject = sanitizeOffer(createExpandedPolicy(dataAsset, partnerId, partnerProperties, version));
             return offerObject.equals(expectedObject);
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -202,11 +203,11 @@ public abstract class DspPolicyService {
      * Since the negotiation request from a partner is expanded, we need to expand
      * our own comparison object as well.
      *
-     * @param targetAssetId the id of the asset in question
+     * @param dataAsset the asset in question
      * @param partnerId the id of the negotiation partner
      * @return the expanded object that can be compared with the partner's offer
      */
-    protected JsonObject createExpandedPolicy(String targetAssetId, String partnerId, DspVersion version) {
+    protected JsonObject createExpandedPolicy(DataAsset dataAsset, String partnerId, Map<String, String> partnerProperties, DspVersion version) {
         try {
             var wrapper = Json.createObjectBuilder();
             var odrlContext = Json.createObjectBuilder()
@@ -214,7 +215,7 @@ public abstract class DspPolicyService {
                     .add("dspace", DSPACE_NAMESPACE)
                     .add("odrl", ODRL_NAMESPACE);
             wrapper.add("@context", odrlContext.build());
-            wrapper.add("dspace:Offer", createOfferedPolicy(targetAssetId, partnerId, version));
+            wrapper.add("dspace:Offer", createOfferedPolicy(dataAsset, partnerId, partnerProperties, version));
             return JsonLd.expand(JsonDocument.of(wrapper.build()))
                     .get()
                     .getJsonObject(0)

@@ -39,8 +39,4 @@ public class MongoTransferRecord extends TransferRecord {
         return super.getOwnPid();
     }
 
-    @Override
-    public void setOwnPid(UUID ownPid) {
-        super.setOwnPid(ownPid);
-    }
 }

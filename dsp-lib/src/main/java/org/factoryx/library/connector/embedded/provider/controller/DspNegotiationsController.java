@@ -76,19 +76,6 @@ public class DspNegotiationsController {
      * @param authString - the Authorization header value of the incoming message
      * @return - a response ACK-body and code 201, if successful
      */
-    @PostMapping("${org.factoryx.library.dspapiprefix:/dsp}/2024/1/negotiations/request")
-    public ResponseEntity<byte[]> postNegotiationsNewRequestControllerV_2024_1(@RequestBody String stringBody,
-                                                                       @RequestHeader("Authorization") String authString) {
-        return handleNegotiationRequest(stringBody, authString, DspVersion.V_2024_1);
-    }
-
-    /**
-     * Endpoint of the DSP protocol for receiving new contract requests from a partner edc connector
-     *
-     * @param stringBody - the request body of the incoming message
-     * @param authString - the Authorization header value of the incoming message
-     * @return - a response ACK-body and code 201, if successful
-     */
     @PostMapping("${org.factoryx.library.dspapiprefix:/dsp}/2025/1/negotiations/request")
     public ResponseEntity<byte[]> postNegotiationsNewRequestControllerV_2025_1(@RequestBody String stringBody,
                                                                                @RequestHeader("Authorization") String authString) {
@@ -148,20 +135,6 @@ public class DspNegotiationsController {
      * @param providerPid - the process id of the ongoing negotiation
      * @return - a response without body and code 200, if successful
      */
-    @PostMapping("${org.factoryx.library.dspapiprefix:/dsp}/2024/1/negotiations/{providerPid}/agreement/verification")
-    public ResponseEntity<byte[]> postNegotiationsVerificationControllerV_2024_1(@RequestBody String stringBody,
-                                                                         @RequestHeader("Authorization") String authString,
-                                                                         @PathVariable("providerPid") UUID providerPid) {
-        return handleVerificationRequest(stringBody, authString, providerPid, DspVersion.V_2024_1);
-    }
-    /**
-     * Endpoint of the DSP protocol for receiving verification requests from a partner edc connector
-     *
-     * @param stringBody - the request body of the incoming message
-     * @param authString - the Authorization header value of the incoming message
-     * @param providerPid - the process id of the ongoing negotiation
-     * @return - a response without body and code 200, if successful
-     */
     @PostMapping("${org.factoryx.library.dspapiprefix:/dsp}/2025/1/negotiations/{providerPid}/agreement/verification")
     public ResponseEntity<byte[]> postNegotiationsVerificationControllerV_2025_1(@RequestBody String stringBody,
                                                                                  @RequestHeader("Authorization") String authString,
@@ -200,13 +173,6 @@ public class DspNegotiationsController {
         return handleTerminationRequest(stringBody, authString, providerPid, DspVersion.V_08);
     }
 
-    @PostMapping("${org.factoryx.library.dspapiprefix:/dsp}/2024/1/negotiations/{providerPid}/termination")
-    public ResponseEntity<byte[]> postNegotiationsTerminationControllerV_2024_1(@RequestBody String stringBody,
-                                                                            @RequestHeader("Authorization") String authString,
-                                                                            @PathVariable("providerPid") UUID providerPid) {
-        return handleTerminationRequest(stringBody, authString, providerPid, DspVersion.V_2024_1);
-    }
-
     @PostMapping("${org.factoryx.library.dspapiprefix:/dsp}/2025/1/negotiations/{providerPid}/termination")
     public ResponseEntity<byte[]> postNegotiationsTerminationControllerV_2025_1(@RequestBody String stringBody,
                                                                                 @RequestHeader("Authorization") String authString,
@@ -241,12 +207,6 @@ public class DspNegotiationsController {
     public ResponseEntity<byte[]> getNegotiationStatusV_08(@RequestHeader("Authorization") String authString,
                                                            @PathVariable("providerPid") UUID providerPid) {
         return handleGetNegotiationStatusRequest(authString, providerPid, DspVersion.V_08);
-    }
-
-    @GetMapping("${org.factoryx.library.dspapiprefix:/dsp}/2024/1/negotiations/{providerPid}")
-    public ResponseEntity<byte[]> getNegotiationStatusV_2024_1(@RequestHeader("Authorization") String authString,
-                                                               @PathVariable("providerPid") UUID providerPid) {
-        return handleGetNegotiationStatusRequest(authString, providerPid, DspVersion.V_2024_1);
     }
 
     @GetMapping("${org.factoryx.library.dspapiprefix:/dsp}/2025/1/negotiations/{providerPid}")

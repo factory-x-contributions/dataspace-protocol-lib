@@ -24,7 +24,6 @@ import org.springframework.util.MultiValueMap;
 
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 /**
  * A class implementing this interface is expected to provide read-access to
@@ -41,10 +40,10 @@ public interface DataAssetManagementService {
      * credential information because it assumes that this has already been checked during the DSP
      * negotiation and transfer flow.
      *
-     * @param id The UUID that specifies a DataAsset
+     * @param id The id that specifies a DataAsset
      * @return the DataAsset entity
      */
-    DataAsset getById(UUID id);
+    DataAsset getById(String id);
 
 
     /**
@@ -58,7 +57,7 @@ public interface DataAssetManagementService {
      *                          verifiable credentials
      * @return the DataAsset entity
      */
-    DataAsset getByIdForProperties(UUID id, Map<String, String> partnerProperties);
+    DataAsset getByIdForProperties(String id, Map<String, String> partnerProperties);
 
     /**
      * Retrieve a list of all available DataAssets (except for those where the partnerProperties are insufficient).
@@ -70,9 +69,9 @@ public interface DataAssetManagementService {
      *                          verifiable credentials
      * @return the list of DataAssets
      */
-    List<? extends DataAsset> getAll(Map<String, String> partnerProperties);
+    List<DataAsset> getAll(Map<String, String> partnerProperties);
 
-    default ResponseEntity<byte[]> forwardToApiAsset(UUID apiAssetId, HttpMethod method, byte[] requestBody,
+    default ResponseEntity<byte[]> forwardToApiAsset(String apiAssetId, HttpMethod method, byte[] requestBody,
                                                      HttpHeaders headers, String path, MultiValueMap<String, String> incomingQueryParams) {
         return new ResponseEntity<>(HttpStatus.NOT_IMPLEMENTED);
     }

@@ -90,7 +90,7 @@ public class TransferRecordService {
      * @param datasetId        - the id of the dataset to add
      * @return - the updated TransferRecord
      */
-    public TransferRecord addDatasetToTransferRecord(UUID transferRecordId, UUID datasetId) {
+    public TransferRecord addDatasetToTransferRecord(UUID transferRecordId, String datasetId) {
         TransferRecord transferRecord = findByTransferRecordId(transferRecordId);
         if (transferRecord == null) {
             log.error("Update failed, unknown TransferRecord id: {}", transferRecordId);

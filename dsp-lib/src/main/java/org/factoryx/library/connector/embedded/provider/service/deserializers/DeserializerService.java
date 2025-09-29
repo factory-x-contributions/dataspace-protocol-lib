@@ -31,7 +31,6 @@ public class DeserializerService {
     public TransferStartMessage deserializeTransferStartMessage(String rawJson, DspVersion version) {
         return switch (version) {
             case V_08 -> V_08_Deserializer.deserializeTransferStartMessage(rawJson);
-            case V_2024_1 -> V_2024_1_Deserializer.deserializeTransferStartMessage(rawJson);
             case V_2025_1 -> V_2025_1_Deserializer.deserializeTransferStartMessage(rawJson);
         };
     }
@@ -39,7 +38,6 @@ public class DeserializerService {
     public TransferSuspensionMessage deserializeTransferSuspensionMessage(String rawJson, DspVersion version) {
         return switch (version) {
             case V_08 -> V_08_Deserializer.deserializeTransferSuspensionMessage(rawJson);
-            case V_2024_1 -> V_2024_1_Deserializer.deserializeTransferSuspensionMessage(rawJson);
             case V_2025_1 -> V_2025_1_Deserializer.deserializeTransferSuspensionMessage(rawJson);
         };
     }
@@ -47,7 +45,6 @@ public class DeserializerService {
     public TransferTerminationMessage deserializeTransferTerminationMessage(String rawJson, DspVersion version) {
         return switch (version) {
             case V_08 -> V_08_Deserializer.deserializeTransferTerminationMessage(rawJson);
-            case V_2024_1 -> V_2024_1_Deserializer.deserializeTransferTerminationMessage(rawJson);
             case V_2025_1 -> V_2025_1_Deserializer.deserializeTransferTerminationMessage(rawJson);
         };
     }
@@ -55,7 +52,6 @@ public class DeserializerService {
     public TransferCompletionMessage deserializeTransferCompletionMessage(String rawJson, DspVersion version) {
         return switch (version) {
             case V_08 -> V_08_Deserializer.deserializeTransferCompletionMessage(rawJson);
-            case V_2024_1 -> V_2024_1_Deserializer.deserializeTransferCompletionMessage(rawJson);
             case V_2025_1 -> V_2025_1_Deserializer.deserializeTransferCompletionMessage(rawJson);
         };
     }
@@ -63,7 +59,6 @@ public class DeserializerService {
     public TransferRequestMessage deserializeTransferRequestMessage(String rawJson, DspVersion version) {
         return switch (version) {
             case V_08 -> V_08_Deserializer.deserializeTransferRequestMessage(rawJson);
-            case V_2024_1 -> V_2024_1_Deserializer.deserializeTransferRequestMessage(rawJson);
             case V_2025_1 -> V_2025_1_Deserializer.deserializeTransferRequestMessage(rawJson);
         };
     }
@@ -71,7 +66,6 @@ public class DeserializerService {
     public NegotiationTerminationMessage deserializeNegotiationTerminationMessage(String rawJson, DspVersion version) {
         return switch (version) {
             case V_08 -> V_08_Deserializer.deserializeContractTerminationMessage(rawJson);
-            case V_2024_1 -> V_2024_1_Deserializer.deserializeContractTerminationMessage(rawJson);
             case V_2025_1 -> V_2025_1_Deserializer.deserializeContractTerminationMessage(rawJson);
         };
     }
@@ -79,7 +73,6 @@ public class DeserializerService {
     public CatalogRequestMessage deserializeCatalogRequestMessage(String catalogRequest, DspVersion version) {
         return switch (version) {
             case V_08 -> V_08_Deserializer.deserializeCatalogRequest(catalogRequest);
-            case V_2024_1 -> V_2024_1_Deserializer.deserializeCatalogRequest(catalogRequest);
             case V_2025_1 -> V_2025_1_Deserializer.deserializeCatalogRequest(catalogRequest);
         };
     }
@@ -87,7 +80,6 @@ public class DeserializerService {
     public ContractRequestMessage deserializeContractRequestMessage(String contractRequest, DspVersion version) {
         return switch (version) {
             case V_08 -> V_08_Deserializer.deserializeContractRequest(contractRequest);
-            case V_2024_1 -> V_2024_1_Deserializer.deserializeContractRequest(contractRequest);
             case V_2025_1 -> V_2025_1_Deserializer.deserializeContractRequest(contractRequest);
         };
     }
@@ -95,7 +87,6 @@ public class DeserializerService {
     public ContractVerificationMessage deserializeContractVerificationMessage(String contractVerification, DspVersion version) {
         return switch (version) {
             case V_08 -> V_08_Deserializer.deserializeContractVerification(contractVerification);
-            case V_2024_1 -> V_2024_1_Deserializer.deserializeContractVerification(contractVerification);
             case V_2025_1 -> V_2025_1_Deserializer.deserializeContractVerification(contractVerification);
         };
     }

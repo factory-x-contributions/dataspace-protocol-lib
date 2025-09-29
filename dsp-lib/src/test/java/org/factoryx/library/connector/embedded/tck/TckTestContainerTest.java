@@ -91,8 +91,8 @@ public class TckTestContainerTest {
         assertTrue(waitForProjectBooted());
         sampleDataAssetManagementService.addTckDataAsset(SampleDataAsset.CATALOG_ASSET_ID);
         sampleDataAssetManagementService.addTckDataAsset(SampleDataAsset.NEGOTIATION_ASSET_ID);
-        assertNotNull(sampleDataAssetManagementService.getById(UUID.fromString(SampleDataAsset.CATALOG_ASSET_ID)));
-        assertNotNull(sampleDataAssetManagementService.getById(UUID.fromString(SampleDataAsset.NEGOTIATION_ASSET_ID)));
+        assertNotNull(sampleDataAssetManagementService.getById(SampleDataAsset.CATALOG_ASSET_ID));
+        assertNotNull(sampleDataAssetManagementService.getById(SampleDataAsset.NEGOTIATION_ASSET_ID));
         negotiationRecordService.injectMockData(createNegotiationRecord(TP_02_AND_03_MOCK_AGREEMENT_ID));
 
         NegotiationRecord record = negotiationRecordService.findByContractId(TP_02_AND_03_MOCK_AGREEMENT_ID);

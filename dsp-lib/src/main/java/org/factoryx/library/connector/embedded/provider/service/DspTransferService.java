@@ -109,23 +109,14 @@ public class DspTransferService {
             return abortTransferWithBadRequest(newRecord, "Agreement record is not in FINALIZED state", version);
         }
 
-        String datasetIdString = negotiationRecord.getTargetAssetId();
-        UUID datasetId;
-        try {
-            datasetId = UUID.fromString(datasetIdString);
-        } catch (IllegalArgumentException e) {
-            log.warn("Invalid UUID string for datasetId: {}", datasetIdString);
-            return abortTransferWithBadRequest(newRecord, "Invalid dataset ID", version);
-        }
-
-        log.info("Received transfer request for datasetId: {}", datasetId);
-        DataAsset dataset = dataManagementService.getByIdForProperties(datasetId, partnerProperties);
+        log.info("Received transfer request for datasetId: {}", negotiationRecord.getTargetAssetId());
+        DataAsset dataset = dataManagementService.getByIdForProperties(negotiationRecord.getTargetAssetId(), partnerProperties);
         if (dataset == null) {
-            log.warn("Unknown dataset id {} for transfer record", datasetId);
+            log.warn("Unknown dataset id {} for transfer record", negotiationRecord.getTargetAssetId());
             return abortTransferWithBadRequest(newRecord, "Unknown dataset", version);
         }
 
-        newRecord = transferRecordService.addDatasetToTransferRecord(newRecord.getOwnPid(), datasetId);
+        newRecord = transferRecordService.addDatasetToTransferRecord(newRecord.getOwnPid(), negotiationRecord.getTargetAssetId());
 
         byte[] ackResponse = createResponse(newRecord, version);
 

@@ -2,6 +2,7 @@ package org.factoryx.library.connector.embedded.provider.service.policies;
 
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
+import org.factoryx.library.connector.embedded.provider.interfaces.DataAsset;
 import org.factoryx.library.connector.embedded.provider.interfaces.DspPolicyService;
 import org.factoryx.library.connector.embedded.provider.model.DspVersion;
 import org.factoryx.library.connector.embedded.provider.service.helpers.EnvService;
@@ -19,12 +20,12 @@ public class Fxv0_1_PolicyService extends DspPolicyService {
     /**
      * Returns a permission JSON structure based according to the latest specification.
      *
-     * @param assetId   the id of the asset
+     * @param dataAsset  the asset
      * @param partnerId the id of the negotiation partner
      * @return A JSON representation of the permission policy.
      */
     @Override
-    public JsonObject getPermission(String assetId, String partnerId, DspVersion version) {
+    public JsonObject getPermission(DataAsset dataAsset, String partnerId, DspVersion version) {
         String prefix = DspVersion.V_08.equals(version) ? "odrl:" : "";
         var permission = Json.createObjectBuilder();
         permission.add(prefix + "action",
