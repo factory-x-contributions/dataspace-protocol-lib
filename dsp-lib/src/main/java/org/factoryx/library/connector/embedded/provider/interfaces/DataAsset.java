@@ -17,7 +17,6 @@
 package org.factoryx.library.connector.embedded.provider.interfaces;
 
 import java.util.Map;
-import java.util.UUID;
 
 /**
  * This interface should be implemented by a class which represents (or wraps)
@@ -29,9 +28,19 @@ import java.util.UUID;
 public interface DataAsset {
 
     /**
-     * A unique identifier for a DataAsset
+     * A unique identifier for a DataAsset that is used
+     * in DSP-specific contexts, i.e. in the catalog or
+     * generally in DSP-negotiation or -transfer messages.
      */
-    UUID getId();
+    String getDspId();
+
+    /**
+     * The identifier of the wrapped domain-specific asset.
+     *
+     */
+    default String getNativeId() {
+        return getDspId();
+    }
 
     /**
      * A set of key-value pairs that describe the asset. These will

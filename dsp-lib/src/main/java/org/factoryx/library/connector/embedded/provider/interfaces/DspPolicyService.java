@@ -18,13 +18,15 @@ package org.factoryx.library.connector.embedded.provider.interfaces;
 
 import com.apicatalog.jsonld.JsonLd;
 import com.apicatalog.jsonld.document.JsonDocument;
-import jakarta.json.Json;
-import jakarta.json.JsonObject;
-import jakarta.json.JsonValue;
+import jakarta.json.*;
+import lombok.extern.slf4j.Slf4j;
+import org.factoryx.library.connector.embedded.provider.model.DspVersion;
 import org.factoryx.library.connector.embedded.provider.service.helpers.EnvService;
 
-import static org.factoryx.library.connector.embedded.provider.service.helpers.JsonUtils.DSPACE_NAMESPACE;
-import static org.factoryx.library.connector.embedded.provider.service.helpers.JsonUtils.ODRL_NAMESPACE;
+import java.util.Map;
+import java.util.UUID;
+
+import static org.factoryx.library.connector.embedded.provider.service.helpers.JsonUtils.*;
 
 /**
  * This abstract class provides the interface for the DspPolicyService.
@@ -33,6 +35,7 @@ import static org.factoryx.library.connector.embedded.provider.service.helpers.J
  * by overriding the getPermission, getProhibition and getObligation methods.
  *
  */
+@Slf4j
 public abstract class DspPolicyService {
 
     protected final EnvService envService;
@@ -76,31 +79,56 @@ public abstract class DspPolicyService {
      * Note that you can and should provide customized implementations of the getPermission, getProhibition
      * and getObligation methods as required by the framework agreements of the dataspace you want to participate in.
      *
-     * @param assetId the id of the asset in question
+     * @param dataAsset the asset in question
      * @param partnerId the id of the partner who is interested in the given asset
      * @return the JSON object
      */
-    public final JsonObject createOfferedPolicy(String assetId, String partnerId) {
-        return Json.createObjectBuilder()
-                .add("@type", "odrl:Offer")
-                .add("odrl:permission", getPermission(assetId, partnerId))
-                .add("odrl:prohibition", getProhibition(assetId, partnerId))
-                .add("odrl:obligation", getObligation(assetId, partnerId))
-                .add("odrl:assigner", envService.getBackendId())
-                .add("odrl:assignee", partnerId)
-                .add("odrl:target", Json.createObjectBuilder().add(ID, assetId).build())
-                .build();
+    public final JsonObject createOfferedPolicy(DataAsset dataAsset, String partnerId, Map<String, String> partnerProperties, DspVersion version) {
+        String prefix = DspVersion.V_08.equals(version) ? "odrl:" : "";
+        var builder = Json.createObjectBuilder()
+                .add("@id", UUID.randomUUID().toString())
+                .add("@type", prefix + "Offer")
+                .add(prefix + "assigner", envService.getBackendId())
+                .add(prefix + "assignee", partnerId)
+                .add(prefix + "target", Json.createObjectBuilder().add(ID, dataAsset.getDspId()).build());
+        var permission = getPermission(dataAsset, partnerId, version);
+        if (permission != null && !isEmpty(permission)) {
+            builder.add(prefix + "permission", permission);
+        }
+        var prohibition = getProhibition(dataAsset, partnerId, version);
+        if (prohibition != null && !isEmpty(prohibition)) {
+            builder.add(prefix + "prohibition", prohibition);
+        }
+        var obligation = getObligation(dataAsset, partnerId, version);
+        if (obligation != null && !isEmpty(obligation)) {
+            builder.add(prefix + "obligation", obligation);
+        }
+        return builder.build();
+
     }
 
-    public JsonValue getPermission(String assetId, String partnerId) {
+    public static boolean isEmpty(JsonValue value) {
+        if (value instanceof JsonArray array) {
+            return array.isEmpty();
+        }
+        if (value instanceof JsonObject object) {
+            return object.isEmpty();
+        }
+        if (value instanceof JsonString string) {
+            return string.getString().isEmpty();
+        }
+        throw new IllegalArgumentException("Unsupported value type: " + value.getClass());
+    }
+
+    public JsonValue getPermission(DataAsset dataAsset, String partnerId, DspVersion version) {
         return JsonValue.EMPTY_JSON_ARRAY;
     }
 
-    public JsonValue getProhibition(String assetId, String partnerId) {
+    public JsonValue getProhibition(DataAsset dataAsset, String partnerId, DspVersion version) {
         return JsonValue.EMPTY_JSON_ARRAY;
     }
 
-    public JsonValue getObligation(String assetId, String partnerId) {
+    public JsonValue getObligation(DataAsset dataAsset, String partnerId, DspVersion version) {
         return JsonValue.EMPTY_JSON_ARRAY;
     }
 
@@ -110,14 +138,14 @@ public abstract class DspPolicyService {
      *
      *
      * @param offer the offer object
-     * @param targetAssetId the target asset id
+     * @param dataAsset the target asset
      * @param partnerId the id of the negotiation partner
      * @return true if the offer is valid.
      */
-    public final boolean validateOffer(JsonObject offer, String targetAssetId, String partnerId) {
+    public boolean validateOffer(JsonObject offer, DataAsset dataAsset, String partnerId, Map<String, String> partnerProperties, DspVersion version) {
         try {
-            JsonObject offerObject = removeId(offer);
-            JsonObject expectedObject = createExpandedPolicy(targetAssetId, partnerId);
+            JsonObject offerObject = sanitizeOffer(offer);
+            JsonObject expectedObject = sanitizeOffer(createExpandedPolicy(dataAsset, partnerId, partnerProperties, version));
             return offerObject.equals(expectedObject);
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -129,14 +157,45 @@ public abstract class DspPolicyService {
 
     /**
      * When comparing an offer to an expected counterpart, the "@id" values are not required to match.
-     * Therefore, we remove it before comparing.
+     * Therefore, we remove it before comparing. Also, we will remove permission, obligation and prohibition
+     * arrays, if empty.
      *
      * @param offer an offer received from a negotiation partner
-     * @return the same object, but without an "@id" field
+     * @return the same object, but without an "@id" field and without empty arrays
      */
-    private JsonObject removeId(JsonObject offer) {
+    protected JsonObject sanitizeOffer(JsonObject offer) {
         var offerBuilder = Json.createObjectBuilder(offer);
         offerBuilder.remove(ID);
+        var permission = offer.getJsonArray(ODRL_NAMESPACE + "permission");
+        if (permission != null && permission.isEmpty()) {
+            offerBuilder.remove(ODRL_NAMESPACE + "permission");
+        }
+        var prohibition = offer.getJsonArray(ODRL_NAMESPACE + "prohibition");
+        if (prohibition != null && prohibition.isEmpty()) {
+            offerBuilder.remove(ODRL_NAMESPACE + "prohibition");
+        }
+        var obligation = offer.getJsonArray(ODRL_NAMESPACE + "obligation");
+        if (obligation != null && obligation.isEmpty()) {
+            offerBuilder.remove(ODRL_NAMESPACE + "obligation");
+        }
+        for (JsonValue value : offer.getJsonArray(ODRL_NAMESPACE + "assignee")) {
+            if (value instanceof JsonObject object) {
+                var assignee = object.getJsonString("@id");
+                if (assignee != null) {
+                    offerBuilder.remove(ODRL_NAMESPACE + "assignee");
+                    offerBuilder.add(ODRL_NAMESPACE + "assignee", Json.createArrayBuilder().add(Json.createObjectBuilder().add("@value", assignee)));
+                }
+            }
+        }
+        for (JsonValue value : offer.getJsonArray(ODRL_NAMESPACE + "assigner")) {
+            if (value instanceof JsonObject object) {
+                var assigner = object.getJsonString("@id");
+                if (assigner != null) {
+                    offerBuilder.remove(ODRL_NAMESPACE + "assigner");
+                    offerBuilder.add(ODRL_NAMESPACE + "assigner", Json.createArrayBuilder().add(Json.createObjectBuilder().add("@value", assigner)));
+                }
+            }
+        }
         return offerBuilder.build();
     }
 
@@ -144,11 +203,11 @@ public abstract class DspPolicyService {
      * Since the negotiation request from a partner is expanded, we need to expand
      * our own comparison object as well.
      *
-     * @param targetAssetId the id of the asset in question
+     * @param dataAsset the asset in question
      * @param partnerId the id of the negotiation partner
      * @return the expanded object that can be compared with the partner's offer
      */
-    private JsonObject createExpandedPolicy(String targetAssetId, String partnerId) {
+    protected JsonObject createExpandedPolicy(DataAsset dataAsset, String partnerId, Map<String, String> partnerProperties, DspVersion version) {
         try {
             var wrapper = Json.createObjectBuilder();
             var odrlContext = Json.createObjectBuilder()
@@ -156,13 +215,14 @@ public abstract class DspPolicyService {
                     .add("dspace", DSPACE_NAMESPACE)
                     .add("odrl", ODRL_NAMESPACE);
             wrapper.add("@context", odrlContext.build());
-            wrapper.add("dspace:Offer", createOfferedPolicy(targetAssetId, partnerId));
+            wrapper.add("dspace:Offer", createOfferedPolicy(dataAsset, partnerId, partnerProperties, version));
             return JsonLd.expand(JsonDocument.of(wrapper.build()))
                     .get()
                     .getJsonObject(0)
                     .getJsonArray(DSPACE_NAMESPACE + "Offer")
                     .getJsonObject(0);
         } catch (Exception e) {
+            log.error(e.getMessage(), e);
             throw new RuntimeException(e);
         }
     }

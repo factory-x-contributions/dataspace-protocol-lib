@@ -18,6 +18,7 @@ package org.factoryx.library.connector.embedded.provider.model.transfer;
 
 import lombok.Getter;
 import lombok.Setter;
+import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.UUID;
@@ -31,6 +32,7 @@ import java.util.UUID;
 @Setter
 @Getter
 @Slf4j
+@ToString
 public abstract class TransferRecord {
     /**
      * The transfer id on the Provider side (our side)
@@ -67,7 +69,7 @@ public abstract class TransferRecord {
     /**
      * The id of the dataset, which is the subject of this transfer
      */
-    private UUID datasetId;
+    private String datasetId;
 
     /**
      * The format of the transfer, usually "HTTP_PUSH" or "HTTP_PULL"

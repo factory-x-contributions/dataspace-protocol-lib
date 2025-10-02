@@ -1,4 +1,10 @@
 # Dataspace Protocol Lib
+
+[![Contributors][contributors-shield]][contributors-url]
+[![Stargazers][stars-shield]][stars-url]
+[![Apache 2.0 License][license-shield]][license-url]
+[![Latest Release][release-shield]][release-url]
+
 [![Pipeline](https://github.com/factory-x-contributions/dataspace-protocol-lib/actions/workflows/pipeline.yml/badge.svg?logo=GitHub&style=flat-square)](https://github.com/factory-x-contributions/dataspace-protocol-lib/actions/workflows/pipeline.yml)
 
 ## Contributions:
@@ -120,20 +126,25 @@ By default, the library is using the "/dsp/**" path. But you can configure this 
 
 Your importing project should provide the following properties: 
 
-| Property name                              | Meaning                                                                                | Default setting                                                        |
-|--------------------------------------------|----------------------------------------------------------------------------------------|------------------------------------------------------------------------|
-| org.factoryx.library.hostname              | The dns name of the host, the application is running on.                               | localhost                                                              |
-| org.factoryx.library.usetls                | boolean flag that indicates whether TLS is to be used                                  | false                                                                  |
-| org.factoryx.library.id                    | The id, that you are using in your dataspace                                           | provider                                                               |
-| org.factoryx.library.dspapiprefix          | The prefix that all library-related endpoints are using                                | /dsp                                                                   |
-| org.factoryx.library.usebuiltindataccess   | "false" disables the built-in dataacces (not recommended!)                             | true                                                                   | 
-| org.factoryx.library.alternativedataaccess | set the host adress and path to an alternative data access endpoint (not recommended!) | localhost                                                              |
-| org.factoryx.library.validationservice     | set the type of validation for DSP (currently supported: "mock", "mvd")                | mock                                                                   | 
-| org.factoryx.library.mvd.vaultroottoken    | set the token for authorizing access to the MVD provider vault                         | root                                                                   | 
-| org.factoryx.library.mvd.vaulturl          | set the url for the MVD provider vault                                                 | http://provider-vault:8200                                             | 
-| org.factoryx.library.mvd.vaultsecretalias  | set the secret alias for accessing the provider STS                                    | did%3Aweb%3Aprovider-identityhub%253A7083%3Aprovider-sts-client-secret | 
-| org.factoryx.library.mvd.ststokenurl       | set the url of the STS token endpoint                                                  | http://provider-sts-service:8082/api/sts/token                         | 
-| org.factoryx.library.mvd.trustedissuer     | set the ID of the MVD trusted issuer                                                   | did:web:dataspace-issuer                                               | 
+| Property name                                 | Meaning                                                                                | Default setting                                                        |
+|-----------------------------------------------|----------------------------------------------------------------------------------------|------------------------------------------------------------------------|
+| org.factoryx.library.hostname                 | The dns name of the host, the application is running on.                               | localhost                                                              |
+| org.factoryx.library.usetls                   | boolean flag that indicates whether TLS is to be used                                  | false                                                                  |
+| org.factoryx.library.id                       | The id, that you are using in your dataspace                                           | provider                                                               |
+| org.factoryx.library.dspapiprefix             | The prefix that all library-related endpoints are using                                | /dsp                                                                   |
+| org.factoryx.library.usebuiltindataccess      | "false" disables the built-in dataacces (not recommended!)                             | true                                                                   | 
+| org.factoryx.library.alternativedataaccess    | set the host adress and path to an alternative data access endpoint (not recommended!) | http://localhost:9090/                                                              |
+| org.factoryx.library.validationservice        | set the type of validation for DSP (currently supported: "mock", "mvd")                | mock                                                                   |
+| org.factoryx.library.validationservice.stsapi | set the type of the api of your tokenprovider (either "dim-wallet" or "identityhub")   | <none>                                                                 |
+| org.factoryx.library.fxv01.trustedissuer      | set the ID of the fx trusted issuer                                                    | did:web:dataspace-issuer                                               | 
+| org.factoryx.library.fxv01.bearer             | toggle, whether a "Bearer" prefix is added in auth headers, you are sending            | false                                                                  |  
+| org.factoryx.library.fxv01.vaultroottoken     | set the token for authorizing access to the MVD provider vault                         | root                                                                   | 
+| org.factoryx.library.fxv01.vaulturl           | set the url for the vault vault that stores your shared secret for your id-service     | http://provider-vault:8200                                             | 
+| org.factoryx.library.fxv01.vaultsecretalias   | set the secret alias for accessing the provider STS                                    | did%3Aweb%3Aprovider-identityhub%253A7083%3Aprovider-sts-client-secret | 
+| org.factoryx.library.fxv01.dimtokenurl        | set the url of the oauth token endpoint, when dim-wallet is selected                   | http://provider-sts-service:8082/api/sts/token                         |
+| org.factoryx.library.fxv01.dimclientid        | set the id to be used against the oauth token provider, when dim-wallet is selected    | my-client-id                                                           |
+| org.factoryx.library.fxv01.dimurl             | set the url of your dim-wallet, when dim-wallet is selected                            | http://my-dim-url                                                      | 
+| org.factoryx.library.fxv01.identityhub.url    | set  the url of the token endpoint on your id-hub, when identityhub is selected        | http://provider-sts-service:8082/api/sts/token                         |                                                                                    
 
 
 
@@ -143,16 +154,54 @@ Please note that the DSP protocol URL will be a result of several settings:
 http<s>://<org.factoryx.library.hostname>:<server.port>/<org.factoryx.library.dspapiprefix>
 ```
 ### Running the tests
-This project includes a comprehensive suite of unit tests to ensure the quality and correctness of the library. To run all tests, simply execute:
+This project includes a comprehensive suite of unit tests to ensure the quality and correctness of the library. Beyond that 
+it also includes a special testing setup against the [DSP-TCK](https://github.com/eclipse-dataspacetck/dsp-tck), which is 
+based on the [Java Testcontainers Framework](https://java.testcontainers.org/). This requires you to have a proper 
+docker installation on your host machine, see the documentation of the Testcontainers project for details.  
+
+By default, the TCK Test will not be executed, so running ... 
 
 ```
-./gradlew test
+./gradlew clean test
+```
+... will execute all other tests, except for TCK and FxIntTests.  
+
+If you explicitly want to execute the TCK test, then please run 
+
+```
+./gradlew clean test -Dtestcontainer.tck.disable=false
 ```
 
+If you want to run the FxIntDimWallet test, then please run  
+```
+bash inttest.sh
+``` 
 
+But please note that you need to provide secrets via a source file with valid data.  
 
+## License
+Distributed under the Apache 2.0 License.
+See [LICENSE](./LICENSE) for more information.
 
+<!-- MARKDOWN LINKS & IMAGES -->
+<!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
 
+[contributors-shield]: https://img.shields.io/github/contributors/factory-x-contributions/dataspace-protocol-lib.svg?style=for-the-badge
 
+[contributors-url]: https://github.com/factory-x-contributions/dataspace-protocol-lib/graphs/contributors
 
+[stars-shield]: https://img.shields.io/github/stars/factory-x-contributions/dataspace-protocol-lib.svg?style=for-the-badge
 
+[stars-url]: https://github.com/factory-x-contributions/dataspace-protocol-lib/stargazers
+
+[license-shield]: https://img.shields.io/github/license/factory-x-contributions/dataspace-protocol-lib.svg?style=for-the-badge
+
+[license-url]: https://github.com/factory-x-contributions/dataspace-protocol-lib/blob/main/LICENSE
+
+[release-shield]: https://img.shields.io/github/v/release/factory-x-contributions/dataspace-protocol-lib.svg?style=for-the-badge
+
+[release-url]: https://github.com/factory-x-contributions/dataspace-protocol-lib/releases
+
+[build-badge]: https://github.com/factory-x-contributions/dataspace-protocol-lib/actions/workflows/backend-ci.yml/badge.svg
+
+[build-url]: https://github.com/factory-x-contributions/dataspace-protocol-lib/actions/workflows/backend-ci.yml

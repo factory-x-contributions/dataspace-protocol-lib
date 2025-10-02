@@ -23,18 +23,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4.2.2
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0  # Ensure full clone for pull request workflows
 
       - name: TruffleHog OSS
         id: trufflehog
-        uses: trufflesecurity/trufflehog@v3.89.2
+        uses: trufflesecurity/trufflehog@v3.90.6
         continue-on-error: true
         with:
           path: ./  # Scan the entire repository
           base: "${{ github.event.repository.default_branch }}"  # Set base branch for comparison (pull requests)
-          extra_args: --filter-entropy=4 --results=verified,unknown --debug
+          extra_args: --filter-entropy=4 --results=verified,unknown --debug --exclude-paths=.thignore
 
       - name: Scan Results Status
         if: steps.trufflehog.outcome == 'failure'

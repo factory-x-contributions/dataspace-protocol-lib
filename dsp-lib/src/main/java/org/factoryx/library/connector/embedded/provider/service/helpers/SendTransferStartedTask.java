@@ -17,9 +17,14 @@
 package org.factoryx.library.connector.embedded.provider.service.helpers;
 
 import jakarta.json.Json;
+import jakarta.json.JsonArrayBuilder;
 import jakarta.json.JsonObject;
+import jakarta.json.JsonObjectBuilder;
 import lombok.extern.slf4j.Slf4j;
+import org.factoryx.library.connector.embedded.provider.interfaces.ApiAsset;
+import org.factoryx.library.connector.embedded.provider.interfaces.DataAsset;
 import org.factoryx.library.connector.embedded.provider.interfaces.DspTokenProviderService;
+import org.factoryx.library.connector.embedded.provider.model.DspVersion;
 import org.factoryx.library.connector.embedded.provider.model.transfer.TransferRecord;
 import org.factoryx.library.connector.embedded.provider.service.AuthorizationService;
 import org.factoryx.library.connector.embedded.provider.service.TransferRecordService;
@@ -28,17 +33,18 @@ import org.springframework.web.client.RestClient;
 
 import java.util.UUID;
 
-import static org.factoryx.library.connector.embedded.provider.service.helpers.JsonUtils.FULL_CONTEXT;
+import static org.factoryx.library.connector.embedded.provider.service.helpers.JsonUtils.LEGACY_CONTEXT;
+import static org.factoryx.library.connector.embedded.provider.service.helpers.JsonUtils.prettyPrint;
 
-@Slf4j
+
 /**
  * This class represents a task to send a "TransferStarted" message in the
  * context of a specific transfer request. Should be initiated, after a valid transfer
  * request has been received by a consumer partner.
  *
  * @author dalmasoud
- *
  */
+@Slf4j
 public class SendTransferStartedTask implements Runnable {
     private final UUID transferId;
     private final TransferRecordService transferRecordService;
@@ -46,17 +52,21 @@ public class SendTransferStartedTask implements Runnable {
     private final RestClient restClient;
     private final EnvService envService;
     private final DspTokenProviderService dspTokenProviderService;
+    private final DspVersion dspVersion;
+    private final DataAsset dataAsset;
 
 
     public SendTransferStartedTask(UUID transferId, TransferRecordService transferRecordService,
                                    AuthorizationService authorizationService, RestClient restClient,
-                                   EnvService envService, DspTokenProviderService dspTokenProviderService) {
+                                   EnvService envService, DspTokenProviderService dspTokenProviderService, DspVersion dspVersion, DataAsset dataAsset) {
         this.transferId = transferId;
         this.transferRecordService = transferRecordService;
         this.authorizationService = authorizationService;
         this.restClient = restClient;
         this.envService = envService;
         this.dspTokenProviderService = dspTokenProviderService;
+        this.dspVersion = dspVersion;
+        this.dataAsset = dataAsset;
     }
 
     @Override
@@ -68,47 +78,101 @@ public class SendTransferStartedTask implements Runnable {
             return;
         }
 
-        UUID datasetId = transferRecord.getDatasetId();
+        String datasetId = transferRecord.getDatasetId();
 
-        String datasetUrl = envService.getDatasetUrl(datasetId);
+        String datasetUrl = envService.getEdrEndpoint(dataAsset);
 
-        log.info("Starting transfer process {} for dataset {}", transferId, datasetId);
+        log.info("Starting transfer process {} for dataset {} under version {}", transferId, datasetId, dspVersion);
 
         TransferRecord transferRecordUpdated = transferRecordService.startTransferRecord(transferId,
                 datasetUrl);
 
         String targetURL = transferRecord.getPartnerDspUrl() + "/transfers/" + transferRecord.getConsumerPid()
                 + "/start";
-        String requestBody = buildTransferStartedMessage(transferRecordUpdated);
-        restClient
-                .post()
-                .uri(targetURL)
-                .header("Content-Type", "application/json")
-                .header("Authorization", dspTokenProviderService.provideTokenForPartner(transferRecordUpdated) )
-                .body(requestBody)
-                .retrieve()
-                .onStatus(HttpStatusCode::isError,
-                        (request, resp) -> {
-                            log.warn("Error sending STARTED MESSAGE to {} for {}",
-                                    targetURL, transferId);
-                            log.warn("Status code: {}", resp.getStatusCode());
-                            log.warn("Body: {}", requestBody);
-                        })
-                .onStatus(HttpStatusCode::is2xxSuccessful,
-                        (request, resp) -> {
-                            log.info("Successfully sent STARTED MESSAGE to {} for {}!",
-                                    targetURL, transferId);
-                        })
-                .toBodilessEntity();
+        String requestBody = switch (dspVersion) {
+            case V_08 -> buildTransferStartedMessage_V_08(transferRecordUpdated, dataAsset);
+            default -> buildTransferStartedMessage(transferRecordUpdated, dataAsset);
+        };
+        log.info("Generated TransferStartMessage: \n{}", prettyPrint(requestBody));
+        try {
+            restClient
+                    .post()
+                    .uri(targetURL)
+                    .header("Content-Type", "application/json")
+                    .header("Authorization", dspTokenProviderService.provideTokenForPartner(transferRecordUpdated))
+                    .body(requestBody)
+                    .retrieve()
+                    .onStatus(HttpStatusCode::isError,
+                            (request, resp) -> {
+                                log.warn("Error sending STARTED MESSAGE to {} for {}",
+                                        targetURL, transferId);
+                                log.warn("Status code: {}", resp.getStatusCode());
+                                log.warn("Body: {}", requestBody);
+                            })
+                    .onStatus(HttpStatusCode::is2xxSuccessful,
+                            (request, resp) -> {
+                                log.info("Successfully sent STARTED MESSAGE to {} for {}!",
+                                        targetURL, transferId);
+                            })
+                    .toBodilessEntity();
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+        }
     }
 
-    private String buildTransferStartedMessage(TransferRecord record) {
+
+    private String buildTransferStartedMessage(TransferRecord transferRecord, DataAsset asset) {
+        try {
+            String dataAccessToken = asset instanceof ApiAsset ?
+                    authorizationService.issueWriteAccessToken(transferRecord.getContractId(), transferRecord.getDatasetId())
+                    : authorizationService.issueDataAccessToken(transferRecord.getContractId(), transferRecord.getDatasetAddressUrl());
+            JsonObjectBuilder message = Json.createObjectBuilder();
+            message.add("@context", JsonUtils.getContextForDspVersion(dspVersion));
+            message.add("@type", "TransferStartMessage");
+            message.add("consumerPid", transferRecord.getConsumerPid());
+            message.add("providerPid", transferRecord.getOwnPid().toString());
+
+            JsonObjectBuilder dataAddress = Json.createObjectBuilder();
+            dataAddress.add("@type", "DataAddress");
+            dataAddress.add("endpointType", "https://w3id.org/idsa/v4.1/HTTP");
+            dataAddress.add("endpoint", transferRecord.getDatasetAddressUrl());
+
+            JsonArrayBuilder endpointProperties = Json.createArrayBuilder();
+            JsonObjectBuilder authorizationProperty = Json.createObjectBuilder();
+            authorizationProperty.add("@type", "EndpointProperty");
+            authorizationProperty.add("name", "https://w3id.org/edc/v0.0.1/ns/authorization");
+            authorizationProperty.add("value", dataAccessToken);
+            JsonObjectBuilder authTypeProperty = Json.createObjectBuilder();
+            authTypeProperty.add("@type", "EndpointProperty");
+            authTypeProperty.add("name", "https://w3id.org/edc/v0.0.1/ns/authType");
+            authTypeProperty.add("value", authorizationService.getAuthType());
+            JsonObjectBuilder endpointProperty = Json.createObjectBuilder();
+            endpointProperty.add("@type", "EndpointProperty");
+            endpointProperty.add("name", "https://w3id.org/edc/v0.0.1/ns/endpoint");
+            endpointProperty.add("value", transferRecord.getDatasetAddressUrl());
+            endpointProperties.add(authorizationProperty);
+            endpointProperties.add(authTypeProperty);
+            endpointProperties.add(endpointProperty);
+            dataAddress.add("endpointProperties", endpointProperties);
+
+            message.add("dataAddress", dataAddress.build());
+            return message.build().toString();
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+        }
+        return "{}";
+    }
+
+
+    private String buildTransferStartedMessage_V_08(TransferRecord record, DataAsset asset) {
         String datasetAddressUrl = record.getDatasetAddressUrl();
         String contractId = record.getContractId();
-        String dataAccessToken = authorizationService.issueDataAccessToken(contractId, datasetAddressUrl);
+        String dataAccessToken = asset instanceof ApiAsset ?
+                authorizationService.issueWriteAccessToken(contractId, record.getDatasetId())
+                : authorizationService.issueDataAccessToken(contractId, datasetAddressUrl);
         String partnerId = record.getPartnerId();
         String refreshTokenValue = authorizationService.issueRefreshToken(dataAccessToken, partnerId);
-        String expiresInValue = "300"; 
+        String expiresInValue = "300";
         String refreshEndpointValue = envService.getRefreshEndpoint();
 
         JsonObject authorization = Json.createObjectBuilder()
@@ -119,7 +183,7 @@ public class SendTransferStartedTask implements Runnable {
         JsonObject authType = Json.createObjectBuilder()
                 .add("@type", "dspace:EndpointProperty")
                 .add("dspace:name", "authType")
-                .add("dspace:value", "Bearer")
+                .add("dspace:value", authorizationService.getAuthType())
                 .build();
 
         // The following properties are currently necessary for compatibility with the EDC connector
@@ -164,7 +228,7 @@ public class SendTransferStartedTask implements Runnable {
                                 .add(expiresInProp).add(refreshEndpointProp).build())
                 .build();
         return Json.createObjectBuilder()
-                .add("@context", FULL_CONTEXT)
+                .add("@context", LEGACY_CONTEXT)
                 .add("@type", "dspace:TransferStartMessage")
                 .add("dspace:consumerPid", record.getConsumerPid())
                 .add("dspace:providerPid", record.getOwnPid().toString())

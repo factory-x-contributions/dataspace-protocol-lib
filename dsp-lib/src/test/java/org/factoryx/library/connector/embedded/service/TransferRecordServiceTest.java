@@ -118,11 +118,11 @@ public class TransferRecordServiceTest {
 
         // Act
         TransferRecord updatedRecord = transferRecordService.addDatasetToTransferRecord(mockRecord.getOwnPid(),
-                DATASET_UUID);
+                DATASET_UUID.toString());
 
         // Assert
         assertNotNull(updatedRecord, "Expected updated record to be not null");
-        assertEquals(DATASET_UUID, updatedRecord.getDatasetId(), "Expected datasetId to be updated");
+        assertEquals(DATASET_UUID.toString(), updatedRecord.getDatasetId(), "Expected datasetId to be updated");
         verify(repository, times(1)).save(any(TransferRecord.class));
     }
 
@@ -132,7 +132,7 @@ public class TransferRecordServiceTest {
         when(repository.findById(mockRecord.getOwnPid())).thenReturn(Optional.empty());
         // Act
         TransferRecord updatedRecord = transferRecordService.addDatasetToTransferRecord(mockRecord.getOwnPid(),
-                DATASET_UUID);
+                DATASET_UUID.toString());
 
         // Assert
         assertNull(updatedRecord, "Expected record to be null when TransferRecord is not found");

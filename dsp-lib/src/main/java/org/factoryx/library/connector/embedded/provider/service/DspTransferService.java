@@ -22,12 +22,15 @@ import lombok.extern.slf4j.Slf4j;
 import org.factoryx.library.connector.embedded.provider.interfaces.DataAsset;
 import org.factoryx.library.connector.embedded.provider.interfaces.DataAssetManagementService;
 import org.factoryx.library.connector.embedded.provider.interfaces.DspTokenProviderService;
+import org.factoryx.library.connector.embedded.provider.model.DspVersion;
 import org.factoryx.library.connector.embedded.provider.model.ResponseRecord;
 import org.factoryx.library.connector.embedded.provider.model.negotiation.NegotiationRecord;
 import org.factoryx.library.connector.embedded.provider.model.negotiation.NegotiationState;
 import org.factoryx.library.connector.embedded.provider.model.transfer.TransferRecord;
 import org.factoryx.library.connector.embedded.provider.model.transfer.TransferState;
+import org.factoryx.library.connector.embedded.provider.service.deserializers.service_dtos.*;
 import org.factoryx.library.connector.embedded.provider.service.helpers.EnvService;
+import org.factoryx.library.connector.embedded.provider.service.helpers.JsonUtils;
 import org.factoryx.library.connector.embedded.provider.service.helpers.SendTransferStartedTask;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
@@ -82,102 +85,71 @@ public class DspTransferService {
      * This method handles new incoming transfer requests from the
      * /dsp/transfers/request endpoint.
      *
-     * @param requestBody - the request body of the incoming message
+     * @param transferRequestMessage - the essentials of the request body of the incoming message
      * @param partnerId - the id of the requesting party as retrieved from the HTTP auth token
      * @return - a response indicating the initiation status of the transfer process
      */
-    public ResponseRecord handleNewTransfer(String requestBody, String partnerId, Map<String, String> partnerProperties) {
-        JsonObject requestJson = parseAndExpand(requestBody);
-        log.info("RequestJson: {}", requestJson);
-        String consumerPid = requestJson.getJsonArray(DSPACE_NAMESPACE + "consumerPid").getJsonObject(0)
-                .getString("@value");
-        String agreementIdString = requestJson.getJsonArray(DSPACE_NAMESPACE + "agreementId").getJsonObject(0)
-                .getString("@value");
-        String messageType = requestJson.getJsonArray("@type").getString(0);
-        String partnerDspUrl = requestJson.getJsonArray(DSPACE_NAMESPACE + "callbackAddress").getJsonObject(0)
-                .getString("@value");
+    public ResponseRecord handleNewTransfer(TransferRequestMessage transferRequestMessage, String partnerId, Map<String, String> partnerProperties, DspVersion version) {
 
+        String consumerPid = transferRequestMessage.getConsumerPid();
+        String partnerDspUrl = transferRequestMessage.getPartnerDspUrl();
+        UUID agreementId = transferRequestMessage.getAgreementId();
         TransferRecord newRecord = transferRecordService.createTransferRecord(consumerPid, partnerId,
-                partnerDspUrl, agreementIdString);
-
-        UUID agreementId;
-        try {
-            agreementId = UUID.fromString(agreementIdString);
-        } catch (IllegalArgumentException e) {
-            log.warn("Invalid UUID string for agreementId: {}", agreementIdString);
-            return abortTransferWithBadRequest(newRecord, "Invalid agreementId");
-        }
+                partnerDspUrl, agreementId.toString());
 
         NegotiationRecord negotiationRecord = transferRecordService
                 .findNegotiationRecordByAgreementId(agreementId);
-        if (negotiationRecord == null) {
+        if (negotiationRecord == null || !partnerId.equals(negotiationRecord.getPartnerId())) {
             log.warn("Unknown negotiation record for transfer process: {}", agreementId);
-            return abortTransferWithBadRequest(newRecord, "Unknown agreement ID");
+            return abortTransferWithBadRequest(newRecord, "Unknown agreement ID", version);
         }
 
         if (!negotiationRecord.getState().equals(NegotiationState.FINALIZED)) {
             log.warn("Negotiation record is not in FINALIZED state: {}", negotiationRecord.getState());
-            return abortTransferWithBadRequest(newRecord, "Agreement record is not in FINALIZED state");
+            return abortTransferWithBadRequest(newRecord, "Agreement record is not in FINALIZED state", version);
         }
 
-        String datasetIdString = negotiationRecord.getTargetAssetId();
-        UUID datasetId;
-        try {
-            datasetId = UUID.fromString(datasetIdString);
-        } catch (IllegalArgumentException e) {
-            log.warn("Invalid UUID string for datasetId: {}", datasetIdString);
-            return abortTransferWithBadRequest(newRecord, "Invalid dataset ID");
-        }
-
-        log.info("Received transfer request for datasetId: {}", datasetId);
-        DataAsset dataset = dataManagementService.getByIdForProperties(datasetId, partnerProperties);
+        log.info("Received transfer request for datasetId: {}", negotiationRecord.getTargetAssetId());
+        DataAsset dataset = dataManagementService.getByIdForProperties(negotiationRecord.getTargetAssetId(), partnerProperties);
         if (dataset == null) {
-            log.warn("Unknown dataset id {} for transfer record", datasetId);
-            return abortTransferWithBadRequest(newRecord, "Unknown dataset");
+            log.warn("Unknown dataset id {} for transfer record", negotiationRecord.getTargetAssetId());
+            return abortTransferWithBadRequest(newRecord, "Unknown dataset", version);
         }
 
-        newRecord = transferRecordService.addDatasetToTransferRecord(newRecord.getOwnPid(), datasetId);
+        newRecord = transferRecordService.addDatasetToTransferRecord(newRecord.getOwnPid(), negotiationRecord.getTargetAssetId());
 
-        if (!messageType.equals(DSPACE_NAMESPACE + "TransferRequestMessage")) {
-            newRecord = transferRecordService.updateTransferRecordState(newRecord.getOwnPid(),
-                    TransferState.TERMINATED);
-            return abortTransferWithBadRequest(newRecord, "Invalid message type");
-        }
-
-        byte[] ackResponse = createResponse(newRecord);
-
-        log.info("TransferProcess Request endpoint received new partner request:\n {}",
-                prettyPrint(requestJson));
+        byte[] ackResponse = createResponse(newRecord, version);
 
         log.debug("Sending Response:\n{}", prettyPrint(new String(ackResponse)));
 
         executorService.submit(new SendTransferStartedTask(newRecord.getOwnPid(), transferRecordService,
-                authorizationService, restClient, envService, dspTokenProviderService));
+                authorizationService, restClient, envService, dspTokenProviderService, version, dataset));
 
         return new ResponseRecord(ackResponse, 201);
     }
 
-    private static byte[] createResponse(TransferRecord entry) {
-        String type = entry.getState().equals(TransferState.TERMINATED) ? "dspace:TransferError"
-                : "dspace:TransferProcess";
+    private static byte[] createResponse(TransferRecord entry, DspVersion version) {
+        String prefix = DspVersion.V_08.equals(version) ? "dpace:" : "";
+        String type = entry.getState().equals(TransferState.TERMINATED) ? prefix + "TransferError"
+                : prefix +  "TransferProcess";
         return Json.createObjectBuilder()
-                .add("@context", FULL_CONTEXT)
+                .add("@context", JsonUtils.getContextForDspVersion(version))
                 .add("@type", type)
-                .add("dspace:providerPid", entry.getOwnPid().toString())
-                .add("dspace:consumerPid", entry.getConsumerPid())
-                .add("dspace:state", "dspace:" + entry.getState())
+                .add(prefix + "providerPid", entry.getOwnPid().toString())
+                .add(prefix + "consumerPid", entry.getConsumerPid())
+                .add(prefix + "state", prefix + entry.getState())
                 .build()
                 .toString()
                 .getBytes(StandardCharsets.UTF_8);
     }
 
-    private ResponseRecord abortTransferWithBadRequest(TransferRecord transferRecord, String errorMessage) {
+    private ResponseRecord abortTransferWithBadRequest(TransferRecord transferRecord, String errorMessage, DspVersion version) {
         log.warn("Terminating transfer process with ID {} due to error: {}", transferRecord.getOwnPid(), errorMessage);
         transferRecordService.updateTransferRecordState(transferRecord.getOwnPid(), TransferState.TERMINATED);
         return new ResponseRecord(
                 createErrorResponse(transferRecord.getOwnPid().toString(), transferRecord.getConsumerPid(),
                         "TransferError",
-                        List.of(errorMessage)),
+                        List.of(errorMessage), version),
                 400);
     }
 
@@ -185,21 +157,113 @@ public class DspTransferService {
      * This method handles incoming transfer completion requests from the
      * /dsp/transfers/{providerPid}/completion endpoint.
      *
-     * @param requestBody
+     * @param transferCompletionMessage
      * @param partnerId
      * @param providerPid
      * @return
      */
-    public ResponseRecord handleCompletionRequest(String requestBody, String partnerId,
-                                                  UUID providerPid) {
-        TransferRecord transferRecord = transferRecordService.updateTransferRecordState(providerPid,
-                TransferState.COMPLETED);
-
-        if (transferRecord != null) {
-            return new ResponseRecord(createResponse(transferRecord), 200);
+    public ResponseRecord handleCompletionRequest(TransferCompletionMessage transferCompletionMessage, String partnerId,
+                                                  UUID providerPid, DspVersion version) {
+        TransferRecord transferRecord = transferRecordService.findByTransferRecordId(providerPid);
+        if (transferRecord.getPartnerId().equals(partnerId) && transferCompletionMessage.getProviderPid().equals(providerPid)) {
+            transferRecord = transferRecordService.updateTransferRecordState(providerPid, TransferState.COMPLETED);
+            if (transferRecord != null) {
+                return new ResponseRecord(createResponse(transferRecord, version), 200);
+            }
         }
-        return new ResponseRecord(createResponse(transferRecord), 400);
+
+        return new ResponseRecord(createErrorResponse(transferCompletionMessage.getConsumerPid(), providerPid.toString(),
+                "TransferError", List.of("Invalid completion request"), version), 400);
     }
+
+
+    public ResponseRecord handleGetStatusRequest(UUID providerPid, String partnerId, DspVersion version) {
+        TransferRecord transferRecord = transferRecordService.findByTransferRecordId(providerPid);
+        if (transferRecord != null && transferRecord.getPartnerId().equals(partnerId)) {
+            return new ResponseRecord(createStatusResponse(transferRecord, version).getBytes(StandardCharsets.UTF_8), 200);
+        }
+        return new ResponseRecord(createErrorResponse(providerPid.toString(), "unknown", "TransferError",
+                List.of("Invalid transfer status request"), version), 400);
+    }
+
+    private String createStatusResponse(TransferRecord transferRecord, DspVersion version) {
+        return Json.createObjectBuilder()
+                .add("@context", JsonUtils.getContextForDspVersion(version))
+                .add("@type", "TransferProcess")
+                .add("providerPid", transferRecord.getOwnPid().toString())
+                .add("consumerPid", transferRecord.getConsumerPid())
+                .add("state", transferRecord.getState().toString())
+                .build()
+                .toString();
+    }
+
+    /**
+     * This method handles incoming transfer termination requests from the
+     * /dsp/transfers/{providerPid}/termination endpoint.
+     *
+     * @param terminationMessage
+     * @param partnerId
+     * @param providerPid
+     * @return
+     */
+    public ResponseRecord handleTerminationRequest(TransferTerminationMessage terminationMessage, String partnerId,
+                                                   UUID providerPid, DspVersion version) {
+        TransferRecord transferRecord = transferRecordService.findByTransferRecordId(providerPid);
+        if (transferRecord.getPartnerId().equals(partnerId) && terminationMessage.getProviderPid().equals(providerPid)) {
+            transferRecord = transferRecordService.updateTransferRecordState(providerPid, TransferState.TERMINATED);
+            if (transferRecord != null) {
+                return new ResponseRecord(createResponse(transferRecord, version), 200);
+            }
+        }
+
+        return new ResponseRecord(createErrorResponse(terminationMessage.getConsumerPid(), providerPid.toString(),
+                "TransferError", List.of("Invalid termination request"), version), 400);
+    }
+
+    /**
+     * This method handles incoming transfer termination requests from the
+     * /dsp/transfers/{providerPid}/termination endpoint.
+     *
+     * @param suspensionMessage
+     * @param partnerId
+     * @param providerPid
+     * @return
+     */
+    public ResponseRecord handleSuspensionRequest(TransferSuspensionMessage suspensionMessage, String partnerId,
+                                                  UUID providerPid, DspVersion version) {
+        TransferRecord transferRecord = transferRecordService.findByTransferRecordId(providerPid);
+        if (transferRecord.getPartnerId().equals(partnerId) && suspensionMessage.getProviderPid().equals(providerPid)) {
+            transferRecord = transferRecordService.updateTransferRecordState(providerPid, TransferState.SUSPENDED);
+            if (transferRecord != null) {
+                return new ResponseRecord(createResponse(transferRecord, version), 200);
+            }
+        }
+        return new ResponseRecord(createErrorResponse(suspensionMessage.getConsumerPid(), providerPid.toString(),
+                "TransferError", List.of("Invalid suspension request"), version), 400);
+    }
+
+    /**
+     * This method handles incoming transfer termination requests from the
+     * /dsp/transfers/{providerPid}/termination endpoint.
+     *
+     * @param startMessage
+     * @param partnerId
+     * @param providerPid
+     * @return
+     */
+    public ResponseRecord handleStartRequest(TransferStartMessage startMessage, String partnerId,
+                                             UUID providerPid, DspVersion version) {
+        TransferRecord transferRecord = transferRecordService.findByTransferRecordId(providerPid);
+        if (transferRecord.getPartnerId().equals(partnerId) && startMessage.getProviderPid().equals(providerPid)) {
+            transferRecord = transferRecordService.updateTransferRecordState(providerPid, TransferState.STARTED);
+            if (transferRecord != null) {
+                return new ResponseRecord(createResponse(transferRecord, version), 200);
+            }
+        }
+        return new ResponseRecord(createErrorResponse(startMessage.getConsumerPid(), providerPid.toString(),
+                "TransferError", List.of("Invalid start request"), version), 400);
+    }
+
 
     /**
      * This method handles incoming token refresh requests from the

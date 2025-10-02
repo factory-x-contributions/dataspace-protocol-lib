@@ -1,0 +1,45 @@
+name: FxEdcDimWalletPipeline
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+      - development
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    env:
+      PROVIDER_DIM_TOKEN_URL: ${{ secrets.PROVIDER_DIM_TOKEN_URL }}
+      PROVIDER_DIM_CLIENT_ID: ${{ secrets.PROVIDER_DIM_CLIENT_ID }}
+      PROVIDER_DIM_URL: ${{ secrets.PROVIDER_DIM_URL }}
+      PROVIDER_DID_WEB: ${{ secrets.PROVIDER_DID_WEB }}
+      PROVIDER_DIM_SECRET: ${{ secrets.PROVIDER_DIM_SECRET }}
+      TRUSTED_ISSUER: ${{ secrets.TRUSTED_ISSUER }}
+      CONSUMER_DIM_TOKEN_URL: ${{ secrets.CONSUMER_DIM_TOKEN_URL }}
+      CONSUMER_DIM_CLIENT_ID: ${{ secrets.CONSUMER_DIM_CLIENT_ID }}
+      CONSUMER_DIM_URL: ${{ secrets.CONSUMER_DIM_URL }}
+      CONSUMER_DID_WEB: ${{ secrets.CONSUMER_DID_WEB }}
+      CONSUMER_DIM_SECRET: ${{ secrets.CONSUMER_DIM_SECRET }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v5
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Run FxInt Test with dim-wallet
+        run: ./gradlew --no-daemon test -Dtestcontainer.fxint.dim.disable=false
+

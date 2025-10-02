@@ -17,18 +17,22 @@
 package org.factoryx.library.connector.embedded.provider.service.helpers;
 
 import lombok.Getter;
+import org.factoryx.library.connector.embedded.provider.interfaces.DataAccessAddressProvider;
+import org.factoryx.library.connector.embedded.provider.interfaces.DataAsset;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.util.UUID;
+import java.net.URI;
+import java.util.Optional;
 
-@Service
+
 /**
  * This service provides access to property defined variables.
  *
  * @author eschrewe
  *
  */
+@Service
 public class EnvService {
 
     @Value("${org.factoryx.library.hostname:localhost}")
@@ -51,8 +55,15 @@ public class EnvService {
     @Value("${org.factoryx.library.usebuiltindataccess:true}")
     private boolean useBuiltInDataAccess;
 
-    @Value("${org.factoryx.library.alternativedataaccess:localhost}")
+    @Value("${org.factoryx.library.alternativedataaccess:http://localhost:9090/}")
     private String alternativeDataAccessUrlPrefix;
+
+    private final DataAccessAddressProvider dataAccessAddressProvider;
+
+    public EnvService(Optional<DataAccessAddressProvider> dataAccessAddressProvider) {
+        this.dataAccessAddressProvider = dataAccessAddressProvider
+                .orElse(dataAsset -> URI.create(alternativeDataAccessUrlPrefix).resolve(dataAsset.getDspId()).toString());
+    }
 
     public String getURLPrefix(){
         return useTls ? "https://" : "http://";
@@ -62,13 +73,12 @@ public class EnvService {
         return getURLPrefix() + hostName + ":" + serverPort + dspApiPrefix;
     }
 
-    public String getDatasetUrl(UUID datasetId) {
+    public String getEdrEndpoint(DataAsset dataAsset) {
         if (useBuiltInDataAccess) {
-            return getURLPrefix() + hostName + ":" + serverPort + dspApiPrefix + "/data-access/" + datasetId;
+            return getURLPrefix() + hostName + ":" + serverPort + dspApiPrefix + "/data-access/" + dataAsset.getDspId();
         } else {
-            return alternativeDataAccessUrlPrefix + datasetId;
+            return dataAccessAddressProvider.getAddressForDataAsset(dataAsset);
         }
-
     }
 
     public String getRefreshEndpoint() {
@@ -82,5 +92,9 @@ public class EnvService {
      */
     public String getSingleAssetReadOnlyDataAccessIssuer() {
         return backendId + "/singleAssetReadOnlyDataAccessIssuer";
+    }
+
+    public String getApiAssetWriteAccessIssuer() {
+        return backendId + "/apiAssetWriteAccessIssuer";
     }
 }

@@ -17,10 +17,11 @@
 package org.factoryx.library.connector.embedded.provider.service.helpers;
 
 import jakarta.json.Json;
-import jakarta.json.JsonObject;
 import lombok.extern.slf4j.Slf4j;
+import org.factoryx.library.connector.embedded.provider.interfaces.DataAsset;
 import org.factoryx.library.connector.embedded.provider.interfaces.DspPolicyService;
 import org.factoryx.library.connector.embedded.provider.interfaces.DspTokenProviderService;
+import org.factoryx.library.connector.embedded.provider.model.DspVersion;
 import org.factoryx.library.connector.embedded.provider.model.negotiation.NegotiationRecord;
 import org.factoryx.library.connector.embedded.provider.model.negotiation.NegotiationState;
 import org.factoryx.library.connector.embedded.provider.service.NegotiationRecordService;
@@ -30,9 +31,11 @@ import org.springframework.web.client.RestClient;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
 import java.util.UUID;
 
-import static org.factoryx.library.connector.embedded.provider.service.helpers.JsonUtils.FULL_CONTEXT;
+import static org.factoryx.library.connector.embedded.provider.interfaces.DspPolicyService.isEmpty;
+import static org.factoryx.library.connector.embedded.provider.service.helpers.JsonUtils.prettyPrint;
 
 /**
  * This class represents a task to send a ContractAgreed message in the
@@ -40,7 +43,6 @@ import static org.factoryx.library.connector.embedded.provider.service.helpers.J
  * new contract request has been received by a consumer partner.
  *
  * @author eschrewe
- *
  */
 @Slf4j
 public class SendContractAgreedTask implements Runnable {
@@ -50,16 +52,20 @@ public class SendContractAgreedTask implements Runnable {
     private final EnvService envService;
     private final DspTokenProviderService dspTokenProviderService;
     private final DspPolicyService dspPolicyService;
-
+    private final DspVersion dspVersion;
+    private final DataAsset dataAsset;
 
     public SendContractAgreedTask(UUID negotiationId, NegotiationRecordService negotiationRecordService, RestClient restClient,
-                                  EnvService envService, DspTokenProviderService dspTokenProviderService, DspPolicyService dspPolicyService) {
+                                  EnvService envService, DspTokenProviderService dspTokenProviderService, DspPolicyService dspPolicyService,
+                                  DspVersion dspVersion, DataAsset dataAsset) {
         this.negotiationId = negotiationId;
         this.negotiationRecordService = negotiationRecordService;
         this.restClient = restClient;
         this.envService = envService;
         this.dspTokenProviderService = dspTokenProviderService;
         this.dspPolicyService = dspPolicyService;
+        this.dspVersion = dspVersion;
+        this.dataAsset = dataAsset;
     }
 
     @Override
@@ -79,28 +85,41 @@ public class SendContractAgreedTask implements Runnable {
         }
 
         negotiationRecord = negotiationRecordService.updateNegotiationRecordToState(negotiationId, NegotiationState.AGREED);
-
         String targetURL = negotiationRecord.getPartnerDspUrl() + "/negotiations/" + negotiationRecord.getConsumerPid() + "/agreement";
         String requestBody = buildContractAgreedMessage(negotiationRecord);
-        log.debug("Created contract agreed request body: {}", requestBody);
-        restClient
-                .post()
-                .uri(targetURL)
-                .header("Content-Type", "application/json")
-                .header("Authorization", dspTokenProviderService.provideTokenForPartner(negotiationRecord))
-                .body(requestBody)
-                .retrieve()
-                .onStatus(HttpStatusCode::isError,
-                        (request, resp) -> {
-                            log.warn("Error sending AGREED MESSAGE to {} for {}", targetURL, negotiationId);
-                            log.warn("Status code: {}", resp.getStatusCode());
-                            log.warn("Body: {}", requestBody);
-                        })
-                .onStatus(HttpStatusCode::is2xxSuccessful,
-                        (request, resp) -> {
-                            log.info("Successfully sent AGREED MESSAGE to {} for {}!", targetURL, negotiationId);
-                        })
-                .toBodilessEntity();
+        log.debug("Created contract agreed request body: \n{}", prettyPrint(requestBody));
+
+
+        try {
+            restClient
+                    .post()
+                    .uri(targetURL)
+                    .header("Content-Type", "application/json")
+                    .header("Authorization", dspTokenProviderService.provideTokenForPartner(negotiationRecord))
+                    .body(requestBody)
+                    .retrieve()
+                    .onStatus(HttpStatusCode::isError,
+                            (request, resp) -> {
+                                log.warn("Error sending AGREED MESSAGE to {} for {}", targetURL, negotiationId);
+                                log.warn("Status code: {}", resp.getStatusCode());
+                                var respBytes = resp.getBody().readAllBytes();
+                                try {
+                                    log.warn("Response from consumer\n{}", prettyPrint(new String(respBytes)));
+                                } catch (Exception e) {
+                                    log.warn("Response from consumer\n{}", new String(respBytes));
+                                    log.warn("As bytes: {}", Arrays.toString(respBytes));
+                                }
+                                log.warn("Body: \n{}", prettyPrint(requestBody));
+                            })
+                    .onStatus(HttpStatusCode::is2xxSuccessful,
+                            (request, resp) -> {
+                                log.info("Successfully sent AGREED MESSAGE to {} for {}!", targetURL, negotiationId);
+                                log.info("Body: \n{}", prettyPrint(requestBody));
+                            })
+                    .toBodilessEntity();
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+        }
     }
 
     private final static DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'");
@@ -110,25 +129,36 @@ public class SendContractAgreedTask implements Runnable {
     }
 
     private String buildContractAgreedMessage(NegotiationRecord record) {
-        JsonObject agreementObject = Json.createObjectBuilder()
-                .add("@type", "odrl:Agreement")
+        String odrlPrefix = dspVersion.ordinal() < DspVersion.V_2025_1.ordinal() ? "odrl:" : "";
+        String dspacePrefix = dspVersion.ordinal() < DspVersion.V_2025_1.ordinal() ? "dspace:" : "";
+        var agreementBuilder = Json.createObjectBuilder()
+                .add("@type", odrlPrefix + "Agreement")
                 .add("@id", record.getContractId().toString())
-                .add("odrl:target", record.getTargetAssetId())
-                .add("dspace:timestamp", getTimestampForZuluTimeZone())
-                .add("odrl:assignee", record.getPartnerId())
-                .add("odrl:assigner", envService.getBackendId())
-                .add("odrl:permission", dspPolicyService.getPermission(record.getTargetAssetId(), record.getPartnerId()))
-                .add("odrl:prohibition", dspPolicyService.getProhibition(record.getTargetAssetId(), record.getPartnerId()))
-                .add("odrl:obligation", dspPolicyService.getObligation(record.getTargetAssetId(), record.getPartnerId()))
-                .build();
-        return Json.createObjectBuilder()
-                .add("@context", FULL_CONTEXT)
-                .add("@type", "dspace:ContractAgreementMessage")
-                .add("dspace:consumerPid", record.getConsumerPid())
-                .add("dspace:providerPid", record.getOwnPid().toString())
-                .add("dspace:callbackAddress", envService.getOwnDspUrl())
-                .add("dspace:agreement", agreementObject)
-                .build()
-                .toString();
+                .add(odrlPrefix + "target", record.getTargetAssetId())
+                .add(dspacePrefix + "timestamp", getTimestampForZuluTimeZone())
+                .add(odrlPrefix + "assignee", record.getPartnerId())
+                .add(odrlPrefix + "assigner", envService.getBackendId());
+        var permission = dspPolicyService.getPermission(dataAsset, record.getPartnerId(), dspVersion);
+        if (permission != null && !isEmpty(permission)) {
+            agreementBuilder.add(odrlPrefix + "permission", permission);
+        }
+        var prohibition = dspPolicyService.getProhibition(dataAsset, record.getPartnerId(), dspVersion);
+        if (prohibition != null && !isEmpty(prohibition)) {
+            agreementBuilder.add(odrlPrefix + "prohibition", prohibition);
+        }
+        var obligation = dspPolicyService.getObligation(dataAsset, record.getPartnerId(), dspVersion);
+        if (obligation != null && !isEmpty(prohibition)) {
+            agreementBuilder.add(odrlPrefix + "obligation", obligation);
+        }
+        var builder = Json.createObjectBuilder()
+                .add("@context", JsonUtils.getContextForDspVersion(dspVersion))
+                .add("@type", dspacePrefix + "ContractAgreementMessage")
+                .add(dspacePrefix + "consumerPid", record.getConsumerPid())
+                .add(dspacePrefix + "providerPid", record.getOwnPid().toString())
+                .add(dspacePrefix + "agreement", agreementBuilder);
+        if (dspVersion.ordinal() < DspVersion.V_2025_1.ordinal()) {
+            builder.add(dspacePrefix + "callbackAddress", envService.getOwnDspUrl());
+        }
+        return builder.build().toString();
     }
 }

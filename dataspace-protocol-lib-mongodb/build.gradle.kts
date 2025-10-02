@@ -40,6 +40,7 @@ tasks.jar {
     from({
         configurations.runtimeClasspath.get().map { if (it.isDirectory) it else zipTree(it) }
     })
+    exclude("META-INF/*.SF", "META-INF/*.DSA", "META-INF/*.RSA", "META-INF/INDEX.LIST")
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }
 

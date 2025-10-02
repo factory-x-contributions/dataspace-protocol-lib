@@ -34,8 +34,8 @@ import java.util.UUID;
  */
 public class NegotiationRecordService implements ContractRecordService {
 
-    private final NegotiationRecordFactory recordFactory;
-    private final NegotiationRecordRepository repository;
+    protected final NegotiationRecordFactory recordFactory;
+    protected final NegotiationRecordRepository repository;
 
     public NegotiationRecordService(NegotiationRecordFactory recordFactory, NegotiationRecordRepository repository) {
         this.repository = repository;

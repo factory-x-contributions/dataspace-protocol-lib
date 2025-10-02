@@ -27,6 +27,19 @@ tasks {
 
     jar {
         enabled = true
+        manifest {
+            attributes(
+                "Implementation-Title" to "dataspace-protocol-lib-sql",
+                "Implementation-Version" to libVersion
+            )
+        }
+
+        from({
+            configurations.runtimeClasspath.get().map { if (it.isDirectory) it else zipTree(it) }
+        })
+
+        exclude("META-INF/*.SF", "META-INF/*.DSA", "META-INF/*.RSA", "META-INF/INDEX.LIST")
+        duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     }
 }
 

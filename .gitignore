@@ -35,3 +35,9 @@ out/
 
 ### VS Code ###
 .vscode/
+
+### Logging Output ###
+/dsp-lib/src/test/resources/tck-logs/
+
+### Test Secrets ###
+/testsecrets

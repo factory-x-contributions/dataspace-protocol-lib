@@ -16,6 +16,8 @@
 
 package org.factoryx.library.connector.embedded.provider.interfaces;
 
+import jakarta.json.JsonValue;
+
 import java.util.Map;
 
 public interface DspTokenValidationService {
@@ -29,6 +31,14 @@ public interface DspTokenValidationService {
      *
      */
     Map<String, String> validateToken(String token);
+
+    default JsonValue getAuthInfo() {
+        return null;
+    }
+
+    default JsonValue getIdentifierTypeInfo() {
+        return null;
+    }
 
     enum ReservedKeys {
         /**
