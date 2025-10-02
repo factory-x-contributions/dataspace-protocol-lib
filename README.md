@@ -182,3 +182,26 @@ But please note that you need to provide secrets via a source file with valid da
 ## License
 Distributed under the Apache 2.0 License.
 See [LICENSE](./LICENSE) for more information.
+
+<!-- MARKDOWN LINKS & IMAGES -->
+<!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
+
+[contributors-shield]: https://img.shields.io/github/contributors/factory-x-contributions/dataspace-protocol-lib.svg?style=for-the-badge
+
+[contributors-url]: https://github.com/factory-x-contributions/dataspace-protocol-lib/graphs/contributors
+
+[stars-shield]: https://img.shields.io/github/stars/factory-x-contributions/dataspace-protocol-lib.svg?style=for-the-badge
+
+[stars-url]: https://github.com/factory-x-contributions/dataspace-protocol-lib/stargazers
+
+[license-shield]: https://img.shields.io/github/license/factory-x-contributions/dataspace-protocol-lib.svg?style=for-the-badge
+
+[license-url]: https://github.com/factory-x-contributions/dataspace-protocol-lib/blob/main/LICENSE
+
+[release-shield]: https://img.shields.io/github/v/release/factory-x-contributions/dataspace-protocol-lib.svg?style=for-the-badge
+
+[release-url]: https://github.com/factory-x-contributions/dataspace-protocol-lib/releases
+
+[build-badge]: https://github.com/factory-x-contributions/dataspace-protocol-lib/actions/workflows/backend-ci.yml/badge.svg
+
+[build-url]: https://github.com/factory-x-contributions/dataspace-protocol-lib/actions/workflows/backend-ci.yml
