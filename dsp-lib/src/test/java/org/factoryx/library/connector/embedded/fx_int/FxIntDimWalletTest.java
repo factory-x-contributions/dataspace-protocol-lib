@@ -73,9 +73,7 @@ public class FxIntDimWalletTest {
         registry.add("org.factoryx.library.validationservice", () -> "fxv0_1");
         registry.add("org.factoryx.library.validationservice.stsapi", () -> "dim-wallet");
         registry.add("org.factoryx.library.fxv01.vaultsecreturl", () -> "http://localhost:8200/v1/secret/data/providerdimsecret");
-//        registry.add("org.factoryx.library.fxv01.vaulturl", () -> "http://localhost:8200");
         registry.add("org.factoryx.library.fxv01.vaultroottoken", () -> "root");
-//        registry.add("org.factoryx.library.fxv01.vaultsecretalias", () -> "providerdimsecret");
         registry.add("org.factoryx.library.id", () -> PROV_DID_WEB);
         registry.add("org.factoryx.library.fxv01.dimtokenurl", () -> PROV_DIM_TOKENURL);
         registry.add("org.factoryx.library.fxv01.dimclientid", () -> PROV_DIM_CLIENTID);
