@@ -72,15 +72,15 @@ public class FxIntDimWalletTest {
         registry.add("org.factoryx.library.policyservice", () -> "fxv0_1");
         registry.add("org.factoryx.library.validationservice", () -> "fxv0_1");
         registry.add("org.factoryx.library.validationservice.stsapi", () -> "dim-wallet");
-        registry.add("org.factoryx.library.fxv01.vaulturl", () -> "http://localhost:8200");
+        registry.add("org.factoryx.library.fxv01.vaultsecreturl", () -> "http://localhost:8200/v1/secret/data/providerdimsecret");
         registry.add("org.factoryx.library.fxv01.vaultroottoken", () -> "root");
-        registry.add("org.factoryx.library.fxv01.vaultsecretalias", () -> "providerdimsecret");
         registry.add("org.factoryx.library.id", () -> PROV_DID_WEB);
         registry.add("org.factoryx.library.fxv01.dimtokenurl", () -> PROV_DIM_TOKENURL);
         registry.add("org.factoryx.library.fxv01.dimclientid", () -> PROV_DIM_CLIENTID);
         registry.add("org.factoryx.library.fxv01.dimurl", () -> PROV_DIM_URL);
         registry.add("org.factoryx.library.fxv01.trustedissuer", () -> TRUSTED_ISSUER);
         registry.add("org.factoryx.library.fxv01.bearer", () -> "false");
+        registry.add("org.factoryx.library.fxv01.https", () -> "true");
     }
 
     @Autowired
@@ -245,7 +245,7 @@ public class FxIntDimWalletTest {
             .withPassword("password");
 
     @Container
-    final static GenericContainer<?> FX_EDC_CONTAINER = new GenericContainer<>("ghcr.io/factory-x-contributions/edc-controlplane-postgresql-hashicorp-vault:0.1.2")
+    final static GenericContainer<?> FX_EDC_CONTAINER = new GenericContainer<>("ghcr.io/factory-x-contributions/edc-controlplane-postgresql-hashicorp-vault:0.2.0")
             .withNetwork(DOCKER_NET)
             .withNetworkAliases("consumer-controlplane")
             .withExposedPorts(9000, 9010, 9020, 9030, 9040, 9050, 9060)

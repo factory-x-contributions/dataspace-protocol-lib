@@ -46,11 +46,8 @@ public class FXv0_1_DimWalletTokenProviderService extends FXv0_1_AbstractTokenPr
     @Value("${org.factoryx.library.fxv01.vaultroottoken:root}")
     private String vaultRootToken;
 
-    @Value("${org.factoryx.library.fxv01.vaulturl:http://provider-vault:8200}")
-    private String vaultBaseUrl;
-
-    @Value("${org.factoryx.library.fxv01.vaultsecretalias:did%3Aweb%3Aprovider-identityhub%253A7083%3Aprovider-sts-client-secret}")
-    private String vaultSecretAlias;
+    @Value("${org.factoryx.library.fxv01.vaultsecreturl:http://provider-vault:8200/v1/secret/data/myVaultAlias}")
+    private String vaultSecretUrl;
 
     @Value("${org.factoryx.library.fxv01.dimtokenurl:http://my-dim-token-url}")
     private String dimTokenUrl;
@@ -141,9 +138,8 @@ public class FXv0_1_DimWalletTokenProviderService extends FXv0_1_AbstractTokenPr
 
     String obtainDimAccessToken() {
         if (dimTokenAccessSecret == null) {
-            String vaultRequestUrl = vaultBaseUrl + "/v1/secret/data/" + vaultSecretAlias;
             String vaultResponse = restClient.get()
-                    .uri(vaultRequestUrl)
+                    .uri(vaultSecretUrl)
                     .header("X-Vault-Token", vaultRootToken)
                     .retrieve()
                     .body(String.class);

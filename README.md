@@ -126,25 +126,27 @@ By default, the library is using the "/dsp/**" path. But you can configure this 
 
 Your importing project should provide the following properties: 
 
-| Property name                                 | Meaning                                                                                | Default setting                                                        |
-|-----------------------------------------------|----------------------------------------------------------------------------------------|------------------------------------------------------------------------|
-| org.factoryx.library.hostname                 | The dns name of the host, the application is running on.                               | localhost                                                              |
-| org.factoryx.library.usetls                   | boolean flag that indicates whether TLS is to be used                                  | false                                                                  |
-| org.factoryx.library.id                       | The id, that you are using in your dataspace                                           | provider                                                               |
-| org.factoryx.library.dspapiprefix             | The prefix that all library-related endpoints are using                                | /dsp                                                                   |
-| org.factoryx.library.usebuiltindataccess      | "false" disables the built-in dataacces (not recommended!)                             | true                                                                   | 
-| org.factoryx.library.alternativedataaccess    | set the host adress and path to an alternative data access endpoint (not recommended!) | http://localhost:9090/                                                              |
-| org.factoryx.library.validationservice        | set the type of validation for DSP (currently supported: "mock", "mvd")                | mock                                                                   |
-| org.factoryx.library.validationservice.stsapi | set the type of the api of your tokenprovider (either "dim-wallet" or "identityhub")   | <none>                                                                 |
-| org.factoryx.library.fxv01.trustedissuer      | set the ID of the fx trusted issuer                                                    | did:web:dataspace-issuer                                               | 
-| org.factoryx.library.fxv01.bearer             | toggle, whether a "Bearer" prefix is added in auth headers, you are sending            | false                                                                  |  
-| org.factoryx.library.fxv01.vaultroottoken     | set the token for authorizing access to the MVD provider vault                         | root                                                                   | 
-| org.factoryx.library.fxv01.vaulturl           | set the url for the vault vault that stores your shared secret for your id-service     | http://provider-vault:8200                                             | 
-| org.factoryx.library.fxv01.vaultsecretalias   | set the secret alias for accessing the provider STS                                    | did%3Aweb%3Aprovider-identityhub%253A7083%3Aprovider-sts-client-secret | 
-| org.factoryx.library.fxv01.dimtokenurl        | set the url of the oauth token endpoint, when dim-wallet is selected                   | http://provider-sts-service:8082/api/sts/token                         |
-| org.factoryx.library.fxv01.dimclientid        | set the id to be used against the oauth token provider, when dim-wallet is selected    | my-client-id                                                           |
-| org.factoryx.library.fxv01.dimurl             | set the url of your dim-wallet, when dim-wallet is selected                            | http://my-dim-url                                                      | 
-| org.factoryx.library.fxv01.identityhub.url    | set  the url of the token endpoint on your id-hub, when identityhub is selected        | http://provider-sts-service:8082/api/sts/token                         |                                                                                    
+| Property name                                 | Meaning                                                                                | Default setting                                        |
+|-----------------------------------------------|----------------------------------------------------------------------------------------|--------------------------------------------------------|
+| org.factoryx.library.hostname                 | The dns name of the host, the application is running on.                               | localhost                                              |
+| org.factoryx.library.usetls                   | boolean flag that indicates whether TLS is to be used                                  | false                                                  |
+| org.factoryx.library.id                       | The id, that you are using in your dataspace                                           | provider                                               |
+| org.factoryx.library.dspapiprefix             | The prefix that all library-related endpoints are using                                | /dsp                                                   |
+| org.factoryx.library.usebuiltindataccess      | "false" disables the built-in dataacces (not recommended!)                             | true                                                   | 
+| org.factoryx.library.alternativedataaccess    | set the host adress and path to an alternative data access endpoint (not recommended!) | http://localhost:9090/                                 |
+| org.factoryx.library.validationservice        | set the type of validation for DSP (currently supported: "mock", "mvd")                | mock                                                   |
+| org.factoryx.library.validationservice.stsapi | set the type of the api of your tokenprovider (either "dim-wallet" or "identityhub")   | <none>                                                 |
+| org.factoryx.library.fxv01.trustedissuer      | set the ID of the fx trusted issuer                                                    | did:web:dataspace-issuer                               | 
+| org.factoryx.library.fxv01.bearer             | toggle, whether a "Bearer" prefix is added in auth headers, you are sending            | false                                                  |  
+| org.factoryx.library.fxv01.vaultroottoken     | set the token for authorizing access to the MVD provider vault                         | root                                                   | 
+| org.factoryx.library.fxv01.vaultsecreturl     | set the url to the vault secret that stores your shared secret for your id-service     | http://provider-vault:8200/v1/secret/data/myVaultAlias |
+| org.factoryx.library.fxv01.dimtokenurl        | set the url of the oauth token endpoint, when dim-wallet is selected                   | http://provider-sts-service:8082/api/sts/token         |
+| org.factoryx.library.fxv01.dimclientid        | set the id to be used against the oauth token provider, when dim-wallet is selected    | my-client-id                                           |
+| org.factoryx.library.fxv01.dimurl             | set the url of your dim-wallet, when dim-wallet is selected                            | http://my-dim-url                                      | 
+| org.factoryx.library.fxv01.identityhub.url    | set  the url of the token endpoint on your id-hub, when identityhub is selected        | http://provider-sts-service:8082/api/sts/token         |                                                                                    
+| org.factoryx.library.fxv01.credentialscope    | set the scope of your verifiable credentials                                           | org.eclipse.tractusx.vc.type                           | 
+| org.factoryx.library.fxv01.credentials        | set the credential type(s). Multiple entries can be set separated by commas            | MembershipCredential                                   | 
+| org.factoryx.library.fxv01.https              | toggles, whether the external identity services are connected via https or http        | false                                                  | 
 
 
 

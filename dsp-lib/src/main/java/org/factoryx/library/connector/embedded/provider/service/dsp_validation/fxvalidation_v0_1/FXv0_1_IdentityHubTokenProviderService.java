@@ -28,17 +28,22 @@ public class FXv0_1_IdentityHubTokenProviderService extends FXv0_1_AbstractToken
     @Value("${org.factoryx.library.fxv01.vaultroottoken:root}")
     private String vaultRootToken;
 
-    @Value("${org.factoryx.library.fxv01.vaulturl:http://provider-vault:8200}")
-    private String vaultBaseUrl;
-
-    @Value("${org.factoryx.library.fxv01.vaultsecretalias:did%3Aweb%3Aprovider-identityhub%253A7083%3Aprovider-sts-client-secret}")
-    private String vaultSecretAlias;
+    @Value("${org.factoryx.library.fxv01.vaultsecreturl:http://provider-vault:8200/v1/secret/data/myVaultAlias}")
+    private String vaultSecretUrl;
 
     @Value("${org.factoryx.library.fxv01.identityhub.url:http://provider-sts-service:8082/api/sts/token}")
     private String identityHubTokenUrl;
 
     @Value("${org.factoryx.library.fxv01.bearer:false}")
     private boolean addBearer;
+
+    @Value("${org.factoryx.library.fxv01.credentialscope:org.eclipse.tractusx.vc.type}")
+    private String credentialScope;
+
+    @Value("${org.factoryx.library.fxv01.credentials:MembershipCredential}")
+    private String credentialTypeSetting;
+
+    private String preparedScope;
 
     /**
      * Is initialized at runtime via request to the vault
@@ -72,6 +77,17 @@ public class FXv0_1_IdentityHubTokenProviderService extends FXv0_1_AbstractToken
         return obtainSelfSignedSignatureFromSTS(requestBody);
     }
 
+    String getPreparedScope() {
+        if (this.preparedScope == null) {
+            var credentialTypes = credentialTypeSetting.replace(" ", "").strip().split(",");
+            StringBuilder builder = new StringBuilder();
+            for (String type : credentialTypes) {
+                builder.append(credentialScope).append(":").append(type).append(":read ");
+            }
+            preparedScope = builder.toString().strip();
+        }
+        return preparedScope;
+    }
 
 
     private String provideTokenForPartner(String partnerDid) {
@@ -80,7 +96,7 @@ public class FXv0_1_IdentityHubTokenProviderService extends FXv0_1_AbstractToken
         requestBody.add("client_secret", stsSecret);
         requestBody.add("client_id", envService.getBackendId());
         requestBody.add("audience", partnerDid);
-        requestBody.add("bearer_access_scope", "org.eclipse.edc.vc.type:MembershipCredential:read org.eclipse.edc.vc.type:DataProcessorCredential:read");
+        requestBody.add("bearer_access_scope", getPreparedScope());
         return obtainSelfSignedSignatureFromSTS(requestBody);
     }
 
@@ -90,13 +106,12 @@ public class FXv0_1_IdentityHubTokenProviderService extends FXv0_1_AbstractToken
      * interpreted as key-value pairs, notable keys include "token" or "bearer_access_scope". Also note, that potentially
      * we could provide multiple values for one key (that's why a "List" instead of a "Map" is used here).
      *
-
      * @return the token from the STS
      */
     String obtainSelfSignedSignatureFromSTS(MultiValueMap<String, String> requestBody) {
         if (stsSecret == null) {
             String vaultResponse = restClient.get()
-                    .uri(vaultBaseUrl + "/v1/secret/data/" + vaultSecretAlias)
+                    .uri(vaultSecretUrl)
                     .header("X-Vault-Token", vaultRootToken)
                     .retrieve()
                     .body(String.class);

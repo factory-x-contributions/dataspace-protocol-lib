@@ -28,6 +28,7 @@ import jakarta.json.Json;
 import jakarta.json.JsonArray;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonString;
+import jakarta.json.JsonValue;
 import lombok.extern.slf4j.Slf4j;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.factoryx.library.connector.embedded.provider.interfaces.DspTokenValidationService;
@@ -85,12 +86,15 @@ public class FXv0_1_ValidationService implements DspTokenValidationService {
     @Value("${org.factoryx.library.fxv01.trustedissuer:did:web:dataspace-issuer}")
     private String TRUSTED_ISSUER;
 
+    @Value("${org.factoryx.library.fxv01.https:false}")
+    private boolean iamUseHttps;
+
     private final RestClient restClient;
     private final EnvService envService;
     private final FXv0_1_AbstractTokenProviderService fXv01TokenProviderService;
     private final BouncyCastleProvider bouncyCastleProvider = new BouncyCastleProvider();
 
-    public FXv0_1_ValidationService(RestClient restClient, EnvService envService, FXv0_1_DimWalletTokenProviderService fXv01TokenProviderService) {
+    public FXv0_1_ValidationService(RestClient restClient, EnvService envService, FXv0_1_AbstractTokenProviderService fXv01TokenProviderService) {
         this.restClient = restClient;
         this.envService = envService;
         this.fXv01TokenProviderService = fXv01TokenProviderService;
@@ -218,7 +222,8 @@ public class FXv0_1_ValidationService implements DspTokenValidationService {
         String url = partnerDid.replace("did:web:", "");
         url = url.replace(":", "/");
         url = url.replace("%3A", ":");
-        url = "https://" + url;
+        String schema = iamUseHttps ? "https://" :  "http://";
+        url = schema + url;
         URI uri = URI.create(url);
         uri = uri.getPath().isEmpty() ? uri.resolve("/.well-known/did.json") : URI.create(url + "/did.json");
         String didDocResponse = restClient.get()
@@ -328,7 +333,13 @@ public class FXv0_1_ValidationService implements DspTokenValidationService {
             log.info("Got Response from CredentialService \n{}", prettyPrint(credServiceResponseJson));
             boolean vcExpectationSatisfied = false;
             if (credServiceResponseJson.getString("type").equals("PresentationResponseMessage")) {
-                JsonArray presentationsArray = credServiceResponseJson.getJsonArray("presentation");
+                JsonValue presentationsValue = credServiceResponseJson.get("presentation");
+                JsonArray presentationsArray;
+                if (presentationsValue instanceof JsonArray array) {
+                    presentationsArray = array;
+                } else {
+                    presentationsArray = Json.createArrayBuilder().add(presentationsValue).build();
+                }
                 for (var item : presentationsArray) {
                     if (item instanceof JsonString jsonString) {
                         String presentationToken = jsonString.getString();
@@ -405,9 +416,17 @@ public class FXv0_1_ValidationService implements DspTokenValidationService {
     private String getPresentationQuery() {
         var presentationQuery = Json.createObjectBuilder();
         var context = Json.createArrayBuilder();
-        context.add("https://w3id.org/dspace-dcp/v1.0/dcp.jsonld");
+        context.add("https://w3id.org/tractusx-trust/v0.8");
+        context.add("https://identity.foundation/presentation-exchange/submission/v1");
         presentationQuery.add("@context", context.build());
         presentationQuery.add("type", "PresentationQueryMessage");
+        if (fXv01TokenProviderService instanceof FXv0_1_IdentityHubTokenProviderService service) {
+            var scopesArray = Json.createArrayBuilder();
+            for (var scope : service.getPreparedScope().split(" ")) {
+                scopesArray.add(scope);
+            }
+            presentationQuery.add("scope", scopesArray);
+        }
         return presentationQuery.build().toString();
     }
 
