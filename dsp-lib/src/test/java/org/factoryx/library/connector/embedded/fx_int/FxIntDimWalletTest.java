@@ -70,17 +70,17 @@ public class FxIntDimWalletTest {
     @DynamicPropertySource
     static void registerProps(DynamicPropertyRegistry registry) {
         registry.add("org.factoryx.library.policyservice", () -> "fxv0_1");
-        registry.add("org.factoryx.library.validationservice", () -> "fxv0_1");
-        registry.add("org.factoryx.library.validationservice.stsapi", () -> "dim-wallet");
-        registry.add("org.factoryx.library.fxv01.vaultsecreturl", () -> "http://localhost:8200/v1/secret/data/providerdimsecret");
-        registry.add("org.factoryx.library.fxv01.vaultroottoken", () -> "root");
+        registry.add("org.factoryx.library.dcpvalidation", () -> "fxv0_1");
+        registry.add("org.factoryx.library.dcpvalidation.stsapi", () -> "dim-wallet");
+        registry.add("org.factoryx.library.dcpvalidation.vaultsecreturl", () -> "http://localhost:8200/v1/secret/data/providerdimsecret");
+        registry.add("org.factoryx.library.dcpvalidation.vaultroottoken", () -> "root");
         registry.add("org.factoryx.library.id", () -> PROV_DID_WEB);
-        registry.add("org.factoryx.library.fxv01.dimtokenurl", () -> PROV_DIM_TOKENURL);
-        registry.add("org.factoryx.library.fxv01.dimclientid", () -> PROV_DIM_CLIENTID);
-        registry.add("org.factoryx.library.fxv01.dimurl", () -> PROV_DIM_URL);
-        registry.add("org.factoryx.library.fxv01.trustedissuer", () -> TRUSTED_ISSUER);
-        registry.add("org.factoryx.library.fxv01.bearer", () -> "false");
-        registry.add("org.factoryx.library.fxv01.https", () -> "true");
+        registry.add("org.factoryx.library.dcpvalidation.dimtokenurl", () -> PROV_DIM_TOKENURL);
+        registry.add("org.factoryx.library.dcpvalidation.dimclientid", () -> PROV_DIM_CLIENTID);
+        registry.add("org.factoryx.library.dcpvalidation.stsurl", () -> PROV_DIM_URL);
+        registry.add("org.factoryx.library.dcpvalidation.trustedissuers", () -> TRUSTED_ISSUER);
+        registry.add("org.factoryx.library.dcpvalidation.addbearer", () -> "false");
+        registry.add("org.factoryx.library.dcpvalidation.https", () -> "true");
     }
 
     @Autowired
@@ -103,7 +103,7 @@ public class FxIntDimWalletTest {
                 .header("Content-Type", "application/json")
                 .header("x-api-password", "mypw")
                 .retrieve()
-                .onStatus(HttpStatusCode::isError, (request, resp) -> log.info("Status: {}", resp.getStatusCode()))
+                .onStatus(HttpStatusCode::isError, (request, resp) -> log.info("<1> Status Code: {}", resp.getStatusCode()))
                 .body(String.class);
         var catalogObject = parse(catalogResponse);
         var targetDatasetObject = catalogObject.getJsonArray("dcat:dataset").getJsonObject(0);
@@ -124,7 +124,7 @@ public class FxIntDimWalletTest {
                 .header("Content-Type", "application/json")
                 .header("x-api-password", "mypw")
                 .retrieve()
-                .onStatus(HttpStatusCode::isError, (request, resp) -> log.warn("Status code: {}", resp.getStatusCode()))
+                .onStatus(HttpStatusCode::isError, (request, resp) -> log.warn("<2> Status Code: {}", resp.getStatusCode()))
                 .body(String.class);
 
         // obtain negotiation id
@@ -143,7 +143,7 @@ public class FxIntDimWalletTest {
                     .uri(negotiationStatusApi)
                     .header("x-api-password", "mypw")
                     .retrieve()
-                    .onStatus(HttpStatusCode::isError, (request, resp) -> log.warn("Status code: {}", resp.getStatusCode()))
+                    .onStatus(HttpStatusCode::isError, (request, resp) -> log.warn("<3> Status Code: {}", resp.getStatusCode()))
                     .body(String.class);
             var statusRequestResponseObject = parse(statusResponse);
             if ("FINALIZED".equalsIgnoreCase(statusRequestResponseObject.getString("state"))) {
@@ -165,7 +165,7 @@ public class FxIntDimWalletTest {
                 .header("Content-Type", "application/json")
                 .header("x-api-password", "mypw")
                 .retrieve()
-                .onStatus(HttpStatusCode::isError, (request, resp) -> log.warn("Status code: {}", resp.getStatusCode()))
+                .onStatus(HttpStatusCode::isError, (request, resp) -> log.warn("<4> Status Code: {}", resp.getStatusCode()))
                 .body(String.class);
         // extract transfer id
         var transferResponseObject = parse(transferRequestResponse);
@@ -183,7 +183,7 @@ public class FxIntDimWalletTest {
                         .uri(edrsApi)
                         .header("x-api-password", "mypw")
                         .retrieve()
-                        .onStatus(HttpStatusCode::isError, (request, resp) -> log.warn("Status code: {}", resp.getStatusCode()))
+                        .onStatus(HttpStatusCode::isError, (request, resp) -> log.warn("<5> Status Code: {}", resp.getStatusCode()))
                         .body(String.class);
 
                 var edrResponseObject = parse(edrResponse);
@@ -202,7 +202,7 @@ public class FxIntDimWalletTest {
                 .uri(URI.create(edrEndpoint))
                 .header("authorization", authToken)
                 .retrieve()
-                .onStatus(HttpStatusCode::isError, (request, resp) -> log.warn("Status code: {}", resp.getStatusCode()))
+                .onStatus(HttpStatusCode::isError, (request, resp) -> log.warn("<6> Status Code: {}", resp.getStatusCode()))
                 .body(String.class);
         var assetObject = parse(assetFetch);
         String foundAssetId = assetObject.getString("id");

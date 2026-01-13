@@ -25,9 +25,6 @@ import org.factoryx.library.connector.embedded.provider.service.helpers.EnvServi
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
-@Service
-@Slf4j
-@ConditionalOnProperty(name = "org.factoryx.library.validationservice", havingValue = "mock", matchIfMissing = true)
 public class MockTokenProviderService implements DspTokenProviderService {
 
     private final EnvService envService;
