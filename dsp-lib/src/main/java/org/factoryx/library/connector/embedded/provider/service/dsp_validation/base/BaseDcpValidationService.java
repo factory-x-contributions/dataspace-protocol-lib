@@ -55,6 +55,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
 
@@ -101,7 +102,7 @@ public abstract class BaseDcpValidationService implements DspTokenValidationServ
                                         Instant lastUpdated) implements CacheEntryWithUpdatedInstant {
     }
 
-    private Instant nextCacheCleanup;
+    private final ReentrantReadWriteLock cacheLock = new ReentrantReadWriteLock();
 
     /**
      * Cache for seen jti's. The attached value represents the timestamp, after which the
@@ -147,9 +148,7 @@ public abstract class BaseDcpValidationService implements DspTokenValidationServ
         String issuerValue = environment.getProperty("org.factoryx.library.dcpvalidation.trustedissuers", "");
         TRUSTED_ISSUERS = Arrays.stream(issuerValue.replace(" ", "").split(",")).collect(Collectors.toSet());
         log.info("Trusted issuers: {}", TRUSTED_ISSUERS);
-        long cacheUpdateHours = environment.getProperty("org.factoryx.library.dcpvalidation.cacheupdate.hours", Long.class, 24L);
-        this.cacheUpdateInterval = Duration.ofHours(cacheUpdateHours);
-        this.nextCacheCleanup = Instant.now().plus(this.cacheUpdateInterval);
+        this.cacheUpdateInterval =  environment.getProperty("org.factoryx.library.dcpvalidation.cacheupdate.interval", Duration.class, Duration.ofHours(24));
     }
 
     /**
@@ -173,7 +172,7 @@ public abstract class BaseDcpValidationService implements DspTokenValidationServ
 
     @Override
     public Map<String, String> validateToken(String token) {
-        checkCleanups();
+        cacheLock.readLock().lock();
         try {
             if ("Bearer ".equalsIgnoreCase(token.substring(0, 7))) {
                 token = token.substring(7);
@@ -209,6 +208,8 @@ public abstract class BaseDcpValidationService implements DspTokenValidationServ
         } catch (Exception e) {
             log.error("Failure while validating token {}", token, e);
             return Map.of();
+        } finally {
+            cacheLock.readLock().unlock();
         }
     }
 
@@ -609,14 +610,16 @@ public abstract class BaseDcpValidationService implements DspTokenValidationServ
      * In order to keep the memory usage under control by getting rid of outdated data, the caches will be purged after
      * a certain timespan (currently: 1 day).
      */
-    private void checkCleanups() {
-        if (Instant.now().isBefore(nextCacheCleanup)) {
-            return;
+    void doCleanups() {
+        cacheLock.writeLock().lock();
+        try {
+            log.info("Doing scheduled cache cleanup (configured interval is {} minutes)", cacheUpdateInterval.toMinutes());
+            cleanUpSeenJtis();
+            cleanUpCache(revocationCache);
+            cleanUpCache(didDocumentsCache);
+        } finally {
+            cacheLock.writeLock().unlock();
         }
-        cleanUpSeenJtis();
-        cleanUpCache(revocationCache);
-        cleanUpCache(didDocumentsCache);
-        nextCacheCleanup = Instant.now().plus(cacheUpdateInterval);
     }
 
     private void cleanUpCache(Map<String, ? extends CacheEntryWithUpdatedInstant> cache) {
