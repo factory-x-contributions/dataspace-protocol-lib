@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024. Fraunhofer-Gesellschaft zur Foerderung der angewandten Forschung e.V. (represented by Fraunhofer ISST)
+ * Copyright (c) 2026. Fraunhofer-Gesellschaft zur Foerderung der angewandten Forschung e.V. (represented by Fraunhofer ISST)
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -14,92 +14,53 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-package org.factoryx.library.connector.embedded.provider.service.dsp_validation.fxvalidation_v0_1;
+package org.factoryx.library.connector.embedded.provider.service.dsp_validation.base;
 
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import lombok.extern.slf4j.Slf4j;
-import org.factoryx.library.connector.embedded.provider.model.negotiation.NegotiationRecord;
-import org.factoryx.library.connector.embedded.provider.model.transfer.TransferRecord;
 import org.factoryx.library.connector.embedded.provider.service.helpers.EnvService;
 import org.factoryx.library.connector.embedded.provider.service.helpers.JsonUtils;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
+import org.springframework.core.env.Environment;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
-import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestClient;
 
 import static org.factoryx.library.connector.embedded.provider.service.helpers.JsonUtils.parse;
-import static org.factoryx.library.connector.embedded.provider.service.helpers.JsonUtils.prettyPrint;
 
-@Service
 @Slf4j
-@ConditionalOnExpression("'${org.factoryx.library.validationservice:}'=='fxv0_1' and '${org.factoryx.library.validationservice.stsapi:}'=='dim-wallet'")
-public class FXv0_1_DimWalletTokenProviderService extends FXv0_1_AbstractTokenProviderService {
+public class DefaultDimWalletTokenProviderService extends BaseTokenProviderService {
 
-    private final EnvService envService;
-    private final RestClient restClient;
-
-    @Value("${org.factoryx.library.fxv01.vaultroottoken:root}")
-    private String vaultRootToken;
-
-    @Value("${org.factoryx.library.fxv01.vaultsecreturl:http://provider-vault:8200/v1/secret/data/myVaultAlias}")
-    private String vaultSecretUrl;
-
-    @Value("${org.factoryx.library.fxv01.dimtokenurl:http://my-dim-token-url}")
     private String dimTokenUrl;
-
-    @Value("${org.factoryx.library.fxv01.dimclientid:my-client-id}")
     private String dimClientId;
 
-    @Value("${org.factoryx.library.fxv01.dimurl:http://my-dim-url}")
-    private String dimUrl;
-
-    @Value("${org.factoryx.library.fxv01.bearer:false}")
-    private boolean addBearer;
-
-    /**
-     * Is initialized at runtime via request to the vault
-     */
-    private String dimTokenAccessSecret;
-
-    public FXv0_1_DimWalletTokenProviderService(EnvService envService, RestClient restClient) {
-        this.envService = envService;
-        this.restClient = restClient;
+    public DefaultDimWalletTokenProviderService(RestClient restClient, Environment environment, EnvService envService) {
+        super(restClient, environment, envService);
+        dimTokenUrl = environment.getProperty("org.factoryx.library.dcpvalidation.dimtokenurl", "http://my-dim-token-url");
+        dimClientId = environment.getProperty("org.factoryx.library.dcpvalidation.dimclientid", "my-client-id");
     }
 
     @Override
-    public String provideTokenForPartner(NegotiationRecord record) {
-        return (addBearer ? "Bearer " : "") + provideTokenForPartner(record.getPartnerId());
-    }
-
-    @Override
-    public String provideTokenForPartner(TransferRecord record) {
-        return (addBearer ? "Bearer " : "") + provideTokenForPartner(record.getPartnerId());
-    }
-
-    private String provideTokenForPartner(String partnerDid) {
-
+    protected String provideTokenForPartner(String partnerId) {
         JsonObject payload = Json.createObjectBuilder()
                 .add("grantAccess", Json.createObjectBuilder()
                         .add("scope", "read")
                         .add("credentialTypes", Json.createArrayBuilder()
                                 .add("VerifiableCredential")
                                 .add("MembershipCredential"))
-                        .add("consumerDid", envService.getBackendId())
-                        .add("providerDid", partnerDid)
+                        .add("consumerDid", backendId)
+                        .add("providerDid", partnerId)
                         .build()).build();
         return obtainSelfSignedSignatureFromSTS(payload.toString());
     }
 
-    String getWrappedToken(String partnerDid, String tokenFromPartner) {
+    public String getWrappedToken(String partnerDid, String tokenFromPartner) {
         JsonObject payload = Json.createObjectBuilder()
                 .add("signToken", Json.createObjectBuilder()
-                        .add("issuer", envService.getBackendId())
-                        .add("subject", envService.getBackendId())
+                        .add("issuer", backendId)
+                        .add("subject", backendId)
                         .add("audience", partnerDid)
                         .add("token", tokenFromPartner)
                         .build()).build();
@@ -117,9 +78,8 @@ public class FXv0_1_DimWalletTokenProviderService extends FXv0_1_AbstractTokenPr
      */
     private String obtainSelfSignedSignatureFromSTS(String payload) {
         String dimCurrentToken = obtainDimAccessToken();
-        log.info("Sending \n{}", prettyPrint(payload));
         String dimResponse = restClient.post()
-                .uri(dimUrl)
+                .uri(stsUrl)
                 .contentType(MediaType.APPLICATION_JSON)
                 .header("Authorization", "Bearer " + dimCurrentToken)
                 .body(payload)
@@ -131,29 +91,28 @@ public class FXv0_1_DimWalletTokenProviderService extends FXv0_1_AbstractTokenPr
                     log.info("dim request status: " + res.getStatusCode());
                 })
                 .body(String.class);
-        log.info("dim response: \n{}", dimResponse);
         var stsResponseObject = JsonUtils.parse(dimResponse);
         return stsResponseObject.getString("jwt");
     }
 
-    String obtainDimAccessToken() {
-        if (dimTokenAccessSecret == null) {
+    private String obtainDimAccessToken() {
+        if (initialSecret == null) {
             String vaultResponse = restClient.get()
                     .uri(vaultSecretUrl)
                     .header("X-Vault-Token", vaultRootToken)
                     .retrieve()
                     .body(String.class);
             JsonObject vaultResponseJson = parse(vaultResponse);
-            dimTokenAccessSecret = vaultResponseJson.getJsonObject("data").getJsonObject("data").getString("content");
-            if (dimTokenAccessSecret != null) {
-                dimTokenAccessSecret = dimTokenAccessSecret.strip();
+            initialSecret = vaultResponseJson.getJsonObject("data").getJsonObject("data").getString("content");
+            if (initialSecret != null) {
+                initialSecret = initialSecret.strip();
                 log.info("dimTokenAccessSecret found");
             }
         }
         MultiValueMap<String, String> requestBody = new LinkedMultiValueMap<>();
         requestBody.add("grant_type", "client_credentials");
         requestBody.add("client_id", dimClientId);
-        requestBody.add("client_secret", dimTokenAccessSecret);
+        requestBody.add("client_secret", initialSecret);
         String dimTokenResponse = restClient.post()
                 .uri(dimTokenUrl)
                 .body(requestBody)

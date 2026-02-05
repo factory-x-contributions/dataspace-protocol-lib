@@ -126,27 +126,28 @@ By default, the library is using the "/dsp/**" path. But you can configure this 
 
 Your importing project should provide the following properties: 
 
-| Property name                                 | Meaning                                                                                | Default setting                                        |
-|-----------------------------------------------|----------------------------------------------------------------------------------------|--------------------------------------------------------|
-| org.factoryx.library.hostname                 | The dns name of the host, the application is running on.                               | localhost                                              |
-| org.factoryx.library.usetls                   | boolean flag that indicates whether TLS is to be used                                  | false                                                  |
-| org.factoryx.library.id                       | The id, that you are using in your dataspace                                           | provider                                               |
-| org.factoryx.library.dspapiprefix             | The prefix that all library-related endpoints are using                                | /dsp                                                   |
-| org.factoryx.library.usebuiltindataccess      | "false" disables the built-in dataacces (not recommended!)                             | true                                                   | 
-| org.factoryx.library.alternativedataaccess    | set the host adress and path to an alternative data access endpoint (not recommended!) | http://localhost:9090/                                 |
-| org.factoryx.library.validationservice        | set the type of validation for DSP (currently supported: "mock", "mvd")                | mock                                                   |
-| org.factoryx.library.validationservice.stsapi | set the type of the api of your tokenprovider (either "dim-wallet" or "identityhub")   | <none>                                                 |
-| org.factoryx.library.fxv01.trustedissuer      | set the ID of the fx trusted issuer                                                    | did:web:dataspace-issuer                               | 
-| org.factoryx.library.fxv01.bearer             | toggle, whether a "Bearer" prefix is added in auth headers, you are sending            | false                                                  |  
-| org.factoryx.library.fxv01.vaultroottoken     | set the token for authorizing access to the MVD provider vault                         | root                                                   | 
-| org.factoryx.library.fxv01.vaultsecreturl     | set the url to the vault secret that stores your shared secret for your id-service     | http://provider-vault:8200/v1/secret/data/myVaultAlias |
-| org.factoryx.library.fxv01.dimtokenurl        | set the url of the oauth token endpoint, when dim-wallet is selected                   | http://provider-sts-service:8082/api/sts/token         |
-| org.factoryx.library.fxv01.dimclientid        | set the id to be used against the oauth token provider, when dim-wallet is selected    | my-client-id                                           |
-| org.factoryx.library.fxv01.dimurl             | set the url of your dim-wallet, when dim-wallet is selected                            | http://my-dim-url                                      | 
-| org.factoryx.library.fxv01.identityhub.url    | set  the url of the token endpoint on your id-hub, when identityhub is selected        | http://provider-sts-service:8082/api/sts/token         |                                                                                    
-| org.factoryx.library.fxv01.credentialscope    | set the scope of your verifiable credentials                                           | org.eclipse.tractusx.vc.type                           | 
-| org.factoryx.library.fxv01.credentials        | set the credential type(s). Multiple entries can be set separated by commas            | MembershipCredential                                   | 
-| org.factoryx.library.fxv01.https              | toggles, whether the external identity services are connected via https or http        | false                                                  | 
+| Property name                                           | Meaning                                                                                                                 | Default setting                                        |
+|---------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------|
+| org.factoryx.library.hostname                           | The dns name of the host, the application is running on.                                                                | localhost                                              |
+| org.factoryx.library.usetls                             | boolean flag that indicates whether TLS is to be used for DSP-protocol messages                                         | false                                                  |
+| org.factoryx.library.id                                 | The id, that you are using in your dataspace                                                                            | provider                                               |
+| org.factoryx.library.dspapiprefix                       | The prefix that all library-related endpoints are using                                                                 | /dsp                                                   |
+| org.factoryx.library.usebuiltindataccess                | "false" disables the built-in dataaccess (not recommended!)                                                             | true                                                   | 
+| org.factoryx.library.alternativedataaccess              | set the host address and path to an alternative data access endpoint (not recommended!)                                 | http://localhost:9090/                                 |
+| org.factoryx.library.dcpvalidation                      | set the type of validation for DSP (currently supported: "fxv0_1" or "mock")                                            | mock                                                   |
+| org.factoryx.library.dcpvalidation.stsapi               | set the type of the api of your tokenprovider (either "dim-wallet" or "identityhub")                                    | "identityhub"                                          |
+| org.factoryx.library.dcpvalidation.trustedissuers       | set the ID of the fx trusted issuer                                                                                     | <empty string>                                         | 
+| org.factoryx.library.dcpvalidation.addbearer            | toggle, whether a "Bearer" prefix is added in auth headers, you are sending                                             | false                                                  |  
+| org.factoryx.library.dcpvalidation.vaultroottoken       | set the token for authorizing access to the vault                                                                       | root                                                   | 
+| org.factoryx.library.dcpvalidation.vaultsecreturl       | set the url to the vault secret that stores your shared secret for your id-service                                      | http://provider-vault:8200/v1/secret/data/myVaultAlias |
+| org.factoryx.library.dcpvalidation.initialsecret        | instead of deploying the secret in the vault, set it immediately via config (recommended only for testing environments) | <null>                                                 | 
+| org.factoryx.library.dcpvalidation.dimtokenurl          | set the url of the oauth token endpoint, when dim-wallet is selected                                                    | http://provider-sts-service:8082/api/sts/token         |
+| org.factoryx.library.dcpvalidation.dimclientid          | set the id to be used against the oauth token provider, when dim-wallet is selected                                     | my-client-id                                           |
+| org.factoryx.library.dcpvalidation.stsurl               | set the url of the token endpoint on your id-hub or dim-wallet                                                          | http://provider-sts-service:8082/api/sts/token         |                                                                                    
+| org.factoryx.library.dcpvalidation.credentialscope      | set the scope of your verifiable credentials                                                                            | org.eclipse.tractusx.vc.type                           | 
+| org.factoryx.library.dcpvalidation.credentials          | set the credential type(s). Multiple entries can be set separated by commas                                             | MembershipCredential                                   | 
+| org.factoryx.library.dcpvalidation.https                | toggles, whether the external identity services are connected via https or http                                         | false                                                  | 
+| org.factoryx.library.dcpvalidation.cacheupdate.interval | set, after which timespan cached values in dcp validation shall be dropped                                              | 24h                                                    | 
 
 
 

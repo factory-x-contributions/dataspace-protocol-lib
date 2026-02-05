@@ -30,9 +30,7 @@ import java.util.Map;
 
 import static jakarta.json.JsonValue.ValueType.STRING;
 
-@Service
 @Slf4j
-@ConditionalOnProperty(name = "org.factoryx.library.validationservice", havingValue = "mock", matchIfMissing = true)
 public class MockValidationService implements DspTokenValidationService {
 
     private final EnvService envService;
