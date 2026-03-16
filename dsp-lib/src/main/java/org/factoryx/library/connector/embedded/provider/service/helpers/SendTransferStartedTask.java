@@ -172,7 +172,7 @@ public class SendTransferStartedTask implements Runnable {
                 : authorizationService.issueDataAccessToken(contractId, datasetAddressUrl);
         String partnerId = record.getPartnerId();
         String refreshTokenValue = authorizationService.issueRefreshToken(dataAccessToken, partnerId);
-        String expiresInValue = "300";
+        String expiresInValue = authorizationService.validitySeconds;
         String refreshEndpointValue = envService.getRefreshEndpoint();
 
         JsonObject authorization = Json.createObjectBuilder()
@@ -186,7 +186,6 @@ public class SendTransferStartedTask implements Runnable {
                 .add("dspace:value", authorizationService.getAuthType())
                 .build();
 
-        // The following properties are currently necessary for compatibility with the EDC connector
         JsonObject endpointQuickFix = Json.createObjectBuilder()
                 .add("@type", "dspace:EndpointProperty")
                 .add("dspace:name", "https://w3id.org/edc/v0.0.1/ns/endpoint")
