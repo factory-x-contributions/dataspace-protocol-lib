@@ -85,7 +85,6 @@ public class DspNegotiationsController {
 
     private ResponseEntity<byte[]> handleNegotiationRequest(String rawJson,  String authString, DspVersion version) {
         log.info("negotiations/request on version{}: \n{}", version, JsonUtils.prettyPrint(rawJson));
-        log.info("Raw body \n{}", prettyPrint(rawJson));
         try {
             log.info("Starting validation");
             Map<String, String> tokenValidationResult = dspTokenValidationService.validateToken(authString);
