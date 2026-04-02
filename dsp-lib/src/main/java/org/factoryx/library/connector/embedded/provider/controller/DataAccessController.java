@@ -48,7 +48,7 @@ public class DataAccessController {
         this.dataAccessTokenValidationService = dataAccessTokenValidationService;
     }
 
-    @GetMapping("${org.factoryx.library.dspapiprefix:/dsp}/data-access/{assetId}")
+    @GetMapping("${org.factoryx.library.dspapiprefix:/dsp}/data-access/data/{assetId}")
     public ResponseEntity<byte[]> dataAccess(@RequestHeader("Authorization") String authToken, @PathVariable("assetId") String assetId) {
         boolean tokenValidation = dataAccessTokenValidationService.validateDataAccessTokenForAssetId(authToken, assetId);
         if (!tokenValidation) {

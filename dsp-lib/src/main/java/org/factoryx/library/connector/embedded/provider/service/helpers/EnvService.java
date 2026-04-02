@@ -76,7 +76,7 @@ public class EnvService {
 
     public String getEdrEndpoint(DataAsset dataAsset) {
         if (useBuiltInDataAccess) {
-            String apiAssetPath = dataAsset instanceof ApiAsset ? "api/" : "";
+            String apiAssetPath = dataAsset instanceof ApiAsset ? "api/" : "data/";
             return getURLPrefix() + hostName + ":" + serverPort + dspApiPrefix + "/data-access/" + apiAssetPath + dataAsset.getDspId();
         } else {
             return dataAccessAddressProvider.getAddressForDataAsset(dataAsset);
