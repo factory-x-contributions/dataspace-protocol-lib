@@ -17,6 +17,7 @@
 package org.factoryx.library.connector.embedded.provider.service.helpers;
 
 import lombok.Getter;
+import org.factoryx.library.connector.embedded.provider.interfaces.ApiAsset;
 import org.factoryx.library.connector.embedded.provider.interfaces.DataAccessAddressProvider;
 import org.factoryx.library.connector.embedded.provider.interfaces.DataAsset;
 import org.springframework.beans.factory.annotation.Value;
@@ -75,7 +76,8 @@ public class EnvService {
 
     public String getEdrEndpoint(DataAsset dataAsset) {
         if (useBuiltInDataAccess) {
-            return getURLPrefix() + hostName + ":" + serverPort + dspApiPrefix + "/data-access/" + dataAsset.getDspId();
+            String apiAssetPath = dataAsset instanceof ApiAsset ? "api/" : "data/";
+            return getURLPrefix() + hostName + ":" + serverPort + dspApiPrefix + "/data-access/" + apiAssetPath + dataAsset.getDspId();
         } else {
             return dataAccessAddressProvider.getAddressForDataAsset(dataAsset);
         }

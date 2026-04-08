@@ -48,6 +48,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 public class AuthorizationService {
 
     private final long tokenValidityInMilliSeconds = 1000L * 60 * 5; // five minutes
+    public final String validitySeconds = String.valueOf(tokenValidityInMilliSeconds%1000L);
     private final long refreshTokenValidityInMilliSeconds = 1000L * 60 * 30; // thirty minutes
     private final Duration keyRotationInterval = Duration.ofHours(1); // must be larger than token validity
     public final static String CONTRACT_ID = "cid";

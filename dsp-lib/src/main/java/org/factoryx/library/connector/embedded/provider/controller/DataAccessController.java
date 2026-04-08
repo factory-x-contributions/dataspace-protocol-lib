@@ -17,6 +17,7 @@
 package org.factoryx.library.connector.embedded.provider.controller;
 
 
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.factoryx.library.connector.embedded.provider.interfaces.DataAssetManagementService;
 import org.factoryx.library.connector.embedded.provider.service.helpers.DataAccessTokenValidationService;
@@ -47,7 +48,7 @@ public class DataAccessController {
         this.dataAccessTokenValidationService = dataAccessTokenValidationService;
     }
 
-    @GetMapping("${org.factoryx.library.dspapiprefix:/dsp}/data-access/{assetId}")
+    @GetMapping("${org.factoryx.library.dspapiprefix:/dsp}/data-access/data/{assetId}")
     public ResponseEntity<byte[]> dataAccess(@RequestHeader("Authorization") String authToken, @PathVariable("assetId") String assetId) {
         boolean tokenValidation = dataAccessTokenValidationService.validateDataAccessTokenForAssetId(authToken, assetId);
         if (!tokenValidation) {
@@ -60,33 +61,17 @@ public class DataAccessController {
         return ResponseEntity.ok().contentType(MediaType.parseMediaType(asset.getContentType())).body(asset.getDtoRepresentation());
     }
 
-    @PostMapping("${org.factoryx.library.dspapiprefix:/dsp}/data-access/{assetId}/{*path}")
-    public ResponseEntity<byte[]> forwardPostRequest(@RequestHeader("Authorization") String authToken, @PathVariable("assetId") String assetId,
-                                                     @PathVariable String path, @RequestBody byte[] body, @RequestHeader HttpHeaders incomingHeaders,
-                                                     @RequestParam MultiValueMap<String, String> incomingQueryParams) {
-        return forwardApiAssetRequest(assetId, HttpMethod.POST, authToken, path, body, incomingHeaders, incomingQueryParams);
-    }
-
-    @PutMapping("${org.factoryx.library.dspapiprefix:/dsp}/data-access/{assetId}/{*path}")
-    public ResponseEntity<byte[]> forwardPutRequest(@RequestHeader("Authorization") String authToken, @PathVariable("assetId") String assetId,
-                                                    @PathVariable String path, @RequestBody byte[] body, @RequestHeader HttpHeaders incomingHeaders,
-                                                    @RequestParam MultiValueMap<String, String> incomingQueryParams) {
-        return forwardApiAssetRequest(assetId, HttpMethod.PUT, authToken, path, body, incomingHeaders, incomingQueryParams);
-    }
-
-    @DeleteMapping("${org.factoryx.library.dspapiprefix:/dsp}/data-access/{assetId}/{*path}")
-    public ResponseEntity<byte[]> forwardDeleteRequest(@RequestHeader("Authorization") String authToken, @PathVariable("assetId") String assetId,
-                                                       @PathVariable String path, @RequestHeader HttpHeaders incomingHeaders,
-                                                       @RequestParam MultiValueMap<String, String> incomingQueryParams) {
-        return forwardApiAssetRequest(assetId, HttpMethod.DELETE, authToken, path, null, incomingHeaders, incomingQueryParams);
-    }
-
-    private ResponseEntity<byte[]> forwardApiAssetRequest(String assetId, HttpMethod method, String authToken, String path, byte[] body,
-                                                          HttpHeaders incomingHeaders, MultiValueMap<String, String> incomingQueryParams) {
-        boolean tokenValidation = dataAccessTokenValidationService.validateWriteAccessTokenForAssetId(authToken, assetId.toString());
+    @RequestMapping("${org.factoryx.library.dspapiprefix:/dsp}/data-access/api/{assetId}/{*path}")
+    public ResponseEntity<byte[]> forwardApiAssetRequest(@RequestHeader("Authorization") String authToken, @PathVariable("assetId") String assetId,
+                                                         @PathVariable String path, @RequestBody byte[] body, @RequestHeader HttpHeaders incomingHeaders,
+                                                         @RequestParam MultiValueMap<String, String> incomingQueryParams, HttpServletRequest request) {
+        boolean tokenValidation = dataAccessTokenValidationService.validateWriteAccessTokenForAssetId(authToken, assetId);
         if (!tokenValidation) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
-        return dataAssetManagementService.forwardToApiAsset(assetId, method, body, incomingHeaders, path, incomingQueryParams);
+        HttpMethod httpMethod = HttpMethod.valueOf(request.getMethod());
+        return dataAssetManagementService.forwardToApiAsset(assetId, httpMethod, body, incomingHeaders, path, incomingQueryParams);
     }
+
+
 }
