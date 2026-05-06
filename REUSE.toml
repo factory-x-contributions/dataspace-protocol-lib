@@ -1,0 +1,28 @@
+version = 1
+SPDX-PackageName = "dataspace-protocol-lib"
+SPDX-PackageSupplier = "info@factory-x.org"
+SPDX-PackageDownloadLocation = "https://github.com/factory-x-contributions/dataspace-protocol-lib"
+
+[[annotations]]
+path = ["README.md", "CONTRIBUTING.md", "CHANGELOG.md", "CODE_OF_CONDUCT.md", "SECURITY.md"]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2024-2026 Contributors to the Factory-X project"
+SPDX-License-Identifier = "CC-BY-4.0"
+
+[[annotations]]
+path = ["dsp-lib/**", "dataspace-protocol-lib-mongodb/**", "dataspace-protocol-lib-sql/**"]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2024-2026 Contributors to the Factory-X project"
+SPDX-License-Identifier = "Apache-2.0"
+
+[[annotations]]
+path = [".github/**", ".gitignore", ".gitattributes", "build.gradle.kts", "settings.gradle.kts", "gradle.properties", "gradle/**", "gradlew", "gradlew.bat", "inttest.sh"]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2024-2026 Contributors to the Factory-X project"
+SPDX-License-Identifier = "Apache-2.0"
+
+[[annotations]]
+path = ["LICENSE", "LICENSES/**", "NOTICE"]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2024-2026 Contributors to the Factory-X project"
+SPDX-License-Identifier = "Apache-2.0"
