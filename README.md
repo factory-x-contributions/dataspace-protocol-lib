@@ -1,5 +1,8 @@
 # Dataspace Protocol Lib
 
+> [!IMPORTANT]
+> **This repository is archived.** It will receive no further development or maintenance. Interested parties are invited to fork the repository and continue the work independently.
+
 [![Contributors][contributors-shield]][contributors-url]
 [![Stargazers][stars-shield]][stars-url]
 [![Apache 2.0 License][license-shield]][license-url]
